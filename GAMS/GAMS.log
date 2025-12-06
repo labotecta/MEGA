@@ -1,0 +1,318 @@
+
+--- Job MCA.gms Start 07/07/25 13:39:15 49.6.0 20d51043 WEX-WEI x86 64bit/MS Windows
+--- Applying:
+    C:\GAMS\49\gmsprmNT.txt
+--- GAMS Parameters defined
+    Input C:\FIDELIO\CGE_AMP\GAMS\MCA.gms
+    PageSize 0
+    ScrDir C:\FIDELIO\CGE_AMP\GAMS\225a\
+    SysDir C:\GAMS\49\
+    LogOption 3
+    ErrMsg 1
+    ErrorLog 99
+    IDE 1
+    LstTitleLeftAligned 1
+*** Time-limited license expired 7 days ago
+Licensee: GAMS Demo, for EULA and demo limitations see   G250131/0001CB-GEN
+          https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+          C:\GAMS\49\gamslice.txt
+          Demo license for demonstration and instructional purposes only
+System information: 32 physical cores and 256 Gb memory detected
+GAMS 49.6.0   Copyright (C) 1987-2025 GAMS Development. All rights reserved
+--- Starting compilation
+--- MCA.gms(668) 3 Mb
+--- Starting execution: elapsed 0:00:00.007
+--- MCA.gms(369) 4 Mb
+--- Generating NLP model mca
+--- MCA.gms(371) 6 Mb
+---   181 rows  181 columns  783 non-zeroes
+---   1,165 nl-code  363 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 2.486E+03, 3.790E+05] - Zero values observed as well
+--- Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+--- Matrix    [min, max] : [ 5.227E-12, 1.451E+06]
+--- MCA.gms(371) 4 Mb
+--- Executing IPOPT (Solvelink=2): elapsed 0:00:00.014
+
+COIN-OR Ipopt    49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+COIN-OR Interior Point Optimizer (Ipopt Library 3.14.17)
+written by A. Waechter.
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+This is Ipopt version 3.14.17, running with linear solver MUMPS 5.7.3.
+
+Too few degrees of freedom (n_x = 179, n_c = 180).
+  Trying fixed_variable_treatment = RELAX_BOUNDS
+
+Number of nonzeros in equality constraint Jacobian...:      770
+Number of nonzeros in inequality constraint Jacobian.:        0
+Number of nonzeros in Lagrangian Hessian.............:      409
+
+Total number of variables............................:      180
+                     variables with only lower bounds:      179
+                variables with lower and upper bounds:        1
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:      180
+Total number of inequality constraints...............:        0
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  2.1255570e+05 7.00e-02 1.44e+00   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  2.1255570e+05 7.00e-04 1.44e-02  -1.3 1.00e-02    -  9.90e-01 9.90e-01h  1
+   2  2.1255570e+05 7.00e-06 3.69e+00  -3.3 1.00e-04    -  9.90e-01 9.90e-01h  1
+   3  2.1255570e+05 6.93e-08 3.62e+05  -1.4 1.00e-06    -  9.91e-01 9.90e-01h  1
+   4  2.1255570e+05 6.91e-08 5.72e-03  -2.1 1.32e-07    -  1.00e+00 1.00e+00h  1
+   5  2.1255570e+05 6.34e-09 2.47e-10  -8.1 1.32e-07    -  9.77e-01 1.00e+00h  1
+
+Number of Iterations....: 5
+
+                                   (scaled)                 (unscaled)
+Objective...............:  -2.1255570356183493e+05    2.1255570356183493e+05
+Dual infeasibility......:   2.4709834178793244e-10    2.4709834178793244e-10
+Constraint violation....:   5.1222741603851318e-09    6.3446350395679474e-09
+Variable bound violation:   6.3066107891529555e-11    6.3066107891529555e-11
+Complementarity.........:   0.0000000000000000e+00    0.0000000000000000e+00
+Overall NLP error.......:   5.1222741603851318e-09    6.3446350395679474e-09
+
+
+Number of objective function evaluations             = 6
+Number of objective gradient evaluations             = 6
+Number of equality constraint evaluations            = 6
+Number of inequality constraint evaluations          = 0
+Number of equality constraint Jacobian evaluations   = 6
+Number of inequality constraint Jacobian evaluations = 0
+Number of Lagrangian Hessian evaluations             = 5
+Total seconds in IPOPT                               = 0.010
+
+EXIT: Optimal Solution Found.
+--- Reading solution for model mca
+--- Executing after solve: elapsed 0:00:00.056
+--- MCA.gms(375) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion1.gdx
+--- MCA.gms(435) 4 Mb
+--- Generating NLP model mca
+--- MCA.gms(437) 6 Mb
+---   181 rows  181 columns  783 non-zeroes
+---   1,165 nl-code  363 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 2.486E+03, 3.790E+05] - Zero values observed as well
+--- Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+--- Matrix    [min, max] : [ 2.614E-12, 2.903E+06]
+--- MCA.gms(437) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.061
+
+CONOPT 4         49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+--- *** This solver runs with a demo license. No commercial use.
+*** gmoEvalMaxThreads: invalid maxthread value, has to be [1,64]
+ 
+ 
+    C O N O P T   version 4.36
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 181 constraints and 181 variables
+    with 783 Jacobian elements, 363 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          6.9775070134E+05 (Input point)
+ 
+    The pre-triangular part of the model has 23 constraints and 24 variables.
+    The post-triangular part of the model has 2 constraints and variables.
+    There are 77 definitional constraints and defined variables.
+ 
+    Preprocessed model has 79 constraints and 78 variables
+    with 706 Jacobian elements, 560 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      5.9345851920E+05 (Full preprocessed model)
+                      1.4210427053E+01 (After scaling)
+                      4.4318503644E+00 (After adjusting individual variables)
+       5   0          8.9056342660E-04                 1.0E+00     1 T  T
+ 
+ ** Feasible solution. Value of objective =    212555.703566
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       8   4          2.1255570357E+05 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model mca
+--- Executing after solve: elapsed 0:00:00.103
+--- MCA.gms(439) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion2.gdx
+--- MCA.gms(493) 4 Mb
+--- Generating NLP model mca
+--- MCA.gms(497) 6 Mb
+---   181 rows  181 columns  783 non-zeroes
+---   1,165 nl-code  363 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 2.486E+03, 4.169E+05] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 5.227E-12, 1.451E+06]
+--- MCA.gms(497) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.107
+
+CONOPT 4         49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+--- *** This solver runs with a demo license. No commercial use.
+*** gmoEvalMaxThreads: invalid maxthread value, has to be [1,64]
+ 
+ 
+    C O N O P T   version 4.36
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 181 constraints and 181 variables
+    with 783 Jacobian elements, 363 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          1.7158860007E+05 (Input point)
+ 
+    The pre-triangular part of the model has 23 constraints and variables.
+    The post-triangular part of the model has 2 constraints and variables.
+ 
+    Preprocessed model has 156 constraints and 156 variables
+    with 643 Jacobian elements, 281 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      1.6787900007E+05 (Full preprocessed model)
+                      1.5921925252E+00 (After scaling)
+       5   0          1.4751169766E-06                 1.0E+00     0 T  T
+ 
+ ** Feasible solution. Value of objective =    233335.579555
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       9   4          2.3333557955E+05 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model mca
+--- Executing after solve: elapsed 0:00:00.143
+--- MCA.gms(499) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion3.gdx
+--- MCA.gms(593) 4 Mb
+--- Generating NLP model mca
+--- MCA.gms(595) 6 Mb
+---   181 rows  181 columns  783 non-zeroes
+---   1,165 nl-code  363 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 2.486E+03, 3.790E+05] - Zero values observed as well
+--- Bound     [min, max] : [        NA,        NA] - Zero values observed as well
+--- Matrix    [min, max] : [ 4.611E-12, 1.823E+06]
+--- MCA.gms(595) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.148
+
+CONOPT 4         49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+--- *** This solver runs with a demo license. No commercial use.
+*** gmoEvalMaxThreads: invalid maxthread value, has to be [1,64]
+ 
+ 
+    C O N O P T   version 4.36
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 181 constraints and 181 variables
+    with 783 Jacobian elements, 363 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          3.9823540205E+05 (Input point)
+ 
+    The pre-triangular part of the model has 23 constraints and variables.
+    The post-triangular part of the model has 2 constraints and variables.
+ 
+    Preprocessed model has 156 constraints and 156 variables
+    with 643 Jacobian elements, 281 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      3.9426438696E+05 (Full preprocessed model)
+                      8.0405842324E+00 (After scaling)
+       5   0          2.7714065655E-06                 1.0E+00     0 T  T
+ 
+ ** Feasible solution. Value of objective =    201172.546704
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       8   4          2.0117254670E+05 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model mca
+--- Executing after solve: elapsed 0:00:00.183
+--- MCA.gms(597) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion5.gdx
+--- MCA.gms(637) 4 Mb
+--- Generating NLP model mca
+--- MCA.gms(639) 6 Mb
+---   181 rows  181 columns  783 non-zeroes
+---   1,165 nl-code  363 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 2.486E+03, 3.790E+05] - Zero values observed as well
+--- Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+--- Matrix    [min, max] : [ 5.203E-12, 1.411E+06]
+--- MCA.gms(639) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.188
+
+CONOPT 4         49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+--- *** This solver runs with a demo license. No commercial use.
+*** gmoEvalMaxThreads: invalid maxthread value, has to be [1,64]
+ 
+ 
+    C O N O P T   version 4.36
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 181 constraints and 181 variables
+    with 783 Jacobian elements, 363 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.1515249367E+05 (Input point)
+ 
+    The pre-triangular part of the model has 23 constraints and 24 variables.
+    The post-triangular part of the model has 2 constraints and variables.
+    There are 74 definitional constraints and defined variables.
+ 
+    Preprocessed model has 82 constraints and 81 variables
+    with 637 Jacobian elements, 477 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      2.1504904805E+05 (Full preprocessed model)
+                      5.9278767964E+00 (After scaling)
+                      1.4950832173E+00 (After adjusting individual variables)
+       5  S0          4.1376668759E-10                 1.0E+00     1 T  T
+ 
+ ** Feasible solution. Value of objective =    212555.703565
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       6   4          2.1255570357E+05 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model mca
+--- Executing after solve: elapsed 0:00:00.224
+--- MCA.gms(641) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion6.gdx
+--- MCA.gms(667) 4 Mb
+*** Status: Normal completion
+--- Job MCA.gms Stop 07/07/25 13:39:16 elapsed 0:00:00.225
