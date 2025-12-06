@@ -1,0 +1,38 @@
+
+AP1 AP2 AP3 AP4 AP5 AP6 L K
+AP1 Actividades Agrarias y pesca 2316 1 25294 23 2774 174 0 0
+AP2 Energía e industrias extractivas 1461 42946 19626 2589 20463 3422 0 0
+AP3 Actividades industriales 9256 4288 196336 54375 65046 10935 0 0
+AP4 Construcción 205 655 1734 97947 21050 1825 0 0
+AP5 Servicios destinados a la venta 3980 9878 85257 26081 203868 23914 0 0
+AP6 Servicios no destinados a la venta 0 0 0 0 0 0 0 0
+L Trabajo 4407 3737 56233 40779 158634 70628 0 0
+K Capital 20471 16143 42859 36758 251643 11109 0 0
+C Consumo 0 0 0 0 0 0334418378983
+A-I Ahorro/Inversión 0 0 0 0 0 0 0 0
+CSS Cotizaciones sociales 654 1364 17216 12662 43265 21254 0 0
+INP Impuestos netos sobre los productos -640 748 -1065 1623 12626 4253 0 0
+INPR Otros impuestos netos sobre la producción -1288 509 -629 830 4325 214 0 0
+IRPF IRPF 0 0 0 0 0 0 0 0
+SP Sector público 0 0 0 0 0 0 0 0
+SE Sector exterior 7977 36798 191304 16 38310 0 0 0
+Suma columna 48799 117068 634164 273682 822002 147726 334418 378983
+
+C A-I CSS INP INPR IRPF SP SE Total empleos
+AP1 Actividades Agrarias y pesca 9400 813 0 0 0 0 0 8005 48799
+AP2 Energía e industrias extractivas 17506 309 0 0 0 0 0 8748 117068
+AP3 Actividades industriales 101639 55736 0 0 0 0 7033 129522 634164
+AP4 Construcción 4360 145897 0 0 0 0 0 9 273682
+AP5 Servicios destinados a la venta 356211 42578 0 0 0 0 18708 51527 822002
+AP6 Servicios no destinados a la venta 2174 0 0 0 0 0 145552 0 147726
+L Trabajo 0 0 0 0 0 0 0 0334418
+K Capital 0 0 0 0 0 0 0 0378983
+C Consumo 0 0 0 0 0 0 96804 8910 819115
+A-I Ahorro/Inversión 153214 0 0 0 0 0 46938 67772 267924
+CSS Cotizaciones sociales 21033 0 0 0 0 0 0 0 117447
+INP Impuestos netos sobre los productos 54474 22592 0 0 0 0 494 -89 95016
+INPR Otros impuestos netos sobre la producción 0 0 0 0 0 0 0 0 3961
+IRPF IRPF 99105 0 0 0 0 0 0 0 99105
+SP Sector público 0 0 117447 95016 3961 99105 0 0 315529
+SE Sector exterior 0 0 0 0 0 0 0 0274404
+Suma columna 819115 267924 117447 95016 3961 99105 315529 274404
