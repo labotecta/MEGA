@@ -1,0 +1,3 @@
+Los script BAT permiten ejecutar la aplicación directamente, pasándole las opciones en la línea de comando
+Hay que asegurarse de que la senda a python.exe es la correcta.
+Es una forma de asegurarse que las opciones de cada caso son las correctas.
