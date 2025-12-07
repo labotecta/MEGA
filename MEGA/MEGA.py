@@ -9,12 +9,13 @@ import numpy as np
 import matplotlib
 import pandas as pd
 import scipy
-import argumentos
+
 from pandas          import Series
 from scipy.optimize  import differential_evolution
 from matplotlib      import pyplot as plt
 from timeit          import default_timer as timer
 
+import argumentos
 import calibrado
 import funciones     as mfun
 import ecuaciones    as ecua
@@ -24,7 +25,6 @@ import ahorro_inv    as ainv
 import demanda       as deho
 import exterior      as exte
 import restricciones as restri
-
 
 VERSION = '1.0.7'
 # 4 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
@@ -2524,8 +2524,9 @@ if __name__ == '__main__':
     t_inicio = timer()
     print('Evolución de la minimización')
     print('')
-    historial = []
-    soluciones = []
+    historial   = []
+    soluciones  = []
+    mensaje_fin = []
 
     # función que 'differential_evolution' llamará despues de probar cada posible solución 
     def vigila(intermediate_result):
@@ -2533,14 +2534,16 @@ if __name__ == '__main__':
         nit = intermediate_result.nit   # número de iteraciones
         if vf < GE_TOLERANCIA:
             # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
-            print('{:9} {:12.5e} **'.format(nit, vf))
+            mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
+            imprime()
+            imprime('')
             raise StopIteration
         if GE_HISTORIAL > 0:
             if nit == 1 or (nit % GE_HISTORIAL == 0):
                 if len(historial) > 1 and (historial[-1][1] - vf) < GE_TOLERANCIA:
                     # se comprueba a partir de tener al menos dos valores del 'historial'
                     # no progresa significativamente, por lo que se da por terminada la minimización
-                    print('{:9} {:12.5e} @@'.format(nit, historial[-1][1] - vf))
+                    mensaje_fin.append('nit:{:9} mejora:{:12.5e} no progresa más'.format(nit, historial[-1][1] - vf))
                     raise StopIteration
                 # guardar el valor del error (función objetivo) que, al final, se escribirá en un fichero CSV
                 historial.append([nit,vf])
@@ -2937,10 +2940,13 @@ if __name__ == '__main__':
                 Alp,
     )
     veri_solucion(vec_veri_sol,'Verifica con la solución final', GE_VERIFICAR)
-    if (dist > GE_TOLERANCIA):
+    if len(mensaje_fin) > 0 or dist > GE_TOLERANCIA:
         imprime('')
         imprime('***********************************************************************')
-        imprime('No se alcanzó el mínimo deseado {:9.3e} [{:9.3e}]'.format(GE_TOLERANCIA, dist))
+        for mensaje in mensaje_fin:
+            imprime(mensaje)
+        if (dist > GE_TOLERANCIA):
+            imprime('No se alcanzó el mínimo deseado {:9.3e} [{:9.3e}]'.format(GE_TOLERANCIA, dist))
         imprime('***********************************************************************')
     imprime('')
     imprime("Tiempo de cálculo:{:11,.0f} s".format(t_fin - t_inicio))
