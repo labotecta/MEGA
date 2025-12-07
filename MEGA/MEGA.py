@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib
 import pandas as pd
 import scipy
+import argumentos
 from pandas          import Series
 from scipy.optimize  import differential_evolution
 from matplotlib      import pyplot as plt
@@ -24,11 +25,11 @@ import demanda       as deho
 import exterior      as exte
 import restricciones as restri
 
+
 VERSION = '1.0.7'
 # 4 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 #               0            1             2              3
 etq_sam  = ['1_hogar','2_hogares','3_hogares_AMP','MCA-ESP-05']
-
 # escenarios para las pruebas, se selecciona con NCASO
 etq_caso = [
     'base',                     #  0
@@ -48,190 +49,73 @@ etq_caso = [
     'aranceles',                # 14
 ]
 
-PRECIO_INI  = 0.5                               # para el caso 5 'pre_ini'
-FACTOR_CSSH = [0.95, 1.0]                       # para afectar los coeficientes de la seguridad social de los hohares, caso 8
-FACTOR_CSSE = [1.0 , 1.0, 1.0, 1.0, 1.0, 1.0]   # para afectar los coeficientes de la seguridad social de las empresas, caso 8
+# Extrae los argumento de la línea de comandos
+args = argumentos.valores_opciones()
 
-# factores aportados adicionales para el caso 6, si se especifica un solo valor (escalar) se afectan todos por él.
-# su forma varia con la SAM correspondiente, en función del número de hogares y factores.
-VAR_FACTORES = np.array([
-    [0., 0.],
-    [0., 0.],
-])
-VAR_FACTORES = 1.1
-# para el caso 11, participación del valor añadido sobre la producción de cada sector para calcular 
-# la variación adicional exógena de factores, derivada del incremento de la demanda 'DEM_ADICIONAL'
-# su forma varia con la SAM correspondiente, en función del número de sectores.
-COE_VAB = np.array([0.590982516,0.256023902,0.231881481,0.299890544,0.567089808,0.669947953])
+PRECIO_INI          = np.float64(args.PRECIO_INI)
+FACTOR_CSSH         = np.array(args.FACTOR_CSSH, dtype=np.float64)
+FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
+VAR_FACTORES        = np.array([args.VAR_FACTORES00, args.VAR_FACTORES01], dtype=np.float64)
+COE_VAB             = np.array(args.COE_VAB, dtype=np.float64)
+DEM_ADICIONAL       = np.array([args.DEM_ADICIONAL00, args.DEM_ADICIONAL01], dtype=np.float64)
+DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
+AYD_ADICIONAL       = np.array([args.AYD_ADICIONAL00, args.AYD_ADICIONAL01], dtype=np.float64)
+SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
+ARANCELES           = np.array(args.ARANCELES, dtype=np.float64)
+PREFIJO             = args.PREFIJO if args.PREFIJO != '"' else ''
+NSAM                = args.NSAM
+NCASO               = np.array(args.NCASO, dtype=int)
+OR_PRE_REFERENCIA   = args.OR_PRE_REFERENCIA
+PRECIO_F_REFERENCIA = np.float64(args.PRECIO_F_REFERENCIA)
+VALOR_F_TRA         = np.float64(args.VALOR_F_TRA)
+FF_ENDOGENA         = args.FF_ENDOGENA
+AHORRO_L_PLAZO      = args.AHORRO_L_PLAZO
+OPT_DESVIOS         = args.OPT_DESVIOS
+PRIMERA_VALORACION  = args.PRIMERA_VALORACION
+SAL_CALIBRADO       = args.SAL_CALIBRADO
+SALIDA_VEC_OPT      = args.SALIDA_VEC_OPT
+SALIDA_DESVIOS      = args.SALIDA_DESVIOS
+SAL_AUXILIARES      = args.SAL_AUXILIARES
+SAL_GRAFICOS_EVOL   = args.SAL_GRAFICOS_EVOL
+SAL_GRAFICO_CES_DM  = args.SAL_GRAFICO_CES_DM
+SAL_ISOCUANTA       = args.SAL_ISOCUANTA
+SAL_VARIACIONES     = args.SAL_VARIACIONES
+DECIMALES           = args.DECIMALES
+GE_RESTRICCIONES    = args.GE_RESTRICCIONES
+GE_TIPO_RE          = args.GE_TIPO_RE
+GE_TOLERANCIA       = np.float64(args.GE_TOLERANCIA)
+GE_VERIFICAR        = np.float64(args.GE_VERIFICAR)
+GE_HISTORIAL        = args.GE_HISTORIAL
+GE_SOLUCIONES       = args.GE_SOLUCIONES
+GE_PRE_MIN          = np.float64(args.GE_PRE_MIN)
+GE_PRE_MAX          = np.float64(args.GE_PRE_MAX)
+GE_VAR_MIN          = np.float64(args.GE_VAR_MIN)
+GE_VAR_MAX          = np.float64(args.GE_VAR_MAX)
+GE_VAR_CERO         = np.float64(args.GE_VAR_CERO)
+GE_FIX              = [] if (len(args.GE_FIX) == 0  or args.GE_FIX[0] == '') else args.GE_FIX
+GE_FIX_LIMITES      = np.array([[args.GE_FIX_LIMITES00_00]], dtype=np.float64)
+GE_MAX_ITER         = args.GE_MAX_ITER
+GE_ACTUALIZACION    = args.GE_ACTUALIZACION
+GE_RECONBINACION    = args.GE_RECONBINACION
+GE_DIM_POBLACION    = args.GE_DIM_POBLACION
+GE_WORKERS          = args.GE_WORKERS
+GE_SEMILLA          = args.GE_SEMILLA
+GE_IMG_FIL          = args.GE_IMG_FIL
+GE_IMG_COL          = args.GE_IMG_COL
+GE_ESTRATEGIA       = args.GE_ESTRATEGIA
+METRICA_ERROR       = args.METRICA_ERROR
+POT_DESVIOS         = args.POT_DESVIOS
+SENDA_DATOS         = args.SENDA_DATOS
+SENDA_SALIDAS       = args.SENDA_SALIDAS
+SENDA_GRAFICOS      = args.SENDA_GRAFICOS
 
-# demanda adicional exógena de productos (columna) por consumidor (fila).
-# su forma varia con la SAM correspondiente, en función del número de hogares y productos.
-DEM_ADICIONAL      = np.array([
-    [0., 0.,    0., 0., 0., 0.],
-    [0., 0.,    0., 0., 0., 0.],
-])
-DEM_ADICIONAL_TIPO = 0  # 0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada
-
-# ayuda adicional exógena por consumidor (fila) y producto (columna), en importe
-# su forma varía con la SAM correspondiente, en función del número de hogares y sectores.
-AYD_ADICIONAL = np.array([
-    [0.,0.,    0.,0.,0.,0.],
-    [0.,0.,    0.,0.,0.,0.],
-])
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
 # valores desagregados por producto porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
 AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
-
-# valor de sigma para el escenario 13
-SIGMA_ESCENARIO = np.array(
-    [4.,2.,2.,2.,2.,2.], dtype=np.float64
-)
-# para el caso 14
-ARANCELES = np.array(
-    [0., 0., 0.003825, 0., 0., 0.], dtype=np.float64
-)
-
-PREFIJO = ''                    # un literal que se añade al principio del nombre de los archivos de salida
-NSAM  = 3                       # Matriz de Contabilidad Social a utilizar, ver 'etq_sam'
-#NCASO = [0, 14]                # número de esenario a utilizar, ver 'etq_caso', se pueden combinar varios
-NCASO = [5]                     # número de esenario a utilizar, ver 'etq_caso', se pueden combinar varios
-'''
-Hay dos formas de convertir una variable endógena en exógena con un valor prefijado:
-    1. Darle un valor y no incluirla en el vector de soluciones a probar.
-    2. Establecer los valores mínimos y máximos que puede adoptar en el mismo valor.
-a continuación se usan ambos casos:
-    1. OR_PRE_REFERENCIA y PRECIO_F_REFERENCIA corresponden a la forma 1
-    2. VALOR_F_TRA se usa de la forma 2
-
-En la versión FF_ENDOGENA hay que fijar el valor de 3 variables, lo más cómodo es hacer:
-
-        OR_PRE_REFERENCIA   = 0
-        PRECIO_F_REFERENCIA = 1.0
-        VALOR_F_TRA         = 1.0
-    para fijar 2 de ellas : precios del capital y trabajo
-
-        GE_FIX              = ['epsilon']
-        GE_FIX_LIMITES      = [ [ [1.0, 1.0] ]
-    para fijar la tercera variable: cotización moneda local/extranjera
-'''
-OR_PRE_REFERENCIA   = 1         # factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'
-PRECIO_F_REFERENCIA = 1.0       # precio que se fija para el factor de referencia
-VALOR_F_TRA         = -1        # precio que se fija para el factor trabajo; -1 : no se fija el valor del precio del trabajo
-FF_ENDOGENA         = False     # Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas
-AHORRO_L_PLAZO      = False     # llevar a la cuenta ALP (Ahorro Largo Plazo) los excesos de factores aportados sobre sus valores iniciales
-OPT_DESVIOS         = 0         # 0 : incluye desvíos redundantes, suele mejorar los resultados y acelerar la convergencia
-
-PRIMERA_VALORACION  = False     # calcular una primera valoración de modelo
-SAL_CALIBRADO       = True      # imprimir los valores de los parámetros calibrados
-SALIDA_VEC_OPT      = True      # salida de los valores iniciales de las variables y sus límites
-SAL_AUXILIARES      = False     # imprimir los valores del historial 
-SAL_GRAFICOS_EVOL   = False     # generar gráficos de las evoluciones
-SAL_GRAFICO_CES_DM  = False     # generar graficos de isocuantas CES
-SAL_ISOCUANTA       = False     # generar gráficos adicionales de isocuantas
-SAL_VARIACIONES     = False     # imprime las diferencias entre los valores iniciales y finales de las variables 
-#--------------------------------------------------------------------------------------------------------------------------------------------
-# algunos de estos parámetros se cambian según la MCS seleccionada
-#
-GE_RESTRICCIONES   = False      # restricciones en cantidad de importación (M) y exportación (E)
-GE_TIPO_RE         = 0          # 0: lineal; 1: No lineal
-
-GE_PRE_MIN         = 3.0        # el límite inferior del rango de variación de los precios es su valor inicial dividido por GE_PRE_MIN 
-GE_PRE_MAX         = 3.0        # el límite superior del rango de variación de los precios es su valor inicial multiplicado por GE_PRE_MAX
-
-GE_VAR_MIN         = 9.0        # el límite inferior del rango de variación de las variables es su valor inicial dividido por GE_VAR_MIN 
-GE_VAR_MAX         = 9.0        # el límite superior del rango de variación de las variables es su valor inicial multiplicado por GE_VAR_MAX 
-GE_VAR_CERO        = 10000.      # si el valor inicial de una variable es cero su rango de variación es [-GE_VAR_CERO, +GE_VAR_CERO]
-'''
-GE_FIX             = ['M']       # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [           # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ ['*','*'], ['*','*'], ['M0','M0'], ['*','*'], ['*','*'], ['*','*'] ]
-]
-GE_FIX             = ['M']       # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [           # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ ['*','*'], ['*','*'], [191981.3,191981.3], ['*','*'], ['*','*'], ['*','*'] ]
-]
-GE_FIX             = ['M','E']  # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [          # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ ['*','*'], ['*','*'], ['M0','M0'], ['*','*'], ['*','*'], ['*','*'] ],
-    [ ['*','*'], ['*','*'], ['E0','E0'], ['*','*'], ['*','*'], ['*','*'] ]
-]
-GE_FIX             = ['pF']     # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [          # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ [1.0, 1.0] ]
-]
-GE_FIX             = ['pY']     # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [          # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ ['*','*'], [1.0, 1.0], [1.0, 1.0], ['*','*'], ['*','*'], ['*','*'] ]
-]
-GE_FIX             = []         # no se modifican explicitamente los límites de ninguna variable
-GE_FIX             = ['pY','epsilon']     # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [          # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ [1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0] ],
-    [ [1.0, 1.0] ]
-]
-GE_FIX             = ['epsilon']       # variables para las que se fijan los límites inferior y superior expresamente
-GE_FIX_LIMITES     = [                      # una fila para cada variable; una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial
-    [ [1.0, 1.0] ]
-]
-GE_FIX             = []         # no se modifican explicitamente los límites de ninguna variable
-'''
-GE_FIX             = []         # no se modifican explicitamente los límites de ninguna variable
-
-GE_TOLERANCIA      = 1.e-4      # límite para considerar el objetivo alcanzado.
-# Si el valor de una variable al aplicar la correspondiente ecuación del modelo varía, respecto del valor antes de aplicar la
-# ecuación, en menos de GE_VERIFICAR se considera que la ecuación se cumple (factibilidad de la ecuación)
-GE_VERIFICAR       = 1.e-2
-GE_MAX_ITER        = 1000000    # máximo número de generaciones a simular
-GE_ACTUALIZACION   = 'immediate'
-GE_RECONBINACION   = 0.90
-GE_DIM_POBLACION   = 5          # factor para establecer el tamaño de la población (por defecto es 15)
-GE_WORKERS         = 32         # número de procesadores a utilizar (en esta máquina el máximo es 61 y el óptimo 32)
-SEMAZAR = [42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29]  # varios valores de la semilla para las pruebas, se selecciona una en la línea siguiente
-GE_SEMILLA         = SEMAZAR[8] # valor inicial del generador de números aleatorios
-
-GE_HISTORIAL       = 200        # número de iteraciones para salvar el historial
-GE_SOLUCIONES      = 500        # número de iteraciones para salvar la solución
-GE_IMG_FIL         = 5          # número de filas del mapa de gráficos con la evolución de los precios y las variables
-GE_IMG_COL         = 6          # número de columnas del mapa de gráficos con la evolución de los precios y las variables
-
-'''
-Se genera un candidato a solución mediante los siguientes tres pasos:
-1. Mutación:
-    A partir de una generación se pasa a la siguiente creando una nueva población de individuos mutantes:
-        el método 'best1bin' genera un individuo mutante de la forma:
-            mutante = mejor individuo + (factor de mutación * (individuo[rand1] – individuo[rand2]))
-            el uso del 'mejor individuo' es lo que determina la denominación 'best' en 'best1bin'
-            la inclusión del '1' en la denominación de método 'best1bin' hace referencia a que sólo hay una resta
-        como se puede ver el individuo mutante en la posición 'n' de la población es totalmente independiente del individuo original en esa
-        misma posición, la relación con el individuo original se produce en la recombinación.
-2. Recombinación:
-    A continuación se procede a la recombinación (crossover) de los individuos mutantes con los de la población original.
-    Se construye un vector de prueba rellenándolo secuencialmente con parámetros de 'mutante' o del individuo original.
-    La decisión de usar 'mutante' o el individuo original se toma mediante una distribución binomial (el término 'bin' en 'best1bin'):
-    se genera un número aleatorio en [0, 1). Si este número es menor que la constante de recombinación, el parámetro se
-    carga desde 'mutante', de lo contrario, se carga desde el candidato original. Se exige que siempre se cargue como mínimo un
-    parámetro, seleccionado aleatoriamente, desde 'mutante', para evitar que la nueva solución a probar sea una copia exacta de la original.
-3. Selección:
-    Una vez construido el candidato a solución, se evalúa su mérito (aptitud). Si el candidato a solución es
-    mejor que el individuo original, lo reemplaza. Si es también mejor que el mejor individuo en general pasa a ser el mejor.
-'''
-GE_ESTRATEGIA      = 'best1bin'
-
 if GE_WORKERS != 1:
     # aunque se modifica automáticamente, no está de más especificarlo por transparencia
     GE_ACTUALIZACION = 'deferred'
-
-# el resultado de la función a minimizar lo determina la METRICA_ERROR y es:
-#   0: la suma del cuadrado de los desvios de cada una de las variables
-#   1: la suma de los valores absolutos de los desvios de cada una de las variables
-#   2: la suma de los desvios de cada una de las variables elevada a POT_DESVIOS, si el desvio es negatino se toma el valor absoluto
-METRICA_ERROR     = 0
-POT_DESVIOS       = 2   # solo se usa en el caso de METRICA_ERROR = 2
-
-SENDA_DATOS       = 'C:/MEGA/Datos'         # debe existir
-SENDA_SALIDAS     = 'C:/MEGA/Salidas'
-os.makedirs(SENDA_SALIDAS, exist_ok=True)   # crear el directorio si no existe
-SENDA_GRAFICOS    = 'C:/MEGA/Graficos'
+os.makedirs(SENDA_SALIDAS , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_GRAFICOS, exist_ok=True)  # crear el directorio si no existe
 
 # --------------------------------------------------------------------
@@ -248,16 +132,15 @@ if   NSAM == 0:
         [0., 0.],
     ])
     AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
-
+    '''
     DECIMALES = 5
-    GE_TOLERANCIA     = 1.e-10  # límite para considerar el objetivo alcanzado.
-    GE_VERIFICAR      = 1.e-09  # límite para considerar que la ecuación se cumple
-    GE_HISTORIAL      = 50      # número de iteraciones para salvar el historial
-    GE_SOLUCIONES     = 50      # número de iteraciones para salvar solución
     GE_TOLERANCIA     = 1.e-09  # límite para considerar el objetivo alcanzado.
+    # Si el valor de una variable al aplicar la correspondiente ecuación del modelo varía, respecto del valor antes de aplicar la
+    # ecuación, en menos de GE_VERIFICAR se considera que la ecuación se cumple (factibilidad de la ecuación)
     GE_VERIFICAR      = 1.e-08
     GE_HISTORIAL      = 50      # número de iteraciones para salvar el historial
     GE_SOLUCIONES     = 50      # número de iteraciones para salvar solución
+    '''
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "SAM_estandar")
     ind  = ('BRD' ,'MLK')       # sectores (industria)
     h    = ('CAP' ,'LAB')       # factores de producción
@@ -281,12 +164,13 @@ elif NSAM == 1:
         [0., 0.],
     ])
     AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
-
+    '''
     DECIMALES = 3
     GE_TOLERANCIA     = 1.e-08  # límite para considerar el objetivo alcanzado.
     GE_VERIFICAR      = 1.e-07  # límite para considerar que la ecuación se cumple
     GE_HISTORIAL      = 50      # número de iteraciones para salvar el historial
     GE_SOLUCIONES     = 50      # número de iteraciones para salvar solución
+    '''
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "SAM_10_10")
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "SAM_CSS")
     
@@ -315,12 +199,13 @@ elif NSAM == 2:
         [0., 0.],
     ])
     AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
-
+    '''
     DECIMALES = 3
     GE_TOLERANCIA     = 1.e-08  # límite para considerar el objetivo alcanzado.
     GE_VERIFICAR      = 1.e-07  # límite para considerar que la ecuación se cumple
     GE_HISTORIAL      = 50      # número de iteraciones para salvar el historial
     GE_SOLUCIONES     = 50      # número de iteraciones para salvar solución
+    '''
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "SAM_AMP")
     # declara las variables como 'tuple' (entre paréntesis) que es igual que 'list' pero no modificable, lo que las hace más eficientes)
     ind  = ('BRD' ,'MLK')           # sectores (industria)
@@ -354,11 +239,13 @@ elif NSAM == 3:
     Sector_público	                            SP
     Sector_exterior	                            SE
     '''
+    '''
     DECIMALES = 1
     GE_TOLERANCIA     = 1.e-11  # límite para considerar el objetivo alcanzado
     GE_VERIFICAR      = 1.e-08  # límite para considerar que la ecuación se cumple
-    GE_HISTORIAL      =  1000   # número de iteraciones para salvar el historial
+    GE_HISTORIAL      =   500   # número de iteraciones para salvar el historial
     GE_SOLUCIONES     =  1000   # número de iteraciones para salvar solución
+    '''
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "MCA-ESP-05_ajustada_imp_final")
     ind  = ('AP1','AP2','AP3','AP4','AP5','AP6')    # sectores (industria)
     h    = ('K'  ,'L')                              # factores de producción
@@ -397,7 +284,7 @@ FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
 FI_HISTORIAL    = SENDA_FI_SALIDA + '_his.csv'
 FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
 
-# preparar para usar la función 'imprime' que llama a la del módulo 'nfun', pasándole el nombre del fichero donde escribir
+# preparar para usar la función 'imprime' que llama a la del módulo 'mfun', pasándole el nombre del fichero donde escribir
 mfun.ini(FICHERO_LOG)
 
 def imprime(texto, rc=True):
@@ -1108,7 +995,7 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
         else:
             dist = (abs(desvios) ** POT_DESVIOS).sum()
 
-    if MUESTRA_PROGRESO:
+    if MUESTRA_PROGRESO and SALIDA_DESVIOS:
         mfun.tabla_2De(['equilib Q',] , des_produccion)
         mfun.tabla_2De(['equilib F',] , des_factores)
         mfun.tabla_2De(['des Fi',]    , des_Fi)
@@ -2648,10 +2535,16 @@ if __name__ == '__main__':
             # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
             print('{:9} {:12.5e} **'.format(nit, vf))
             raise StopIteration
-        if GE_HISTORIAL  > 0 and nit == 1 or (nit % GE_HISTORIAL  == 0):
-            # guardar el valor del error que, al final, se escribirá en un fichero CSV
-            historial.append([nit,vf])
-            print('{:9} {:12.5e}'.format(nit, vf))
+        if GE_HISTORIAL > 0:
+            if nit == 1 or (nit % GE_HISTORIAL == 0):
+                if len(historial) > 1 and (historial[-1][1] - vf) < GE_TOLERANCIA:
+                    # se comprueba a partir de tener al menos dos valores del 'historial'
+                    # no progresa significativamente, por lo que se da por terminada la minimización
+                    print('{:9} {:12.5e} @@'.format(nit, historial[-1][1] - vf))
+                    raise StopIteration
+                # guardar el valor del error (función objetivo) que, al final, se escribirá en un fichero CSV
+                historial.append([nit,vf])
+                print('{:9} {:12.5e}'.format(nit, vf))
         if GE_SOLUCIONES > 0 and nit == 1 or (nit % GE_SOLUCIONES == 0):
             # guardar el vector solución que, al final, se escribirá en un fichero CSV
             soluciones.append([nit,intermediate_result.x])

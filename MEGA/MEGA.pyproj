@@ -23,6 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ahorro_inv.py" />
+    <Compile Include="argumentos.py" />
     <Compile Include="calibrado.py" />
     <Compile Include="demanda.py" />
     <Compile Include="ecuaciones.py" />
@@ -32,6 +33,9 @@
     <Compile Include="MEGA.py" />
     <Compile Include="produccion.py" />
     <Compile Include="restricciones.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="temporal.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

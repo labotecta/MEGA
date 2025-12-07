@@ -1,3 +1,5 @@
+import argparse
+
 def ini(fichero):
     global FICHERO_LOG
     FICHERO_LOG = fichero
