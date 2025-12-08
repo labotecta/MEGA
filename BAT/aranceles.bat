@@ -1,7 +1,7 @@
-TITLE +1000 AP3 con Aramceles
-cd C:\MEGA\MEGA
+TITLE +1000 AP3 con Aranceles
 mode con cols120
 mode con lines40
+cd C:\MEGA\MEGA
 C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
 --PRECIO_INI          0.5 ^
 --FACTOR_CSSH         0.95 1.0 ^
