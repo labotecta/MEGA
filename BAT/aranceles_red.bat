@@ -2,7 +2,7 @@ TITLE +1000 AP3 con Aranceles
 mode con cols120
 mode con lines40
 cd C:\MEGA\MEGA
-C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
 --PREFIJO             BATr_ ^
 --NSAM                3 ^
 --NCASO               0 14 ^

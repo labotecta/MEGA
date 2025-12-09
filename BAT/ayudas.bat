@@ -2,7 +2,7 @@ TITLE +1000 ayudas alfa AP3
 mode con cols118
 mode con lines30
 cd C:\MEGA\MEGA
-C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
 --PRECIO_INI          0.5 ^
 --FACTOR_CSSH         0.95 1.0 ^
 --FACTOR_CSSE         1.0 1.0 1.0 1.0 1.0 1.0 ^
