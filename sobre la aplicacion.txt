@@ -9,7 +9,7 @@ exterior.py
 gobierno.py
 producción.py
 
-el módulo argumentos.y contiene los más de 50 parámetros con los que se seleccionan 
+El módulo argumentos.y contiene los más de 50 parámetros con los que se seleccionan 
 las distintas posibilidades de la aplicación. La única función de este módulo define como 
 debe interpretarse la línea de comandos, parámetro a parámetro. Cada parámetro 
 contiene una serie de atributos donde los esenciales son el nombre, el tipo, el valor por 
@@ -20,7 +20,7 @@ hay línea de comandos, que es lo normal si la aplicación se ejecuta dentro de 
 de desarrollo, en este caso hay que venir a este módulo y cambiar los valores por defecto 
 de los parámetros que sea necesario.
 
-Este no es una forma recomendable de ejecutar 
+Esto no es una forma recomendable de ejecutar 
 casos de forma sistemática ya que es casi seguro que se olvidará cambiar algún valor por 
 defecto, por eso es importante la línea de comando ya que se puede tener una para cada 
 caso con sus parámetros correctos y mejor aún podemos tener un fichero batch 
@@ -32,13 +32,15 @@ demanda del producto AP3 en 1000 unidades y se aplica un arancel a este producto
 	mode con cols120
 	mode con lines40
 	cd C:\MEGA\MEGA
-	C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+	start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe 
+MEGA.py ^
 	--PRECIO_INI          0.5 ^
 	--FACTOR_CSSH         0.95 1.0 ^
 	--FACTOR_CSSE         1.0 1.0 1.0 1.0 1.0 1.0 ^
 	--VAR_FACTORES00      0. 0. ^
 	--VAR_FACTORES01      0. 0. ^
-	--COE_VAB             0.590982516 0.256023902 0.231881481 0.299890544 0.567089808 0.669947953 ^
+	--COE_VAB             0.590982516 0.256023902 0.231881481 0.299890544 0.567089808 
+0.669947953 ^
 	--DEM_ADICIONAL00     0. 0.    0. 0. 0. 0. ^
 	--DEM_ADICIONAL01     0. 0. 1000. 0. 0. 0. ^
 	--DEM_ADICIONAL_TIPO  0 ^
@@ -101,7 +103,8 @@ conveniencia por tratarse de parámetros con nombre (BAT/aranceles_red.bat).
 	mode con cols120
 	mode con lines40
 	cd C:\MEGA\MEGA
-	C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+	start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe 
+MEGA.py ^
 	--PREFIJO             BAT_ ^
 	--NSAM                3 ^
 	--NCASO               0 14 ^
@@ -156,7 +159,6 @@ conveniencia por tratarse de parámetros con nombre (BAT/aranceles_red.bat).
 
 Al final de cada línea (excepto la última) aparece el carácter ^ que indica que la línea 
 continua, porque la línea de comandos es una sola línea.
-
 Con el comando cd C:\MEGA\MEGA nos situamos en la carpeta donde se encuentra 
 el módulo MEGA.py
 
@@ -168,7 +170,6 @@ C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe
 
 Una gran cantidad de las ‘líneas’ de la aplicación se encargan de mostrar en pantalla y 
 en el fichero de salida, los datos (obtenidos de la MCS), generar gráficos e informes.
-
 Unas pocas ‘líneas’ preparan las variables que necesita el procedimiento 
 ‘scipy.differential_evolution’, en especial el intervalo de existencis (bnds) de las 
 variables que forman el vector solución.
@@ -188,7 +189,6 @@ definido en la restricción.
 La función más importante del del módulo principal MEGA.py es:
 
 def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO) que junto a:
-
 def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO)
 
 constituyen la función objetivo que se quiere minimizar y calculan el mérito de una 
@@ -200,9 +200,9 @@ La secuencia de actividad del módulo MEGA.py es la siguiente:
 •	Obtención de los parámetros de la aplicación
 •	Lectura de la MCS
 •	Creación de las clases (datos y parámetros) que actuarán como contenedores 
-        de los datos de la MCS y los parámetros calculados para el modelo.
+de los datos de la MCS y los parámetros calculados para el modelo.
 •	Particularización de datos y parámetros según el escenario (NCASO)
 •	Preparación de una solución inicial para ‘scipy.differential_evolution’ y los 
-        intervalos de existencia de las variables incluidas en la solución (bnds)
+intervalos de existencia de las variables incluidas en la solución (bnds)
 •	Ejecución de ‘scipy.differential_evolution’
 •	Mostrar resultados.
