@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib
 import pandas as pd
 import scipy
+import psutil 
 
 from pandas          import Series
 from scipy.optimize  import differential_evolution
@@ -112,9 +113,14 @@ SENDA_GRAFICOS      = args.SENDA_GRAFICOS
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
 # valores desagregados por producto porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
 AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
+ajustar_workers = False
 if GE_WORKERS != 1:
     # aunque se modifica automáticamente, no está de más especificarlo por transparencia
     GE_ACTUALIZACION = 'deferred'
+    # ajustar el número de GE_WORKERS según la máquina
+    n_cores = psutil.cpu_count(logical = False)
+    if n_cores <= GE_WORKERS:
+        ajustar_workers = True
 os.makedirs(SENDA_SALIDAS , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_GRAFICOS, exist_ok=True)  # crear el directorio si no existe
 
@@ -286,9 +292,14 @@ FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
 
 # preparar para usar la función 'imprime' que llama a la del módulo 'mfun', pasándole el nombre del fichero donde escribir
 mfun.ini(FICHERO_LOG)
-
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
+
+if ajustar_workers:
+    if __name__ == '__main__':
+        imprime('Esta máquina tiene {} cores físicos y se han especificado {} workers. workers se ajuta a cores - 1 = {}'.format(n_cores, GE_WORKERS, n_cores - 1))
+        imprime('')
+    GE_WORKERS = n_cores - 1
 
 def punteros():
     # para saber la posición de las distintas variables en el vector solución en el que están
