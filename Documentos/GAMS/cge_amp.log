@@ -1,0 +1,133 @@
+
+--- Job cge_amp.gms Start 07/06/25 19:21:33 49.6.0 20d51043 WEX-WEI x86 64bit/MS Windows
+--- Applying:
+    C:\GAMS\49\gmsprmNT.txt
+--- GAMS Parameters defined
+    Input C:\FIDELIO\CGE_AMP\GAMS\cge_amp.gms
+    PageSize 0
+    ScrDir C:\FIDELIO\CGE_AMP\GAMS\225a\
+    SysDir C:\GAMS\49\
+    LogOption 3
+    ErrMsg 1
+    ErrorLog 99
+    IDE 1
+    LstTitleLeftAligned 1
+*** Time-limited license expired 6 days ago
+Licensee: GAMS Demo, for EULA and demo limitations see   G250131/0001CB-GEN
+          https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+          C:\GAMS\49\gamslice.txt
+          Demo license for demonstration and instructional purposes only
+System information: 32 physical cores and 256 Gb memory detected
+GAMS 49.6.0   Copyright (C) 1987-2025 GAMS Development. All rights reserved
+--- Starting compilation
+--- cge_amp.gms(546) 3 Mb
+--- Starting execution: elapsed 0:00:00.007
+--- cge_amp.gms(363) 4 Mb
+--- Generating NLP model stdcge
+--- cge_amp.gms(372) 6 Mb
+---   67 rows  67 columns  281 non-zeroes
+---   467 nl-code  150 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 1.000E+01, 7.000E+02] - Zero values observed as well
+--- Bound     [min, max] : [ 1.000E-06, 1.000E+02] - Zero values observed as well
+--- Matrix    [min, max] : [ 9.174E-03, 1.696E+03]
+--- cge_amp.gms(372) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.011
+
+CONOPT 4         49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+--- *** This solver runs with a demo license. No commercial use.
+*** gmoEvalMaxThreads: invalid maxthread value, has to be [1,64]
+ 
+ 
+    C O N O P T   version 4.36
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 67 constraints and 67 variables
+    with 281 Jacobian elements, 150 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          3.8479966182E+02 (Input point)
+ 
+    The pre-triangular part of the model has 9 constraints and 10 variables.
+    The post-triangular part of the model has 1 constraints and variables.
+    There are 10 definitional constraints and defined variables.
+ 
+    Preprocessed model has 47 constraints and 46 variables
+    with 184 Jacobian elements, 100 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      4.4978881730E-12 (Full preprocessed model)
+                      7.8478890053E-15 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    384.799661821
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       1   4          3.8479966182E+02 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model stdcge
+--- Executing after solve: elapsed 0:00:00.046
+--- cge_amp.gms(381) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion3H1.gdx
+--- cge_amp.gms(466) 4 Mb
+--- Generating NLP model stdcge
+--- cge_amp.gms(468) 6 Mb
+---   67 rows  67 columns  281 non-zeroes
+---   467 nl-code  150 nl-non-zeroes
+--- Range statistics (absolute non-zero finite values)
+--- RHS       [min, max] : [ 1.100E+01, 7.700E+02] - Zero values observed as well
+--- Bound     [min, max] : [ 1.000E-06, 1.000E+02] - Zero values observed as well
+--- Matrix    [min, max] : [ 9.174E-03, 1.696E+03]
+--- cge_amp.gms(468) 4 Mb
+--- Executing CONOPT (Solvelink=2): elapsed 0:00:00.050
+
+CONOPT 4         49.6.0 20d51043 May 13, 2025          WEI x86 64bit/MS Window
+
+--- *** This solver runs with a demo license. No commercial use.
+*** gmoEvalMaxThreads: invalid maxthread value, has to be [1,64]
+ 
+ 
+    C O N O P T   version 4.36
+    Copyright (C) GAMS Software GmbH
+                  GAMS Development Corporation
+ 
+    Will use up to 4 threads.
+ 
+ 
+    The user model has 67 constraints and 67 variables
+    with 281 Jacobian elements, 150 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+       0   0          2.6170000000E+02 (Input point)
+ 
+    The pre-triangular part of the model has 9 constraints and variables.
+    The post-triangular part of the model has 1 constraints and variables.
+ 
+    Preprocessed model has 57 constraints and 57 variables
+    with 229 Jacobian elements, 114 of which are nonlinear.
+ 
+    Iter Phase   Ninf   Infeasibility   RGmax      NSB   Step  InItr MX OK
+                      2.5570000000E+02 (Full preprocessed model)
+                      1.5664870690E+00 (After scaling)
+       5   0          1.3785488584E-09                 1.0E+00     0 T  T
+ 
+ ** Feasible solution. Value of objective =    422.566100552
+ 
+    Iter Phase   Ninf     Objective     RGmax      NSB   Step  InItr MX OK
+       6   4          4.2256610055E+02 0.0E+00       0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Reading solution for model stdcge
+--- Executing after solve: elapsed 0:00:00.081
+--- cge_amp.gms(470) 4 Mb
+--- GDX File (execute_unload) C:\FIDELIO\CGE_AMP\GAMS\solucion3H2.gdx
+--- cge_amp.gms(545) 4 Mb
+*** Status: Normal completion
+--- Job cge_amp.gms Stop 07/06/25 19:21:33 elapsed 0:00:00.082
