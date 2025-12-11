@@ -31,11 +31,9 @@ def valores_opciones():
     #parser.add_argument('--NCASO'              , type=int  , default=[0,14], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
     parser.add_argument('--NCASO'              , type=int  , default=[0], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
     
-    parser.add_argument('--DEM_ADICIONAL00'    , type=float, default=[0., 0.,    0., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para el hogar 1")
-    parser.add_argument('--DEM_ADICIONAL01'    , type=float, default=[0., 0., 1000., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para el hogar 2")
+    parser.add_argument('--DEM_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 1000., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para los hogares")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0    , help="se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
-    parser.add_argument('--AYD_ADICIONAL00'    , type=float, default=[0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
-    parser.add_argument('--AYD_ADICIONAL01'    , type=float, default=[0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 2")
+    parser.add_argument('--AYD_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
     parser.add_argument('--ARANCELES'          , type=float, default=[0., 0., 0.003825, 0., 0., 0.], nargs='*', help="para el escenario 14")
 
     parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True  , help="Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
@@ -51,6 +49,9 @@ def valores_opciones():
         fijo     : será acotado al valor VALOR_F_TRA si es > 0
         calculado: si VALOR_F_TRA = 0
     '''
+    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
     parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=0, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
     parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0   , help="precio que se fija para el factor de referencia")
     parser.add_argument('--VALOR_F_TRA'        , type=float, default=0     , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
@@ -59,7 +60,8 @@ def valores_opciones():
     parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5, help="relación desempleo salarios")
 
     parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
-    parser.add_argument('--GE_FIX_LIMITES00_00', type=str  , default=[1.0, 1.0] , nargs='*', help="una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1], nargs='*', help="número de parejas para cada variable en GE_FIX")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=float, default=[1.0, 1.0] , nargs='*', help="una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
     parser.add_argument('--NSAM'               , type=int  , default=3    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
 
     parser.add_argument('--PRECIO_INI'         , type=float, default=0.5,  help="para el caso 5 'pre_ini'")
@@ -68,8 +70,7 @@ def valores_opciones():
     '''
     factores aportados adicionales para el caso 6, si se especifica un solo valor (escalar) se afectan todos por él
     '''
-    parser.add_argument('--VAR_FACTORES00'     , type=float, default=[0., 0.], nargs='*', help="factores aportados adicionales para el caso 6. Hogar 1")
-    parser.add_argument('--VAR_FACTORES01'     , type=float, default=[0., 0.], nargs='*', help="factores aportados adicionales para el caso 6. Hogar 2")
+    parser.add_argument('--VAR_FACTORES'       , type=float, default=[0., 0., 0., 0.], nargs='*', help="factores aportados adicionales para el caso 6. Hogar 1")
     '''
     para el caso 11, participación del valor añadido sobre la producción de cada sector para calcular 
     la variación adicional exógena de factores, derivada del incremento de la demanda 'DEM_ADICIONAL'

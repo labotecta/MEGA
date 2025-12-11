@@ -50,17 +50,60 @@ etq_caso = [
     'aranceles',                # 14
 ]
 
-# Extrae los argumento de la línea de comandos
-args = argumentos.valores_opciones()
+if __name__ == '__main__':
+    '''
+    with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+        log.write('lectura de parámetros\n')
+    '''
 
+# Extrae los argumento de la línea de comandos
+try:
+    args = argumentos.valores_opciones()
+except BaseException as e:
+    '''
+    if __name__ == '__main__':
+        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error en la lectura de parámetros\n')
+            log.write(str(e))
+    '''
+    print('Error en la lectura de parámetros')
+    sys.exit()
+
+nfac = args.NFAC
+ndem = args.NDEM
+nsec = args.NSEC
 PRECIO_INI          = np.float64(args.PRECIO_INI)
 FACTOR_CSSH         = np.array(args.FACTOR_CSSH, dtype=np.float64)
 FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
-VAR_FACTORES        = np.array([args.VAR_FACTORES00, args.VAR_FACTORES01], dtype=np.float64)
+if len(args.VAR_FACTORES) != ndem * nfac:
+    if __name__ == '__main__':
+        '''
+        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error. El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac) + '\n')
+        '''
+        print('Error. El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
+    sys.exit()
+VAR_FACTORES        = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
 COE_VAB             = np.array(args.COE_VAB, dtype=np.float64)
-DEM_ADICIONAL       = np.array([args.DEM_ADICIONAL00, args.DEM_ADICIONAL01], dtype=np.float64)
+if len(args.VAR_FACTORES) != ndem * nfac:
+    if __name__ == '__main__':
+        '''
+        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec) + '\n')
+        '''
+        print('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
+    sys.exit()
+DEM_ADICIONAL       = np.array(args.DEM_ADICIONAL, dtype=np.float64).reshape(ndem, nsec)
 DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
-AYD_ADICIONAL       = np.array([args.AYD_ADICIONAL00, args.AYD_ADICIONAL01], dtype=np.float64)
+if len(args.VAR_FACTORES) != ndem * nfac:
+    if __name__ == '__main__':
+        '''
+        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error. El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL)) + '\n')
+        '''
+        print('Error. El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
+    sys.exit()
+AYD_ADICIONAL       = np.array(args.AYD_ADICIONAL, dtype=np.float64).reshape(ndem, nsec)
 SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
 ARANCELES           = np.array(args.ARANCELES, dtype=np.float64)
 PREFIJO             = args.PREFIJO if args.PREFIJO != '"' else ''
@@ -95,8 +138,38 @@ GE_PRE_MAX          = np.float64(args.GE_PRE_MAX)
 GE_VAR_MIN          = np.float64(args.GE_VAR_MIN)
 GE_VAR_MAX          = np.float64(args.GE_VAR_MAX)
 GE_VAR_CERO         = np.float64(args.GE_VAR_CERO)
-GE_FIX              = [] if (len(args.GE_FIX) == 0  or args.GE_FIX[0] == '') else args.GE_FIX
-GE_FIX_LIMITES      = np.array([[args.GE_FIX_LIMITES00_00]], dtype=np.float64)
+if len(args.GE_FIX) == 0 or args.GE_FIX[0] == '':
+    GE_FIX = []
+else:
+    GE_FIX = args.GE_FIX
+    k = len(args.GE_FIX)
+    n = len(args.GE_FIX_LON)
+    if k != n:
+        if __name__ == '__main__':
+            '''
+            with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+                log.write('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n) + '\n')
+            '''
+            print('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
+        sys.exit()
+    if len(args.GE_FIX_LIMITES) != sum(args.GE_FIX_LON) * 2:
+        if __name__ == '__main__':
+            '''
+            with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+                log.write('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES) + '\n')
+            '''
+            print('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES))
+        sys.exit()
+    GE_FIX_LIMITES = np.zeros(k, dtype=list)
+    ni = 0
+    for i in range(k):
+        # para cada variable 'i'
+        sec = []
+        for j in range(args.GE_FIX_LON[i]):
+            # para cada par de la variable
+            sec.append(args.GE_FIX_LIMITES[ni:(ni + 2)])
+            ni += 2
+        GE_FIX_LIMITES[i] = sec
 GE_MAX_ITER         = args.GE_MAX_ITER
 GE_ACTUALIZACION    = args.GE_ACTUALIZACION
 GE_RECONBINACION    = args.GE_RECONBINACION
@@ -111,6 +184,11 @@ POT_DESVIOS         = args.POT_DESVIOS
 SENDA_DATOS         = args.SENDA_DATOS
 SENDA_SALIDAS       = args.SENDA_SALIDAS
 SENDA_GRAFICOS      = args.SENDA_GRAFICOS
+if __name__ == '__main__':
+    '''
+    with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+        log.write('OK\n')
+    '''
 
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
 # valores desagregados por producto porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
@@ -425,10 +503,11 @@ def valores_iniciales(vec_opt):
     imprime('')
     mfun.i_tabla(''  , [] , ['Apz0',]      , datos.Apz0            , False, 5)
     imprime('')
-    paro = 100. * (1. - datos.F0[:,INDICE_F_TRA].sum() / datos.PobAct)
-    mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct, False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['% paro',]     , paro       , False, 2)
-    imprime('')
+    if VALOR_F_TRA == 0:
+        paro = 100. * (1. - datos.F0[:,INDICE_F_TRA].sum() / datos.PobAct)
+        mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct, False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['% paro',]     , paro       , False, 2)
+        imprime('')
     imprime('')
 
 def salida_calibrado(parametros):
@@ -909,10 +988,11 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
         imprime('')
         mfun.i_tabla(''  , []                   , ['Apz',]        , Apz                  , False, 5)
         imprime('')
-        paro = 100. * (1. - F[:,INDICE_F_TRA].sum() / datos.PobAct)
-        mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct          , False, DECIMALES)
-        mfun.i_tabla(''  , []                   , ['% paro',]     , paro                 , False, 2)
-        imprime('')
+        if VALOR_F_TRA == 0:
+            paro = 100. * (1. - F[:,INDICE_F_TRA].sum() / datos.PobAct)
+            mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct          , False, DECIMALES)
+            mfun.i_tabla(''  , []                   , ['% paro',]     , paro                 , False, 2)
+            imprime('')
         imprime('')
     else:
         global iteracion
@@ -2453,14 +2533,15 @@ if __name__ == '__main__':
     imprime('Rango  de validez de las variables  % -{:9.1f} +{:9.1f}'.format(100. * (GE_VAR_MIN - 1.), 100. * (GE_VAR_MAX - 1.)))
     imprime('Rango  de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
     if len(GE_FIX) > 0:
+        imprime('------------------------------------------------------------------------------------------')
         imprime('Rangos de validez explícitos')
-        imprime('----------------------------')
+        imprime('------------------------------------------------------------------------------------------')
         for i in range(len(GE_FIX)):
-            imprime('{:6}'.format(GE_FIX[i]), False)
+            imprime('{:8}'.format(GE_FIX[i]), False)
             for j in range(len(GE_FIX_LIMITES[i])):
                 imprime(' [{:10} {:10}]'.format(GE_FIX_LIMITES[i][j][0], GE_FIX_LIMITES[i][j][1]), False)
             imprime('')
-        imprime('----------------------------')
+        imprime('------------------------------------------------------------------------------------------')
     imprime('El precio del factor {} es variable exógena con valor igual a {}'.format(h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA))
     if VALOR_F_TRA == 0:
         imprime('El precio del factor {} se calcula con la curva Phillips [paro: {}% alfa: {}]'.format(h[INDICE_F_TRA], PARO_INICIAL * 100., ALFA_PHILLIPS))
