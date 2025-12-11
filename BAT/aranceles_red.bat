@@ -1,22 +1,24 @@
-TITLE +1000 AP3 con Aranceles
-mode con cols120
-mode con lines40
+@echo off
+TITLE "+1000 AP3 con Aranceles"
+mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                6 ^
 --PREFIJO             BATr_ ^
 --NSAM                3 ^
 --NCASO               0 14 ^
---DEM_ADICIONAL00     0. 0.    0. 0. 0. 0. ^
---DEM_ADICIONAL01     0. 0. 1000. 0. 0. 0. ^
+--DEM_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 1000. 0. 0. 0. ^
 --DEM_ADICIONAL_TIPO  0 ^
---AYD_ADICIONAL00     0. 0. 0. 0. 0. 0. ^
---AYD_ADICIONAL01     0. 0. 0. 0. 0. 0. ^
+--AYD_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
 --ARANCELES           0. 0. 0.003825 0. 0. 0. ^
 --OR_PRE_REFERENCIA   0 ^
 --PRECIO_F_REFERENCIA 1.0 ^
 --VALOR_F_TRA         1.0 ^
 --GE_FIX              epsilon ^
---GE_FIX_LIMITES00_00 1.0 1.0 ^
+--GE_FIX_LON          1 ^
+--GE_FIX_LIMITES      1.0 1.0 ^
 --FF_ENDOGENA         True ^
 --AHORRO_L_PLAZO      True ^
 --OPT_DESVIOS         1 ^

@@ -1,19 +1,19 @@
-TITLE +1000 AP3
-mode con cols118
-mode con lines30
+@echo off
+TITLE "+1000 AP3"
+mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                6 ^
 --PRECIO_INI          0.5 ^
 --FACTOR_CSSH         0.95 1.0 ^
 --FACTOR_CSSE         1.0 1.0 1.0 1.0 1.0 1.0 ^
---VAR_FACTORES00      0. 0. ^
---VAR_FACTORES01      0. 0. ^
+--VAR_FACTORES        0. 0. 0. 0. ^
 --COE_VAB             0.590982516 0.256023902 0.231881481 0.299890544 0.567089808 0.669947953 ^
---DEM_ADICIONAL00     0. 0.    0. 0. 0. 0. ^
---DEM_ADICIONAL01     0. 0. 1000. 0. 0. 0. ^
+--DEM_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 1000. 0. 0. 0. ^
 --DEM_ADICIONAL_TIPO  0 ^
---AYD_ADICIONAL00     0. 0. 0. 0. 0. 0. ^
---AYD_ADICIONAL01     0. 0. 0. 0. 0. 0. ^
+--AYD_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
 --SIGMA_ESCENARIO     4. 2. 2. 2. 2. 2. ^
 --ARANCELES           0. 0. 0. 0. 0. 0. ^
 --PREFIJO             BAT_ ^
@@ -47,7 +47,8 @@ start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.p
 --GE_VAR_MAX          9.0 ^
 --GE_VAR_CERO         10000.0 ^
 --GE_FIX              epsilon ^
---GE_FIX_LIMITES00_00 1.0 1.0 ^
+--GE_FIX_LON          1 ^
+--GE_FIX_LIMITES      1.0 1.0 ^
 --GE_MAX_ITER         1000000 ^
 --GE_ACTUALIZACION    immediate ^
 --GE_RECONBINACION    0.90 ^
