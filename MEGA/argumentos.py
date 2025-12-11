@@ -28,8 +28,9 @@ def valores_opciones():
         'aranceles',            # 14
     '''
     parser.add_argument('--PREFIJO'            , type=str  , default='', help="un literal que se añade al principio del nombre de los archivos de salida")
-    parser.add_argument('--NCASO'              , type=int  , default=[0,14], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
-
+    #parser.add_argument('--NCASO'              , type=int  , default=[0,14], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
+    parser.add_argument('--NCASO'              , type=int  , default=[0], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
+    
     parser.add_argument('--DEM_ADICIONAL00'    , type=float, default=[0., 0.,    0., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para el hogar 1")
     parser.add_argument('--DEM_ADICIONAL01'    , type=float, default=[0., 0., 1000., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para el hogar 2")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0    , help="se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
@@ -37,11 +38,26 @@ def valores_opciones():
     parser.add_argument('--AYD_ADICIONAL01'    , type=float, default=[0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 2")
     parser.add_argument('--ARANCELES'          , type=float, default=[0., 0., 0.003825, 0., 0., 0.], nargs='*', help="para el escenario 14")
 
-    parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True , help="Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
-    parser.add_argument('--AHORRO_L_PLAZO'     , type=sab  , default=True , help="llevar a la cuenta ALP (Ahorro Largo Plazo) los excesos de factores aportados sobre sus valores iniciales")
+    parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True  , help="Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
+    parser.add_argument('--AHORRO_L_PLAZO'     , type=sab  , default=True  , help="llevar a la cuenta ALP (Ahorro Largo Plazo) los excesos de factores aportados sobre sus valores iniciales")
+    '''
+    el precio del capital (OR_PRE_REFERENCIA=0) exogeno igual a 1, el PRECIO_F_REFERENCIA, no formará parte del vetor solución
+    
     parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=0, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
-    parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0  , help="precio que se fija para el factor de referencia")
-    parser.add_argument('--VALOR_F_TRA'        , type=float, default=1.0  , help="precio que se fija para el factor trabajo; -1 : no se fija el valor del precio del trabajo")
+    parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0   , help="precio que se fija para el factor de referencia")
+    
+    el precio del trabajo formará parte del vector solución, puede ser:
+        endogeno : si VALOR_F_TRA = -1
+        fijo     : será acotado al valor VALOR_F_TRA si es > 0
+        calculado: si VALOR_F_TRA = 0
+    '''
+    parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=0, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
+    parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0   , help="precio que se fija para el factor de referencia")
+    parser.add_argument('--VALOR_F_TRA'        , type=float, default=0     , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
+    parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10  , help="tanto por uno de paro para la curva Phillips")
+    #parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.4566, help="relación desempleo salarios")
+    parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5, help="relación desempleo salarios")
+
     parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
     parser.add_argument('--GE_FIX_LIMITES00_00', type=str  , default=[1.0, 1.0] , nargs='*', help="una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
     parser.add_argument('--NSAM'               , type=int  , default=3    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")

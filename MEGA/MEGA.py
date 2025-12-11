@@ -69,6 +69,8 @@ NCASO               = np.array(args.NCASO, dtype=int)
 OR_PRE_REFERENCIA   = args.OR_PRE_REFERENCIA
 PRECIO_F_REFERENCIA = np.float64(args.PRECIO_F_REFERENCIA)
 VALOR_F_TRA         = np.float64(args.VALOR_F_TRA)
+PARO_INICIAL        = np.float64(args.PARO_INICIAL)
+ALFA_PHILLIPS       = np.float64(args.ALFA_PHILLIPS)
 FF_ENDOGENA         = args.FF_ENDOGENA
 AHORRO_L_PLAZO      = args.AHORRO_L_PLAZO
 OPT_DESVIOS         = args.OPT_DESVIOS
@@ -117,7 +119,7 @@ aviso_workers = False
 if GE_WORKERS != 1:
     # aunque se modifica automáticamente, no está de más especificarlo por transparencia
     GE_ACTUALIZACION = 'deferred'
-    # ajustar el número de GE_WORKERS según la máquina
+    # comprobar el número de GE_WORKERS según la máquina
     n_cores = psutil.cpu_count(logical = False)
     if n_cores <= GE_WORKERS:
         aviso_workers = True
@@ -295,11 +297,6 @@ mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
-if aviso_workers:
-    if __name__ == '__main__':
-        imprime('Esta máquina tiene {} cores físicos y se han especificado {} workers.'.format(n_cores, GE_WORKERS))
-        imprime('')
-
 def punteros():
     # para saber la posición de las distintas variables en el vector solución en el que están
     # todas concatenadas una tras otra. Se usará en la función 'extrae_var'
@@ -427,6 +424,10 @@ def valores_iniciales(vec_opt):
     mfun.i_tabla(''  , [] , ['equi.bal.pag',], ebp_ini               , False, DECIMALES)
     imprime('')
     mfun.i_tabla(''  , [] , ['Apz0',]      , datos.Apz0            , False, 5)
+    imprime('')
+    paro = 100. * (1. - datos.F0[:,INDICE_F_TRA].sum() / datos.PobAct)
+    mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct, False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['% paro',]     , paro       , False, 2)
     imprime('')
     imprime('')
 
@@ -606,15 +607,6 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     esta función con independencia del valor que tengan en el vector de prueba
     '''
     # extraemos los precios del vector de prueba 'vec_opt'
-    pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
-    if OR_PRE_REFERENCIA == 1:
-        # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del
-        # último factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el
-        # precio del primer factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
     py = extrae_var(vec_opt, 'pY', 0, nsec)
     pq = extrae_var(vec_opt, 'pQ', 0, nsec)
     pd = extrae_var(vec_opt, 'pD', 0, nsec)
@@ -632,6 +624,32 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     Ei = copy.deepcopy(E)
     Mi = copy.deepcopy(M)
     Di = copy.deepcopy(D)
+    
+    # el precio de los factores tiene un tratamiento especial, en el vector solución solo se incluye
+    # un precio: el del capital o el del trabajo, según OR_PRE_REFERENCIA sea 0 o 1
+    pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
+    
+    # el precio del otro factor se añade al principio o al final de 'pf'
+    if OR_PRE_REFERENCIA == 1:
+        # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución, luego
+        # si es 1, el trabajo es el que no forma parte y estará prefijado (PRECIO_F_REFERENCIA) o debemos calcularlo (precio_factor_trabajo_pFL)
+
+        # Como el vector de prueba no incluye el precio del último factor (el trabajo), añadimos el precio del
+        # último factor con valor 'PRECIO_F_REFERENCIA' si VALOR_F_TRA > 0 o lo calculamos con la curva Phillips si VALOR_F_TRA = 0
+        if VALOR_F_TRA == 0:
+            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
+        else:
+            # se fja el precio del capital en PRECIO_F_REFERENCIA
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+    else:
+        # Como el vector de prueba no incluye el precio del primer factor (el capital), insertamos al principio el
+        # precio del primer factor con valor 'PRECIO_F_REFERENCIA' 
+        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
+        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
+        if VALOR_F_TRA == 0:
+            # El precio del factor trabajo se calcula con la curva Phillips
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
 
     # calculamos los precios del comercio internacional en moneda local
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)        # 6.14 y 6.15
@@ -818,8 +836,9 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
 
     if MUESTRA_PROGRESO:
         respre = np.concatenate((pz, np.array(pe), np.array(pm)))
-        imprime('{:10}      {:9.5f}'.format('pF_' + h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA))
-        mfun.i_tabla('precios', etq_precios[0:npre_sol], []       , vec_opt[0:npre_sol]  , True ,  5)
+        imprime('{:10}      {:9.5f}'.format('pF_' + h[0], pf[0]))
+        imprime('{:10}      {:9.5f}'.format('pF_' + h[1], pf[1]))
+        mfun.i_tabla('precios', etq_precios[1:npre_sol], []       , vec_opt[1:npre_sol]  , True ,  5)
         mfun.i_tabla('/' , etq_precios[npre_sol:len(etq_precios)] , [], respre           , True ,  5)
         imprime('Cantidades')
         imprime('---------------------------------------------------------------------------------------------')
@@ -883,12 +902,16 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
         mfun.i_tabla('/' , ind                  , ['AgE',]        , AgE                  , True , DECIMALES)
         imprime('Déficit por cuenta corriente. M - E')
         Sfde = M - E
-        mfun.i_tabla(''  , []                   , ['Sf Ind',]    , Sfde                , False, DECIMALES)
-        mfun.i_tabla(''  , []                   , ['Sf',]         , Sfde.sum()          , False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['Sf Ind',]    , Sfde                  , False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['Sf',]         , Sfde.sum()           , False, DECIMALES)
         imprime('Equilibrio de la balanza de pagos')
-        mfun.i_tabla(''  , []                   , ['equi.bal.pag',], ebp                  , False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['equi.bal.pag',], ebp                 , False, DECIMALES)
         imprime('')
-        mfun.i_tabla(''  , []                   , ['Apz',]        , Apz                 , False, 5)
+        mfun.i_tabla(''  , []                   , ['Apz',]        , Apz                  , False, 5)
+        imprime('')
+        paro = 100. * (1. - F[:,INDICE_F_TRA].sum() / datos.PobAct)
+        mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct          , False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['% paro',]     , paro                 , False, 2)
         imprime('')
         imprime('')
     else:
@@ -924,6 +947,7 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
     # aportación de los mismos por los hogares 'FF.sum(axis=0)'
     if  FF_ENDOGENA:
         # está garantizado el cumplimiento de la ecuación 6.24
+        #des_factores = abs(F.sum(axis=0) - FF.sum(axis=0) - Alp.sum(axis=0)).flatten()  # 6.24
         des_factores   = np.zeros(2, dtype=np.float64)
         if AHORRO_L_PLAZO:
             # el desglose de los ahorros por factor es importante porque cada factor tiene su precio y la renta disponible
@@ -1270,7 +1294,20 @@ def diferencias_cantidades_finales_iniciales(vec_opt_ini, vec_opt, res_ecuacione
     imprime('Diferencias entre los valores finales y los iniciales')
     imprime('')
     vec = vec_opt - vec_opt_ini
-    mfun.i_tabla('precios', etq_precios[0:npre_sol], [], vec[0:npre_sol], True, 5)
+
+    pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
+    if OR_PRE_REFERENCIA == 1:
+        if VALOR_F_TRA == 0:
+            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
+        else:
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+    else:
+        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        if VALOR_F_TRA == 0:
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+    imprime('{:10}            {:9.5f}'.format('pF_' + h[0], pf[0]))
+    imprime('{:10}            {:9.5f}'.format('pF_' + h[1], pf[1]))
+    mfun.i_tabla('precios', etq_precios[1:npre_sol], [], vec[1:npre_sol], True, 5)
     dpz = pz - datos.pZ0
     epsilon = extrae_var(vec_opt, 'epsilon', 0, 0)
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
@@ -1377,21 +1414,27 @@ def diferencias_importes_finales_iniciales(vec_opt_ini, vec_opt, res_ecuaciones,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
         Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
+    imprime('Diferencias entre los valores finales y los iniciales')
+    imprime('')
+    vec = vec_opt - vec_opt_ini
+
     pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
     if OR_PRE_REFERENCIA == 1:
-        # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        if VALOR_F_TRA == 0:
+            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
+        else:
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
     else:
-        # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
         pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        if VALOR_F_TRA == 0:
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
     py = extrae_var(vec_opt, 'pY', 0, nsec)
     pq = extrae_var(vec_opt, 'pQ', 0, nsec)
     pd = extrae_var(vec_opt, 'pD', 0, nsec)
     epsilon = extrae_var(vec_opt, 'epsilon', 0, 0)
-    imprime('Diferencias entre los valores finales y los iniciales')
-    imprime('')
-    vec = vec_opt - vec_opt_ini
-    mfun.i_tabla('precios', etq_precios[0:npre_sol], [], vec[0:npre_sol], True, 5)
+    imprime('{:10}            {:9.5f}'.format('pF_' + h[0], pf[0]))
+    imprime('{:10}            {:9.5f}'.format('pF_' + h[1], pf[1]))
+    mfun.i_tabla('precios', etq_precios[1:npre_sol], [], vec[1:npre_sol], True, 5)
     dpz = pz - datos.pZ0
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
     dpe = pe - datos.pWe
@@ -1507,10 +1550,19 @@ def datos_grafico_solucion(v):
     pf = extrae_var(v,'pF', 0, nfac - 1)
     if OR_PRE_REFERENCIA == 1:
         # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        if VALOR_F_TRA == 0:
+            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS))
+        else:
+            # se fja el precio del capital en PRECIO_F_REFERENCIA
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
     else:
         # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
         pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
+        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
+        if VALOR_F_TRA == 0:
+            # El precio del factor trabajo se calcula con la curva Phillips
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
     py = extrae_var(v,'pY', 0, nsec)
     pq = extrae_var(v,'pQ', 0, nsec)
     pd = extrae_var(v,'pD', 0, nsec)
@@ -2009,6 +2061,9 @@ if __name__ == '__main__':
     repetirla en todos los workers por eso deben quedar fuera de este contol.
     encontraremos este control en númerosos puntos de la aplicación
     '''
+    if aviso_workers:
+        imprime('Esta máquina tiene {} cores físicos y se han especificado {} workers.'.format(n_cores, GE_WORKERS))
+        imprime('')
     imprime('python           {}'.format(sys.version))
     imprime('numpy            {}'.format(np.__version__))
     imprime('scipy            {}'.format(scipy.__version__))
@@ -2035,7 +2090,7 @@ el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan 
 '''
 # leemos la Matriz de contabilidad social (SAM) de esta economía
 sam        = pd.read_excel(FICHERO_SAM, index_col=0, header=0)
-datos      = calibrado.datos(sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css)
+datos      = calibrado.datos(sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css, INDICE_F_TRA, PARO_INICIAL)
 parametros = calibrado.parametros(datos, ndem, nsec, INDICE_F_TRA)
 if __name__ == '__main__':
     imprime('')
@@ -2394,9 +2449,9 @@ if __name__ == '__main__':
         imprime('MEGA mediante algoritmo genético. Resolución con restricciones ' + 'lineales' if GE_TIPO_RE==0 else 'no lineales')
     else:
         imprime('MEGA mediante algoritmo genético. Resolución sin restricciones')
-    imprime('Rango de validez de los precios en % -{:9.1f} +{:9.1f}'.format(100. * (GE_PRE_MIN - 1.), 100. * (GE_PRE_MAX - 1.)))
-    imprime('Rango de validez de las variables  % -{:9.1f} +{:9.1f}'.format(100. * (GE_VAR_MIN - 1.), 100. * (GE_VAR_MAX - 1.)))
-    imprime('Rango de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
+    imprime('Rango  de validez de los precios en % -{:9.1f} +{:9.1f}'.format(100. * (GE_PRE_MIN - 1.), 100. * (GE_PRE_MAX - 1.)))
+    imprime('Rango  de validez de las variables  % -{:9.1f} +{:9.1f}'.format(100. * (GE_VAR_MIN - 1.), 100. * (GE_VAR_MAX - 1.)))
+    imprime('Rango  de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
     if len(GE_FIX) > 0:
         imprime('Rangos de validez explícitos')
         imprime('----------------------------')
@@ -2406,6 +2461,12 @@ if __name__ == '__main__':
                 imprime(' [{:10} {:10}]'.format(GE_FIX_LIMITES[i][j][0], GE_FIX_LIMITES[i][j][1]), False)
             imprime('')
         imprime('----------------------------')
+    imprime('El precio del factor {} es variable exógena con valor igual a {}'.format(h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA))
+    if VALOR_F_TRA == 0:
+        imprime('El precio del factor {} se calcula con la curva Phillips [paro: {}% alfa: {}]'.format(h[INDICE_F_TRA], PARO_INICIAL * 100., ALFA_PHILLIPS))
+    elif VALOR_F_TRA != -1:
+        imprime('El precio del factor {} es fijo con valor igual a {}'.format(h[INDICE_F_TRA], VALOR_F_TRA))
+    imprime('')    
     imprime('Aportación de factores por los hogares {}'.format('ENDOGENA' if FF_ENDOGENA else 'exógena'))
     imprime('Ahorro a largo plazo de los hogares    {}'.format('Si' if AHORRO_L_PLAZO else 'No'))
     imprime('Estrategia                       : {}'.format(GE_ESTRATEGIA))
@@ -2426,10 +2487,6 @@ if __name__ == '__main__':
         imprime('Métrica del error: Valor absoluto')
     else:
         imprime('Métrica del error: Desvios elevados a {}'.format(POT_DESVIOS))
-    imprime('El precio del factor {} es variable exógena con valor igual a {}'.format(h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA))
-    if VALOR_F_TRA != -1:
-        imprime('El precio del factor {} es fijo con valor igual a {}'.format(h[INDICE_F_TRA], VALOR_F_TRA))
-
     imprime('-------------------------------------------------------------------')
     imprime('-------------------------------------------------------------------')
     imprime('')
@@ -2486,10 +2543,19 @@ if __name__ == '__main__':
         pf = extrae_var(vec_opt,'pF', 0, nfac - 1)
         if OR_PRE_REFERENCIA == 1:
             # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+            if VALOR_F_TRA == 0:
+                pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS))
+            else:
+                # se fja el precio del capital en PRECIO_F_REFERENCIA
+                pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
         else:
             # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
             pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+            # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
+            # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
+            if VALOR_F_TRA == 0:
+                # El precio del factor trabajo se calcula con la curva Phillips
+                pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
         py = extrae_var(vec_opt,'pY', 0, nsec)
         pq = extrae_var(vec_opt,'pQ', 0, nsec)
         pd = extrae_var(vec_opt,'pD', 0, nsec)
@@ -2530,7 +2596,7 @@ if __name__ == '__main__':
         imprime('')
         imprime('---------------------------------')
         imprime('')
-
+    
     t_inicio = timer()
     print('Evolución de la minimización')
     print('')
@@ -2569,7 +2635,10 @@ if __name__ == '__main__':
 
     # precios
     for i in range(npre_sol):
-        if OR_PRE_REFERENCIA != INDICE_F_TRA and i == 0 and VALOR_F_TRA != -1:
+        if i == 0 and OR_PRE_REFERENCIA != INDICE_F_TRA and VALOR_F_TRA > 0:
+            # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución
+            # el que forma parte es el otro, luego si OR_PRE_REFERENCIA es el capital (!= INDICE_F_TRA),
+            # el incluido en la solución es el trabajo y lo hacemos igual a VALOR_F_TRA, salvo que sea 0 o -1
             vi = VALOR_F_TRA
             vs = VALOR_F_TRA
         else:
@@ -2912,10 +2981,19 @@ if __name__ == '__main__':
     pf = extrae_var(sol,'pF', 0, nfac - 1)
     if OR_PRE_REFERENCIA == 1:
         # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        if VALOR_F_TRA == 0:
+            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS))
+        else:
+            # se fja el precio del capital en PRECIO_F_REFERENCIA
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
     else:
-        # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
+        # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
         pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
+        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
+        if VALOR_F_TRA == 0:
+            # El precio del factor trabajo se calcula con la curva Phillips
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
     # verificar la solución, se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
     vec_veri_sol = (
                 pf,
@@ -2972,11 +3050,36 @@ if __name__ == '__main__':
     imprime('')
     imprime('Precios    iniciales equilibrio')
     imprime('--------- ---------- ----------')
-    imprime('{:10} {:9.5f}  {:9.5f}'.format('pF_' + h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA, PRECIO_F_REFERENCIA))
-    mfun.tabla_1Dl(etq_precios[0:npre_sol], vec_opt_ini[0:npre_sol], sol[0:npre_sol])
+
+    pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
+    if OR_PRE_REFERENCIA == 1:
+        # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución, luego
+        # si es 1, el trabajo es el que no forma parte y estará prefijado (PRECIO_F_REFERENCIA) o debemos calcularlo (precio_factor_trabajo_pFL)
+
+        # Como el vector de prueba no incluye el precio del último factor (el trabajo), añadimos el precio del
+        # último factor con valor 'PRECIO_F_REFERENCIA' si VALOR_F_TRA > 0 o lo calculamos con la curva Phillips si VALOR_F_TRA = 0
+        if VALOR_F_TRA == 0:
+            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
+        else:
+            # se fja el precio del capital en PRECIO_F_REFERENCIA
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
+    else:
+        # Como el vector de prueba no incluye el precio del primer factor (el capital), insertamos al principio el
+        # precio del primer factor con valor 'PRECIO_F_REFERENCIA' 
+        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
+        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
+        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
+        if VALOR_F_TRA == 0:
+            # El precio del factor trabajo se calcula con la curva Phillips
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+
+    imprime('{:10}            {:9.5f}'.format('pF_' + h[0], pf[0]))
+    imprime('{:10}            {:9.5f}'.format('pF_' + h[1], pf[1]))
+    mfun.tabla_1Dl(etq_precios[1:npre_sol], vec_opt_ini[1:npre_sol], sol[1:npre_sol])
     imprime('--------- ---------- ----------')
-    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, extrae_var(sol,'epsilon', 0, 0))
-    respre = np.concatenate((pzi, np.array(datos.pWe*datos.epsilon_ini), np.array(datos.pWm*datos.epsilon_ini)))
+    epsilon = extrae_var(sol,'epsilon', 0, 0)
+    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
+    respre = np.concatenate((pzi, np.array(datos.pWe * datos.epsilon_ini), np.array(datos.pWm * datos.epsilon_ini)))
     mfun.i_tabla('' , etq_precios[npre_sol:len(etq_precios)] , [], respre           , True ,  5)
     respre = np.concatenate((pz, np.array(pe), np.array(pm)))
     mfun.i_tabla('' , etq_precios[npre_sol:len(etq_precios)] , [], respre           , True ,  5)

@@ -104,3 +104,27 @@ def aportacion_factores_FF(FF0, F):
     #assert all(abs(FF.sum(axis=0) - F.sum(axis=0)) < 0.0001), 'aportación:\n{}\nuso:\n{}'.format(FF.sum(axis=0), F.sum(axis=0))
     return FF
 
+def precio_factor_trabajo_pFL(INDICE_F_TRA, pF0L, PobAct, F0, F, alfa):
+    '''
+    tasa de inflacion = C + alfa * tasa desempleo 
+    C    =  0,4957
+    alfa = -0.4566
+
+    var inflacion = alfa * var_desempleo
+    
+    Si la tasa de desempleo sube un 1 punto porcentual la inflación cae 0,4566 puntos porcentuales.
+    Esto es lo que se espera de la curva de Phillips: una relación negativa entre inflación y desempleo.
+    Si el desempleo baja la inflacción sube
+
+    Hacemos inflacción equivalente a precio del factor trabajo (era la idea original de Phillips)
+
+    calcula el precio del factor trabajo
+    pF0L   = precio inicial del factor trabajo
+    PobAct = población activa
+    alfa   = elasticidad de Phillips
+    F0     = utilización de factores por los sectores inicialmente
+    F      = utilización de factores por los sectores final
+    '''
+    var_desempleo = (F0[:,INDICE_F_TRA].sum() - F[:,INDICE_F_TRA].sum()) / PobAct
+    var_pFL = alfa * var_desempleo
+    return pF0L + var_pFL

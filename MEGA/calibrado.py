@@ -13,8 +13,10 @@ Los valores que se muestran como comentarios son los correspondientes a la MCS '
 '''
 class datos(object):
 
-    def __init__(self, sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css):
+    def __init__(self, sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css, INDICE_F_TRA, PARO_INICIAL):
         '''
+        (sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css) son los nombres de filas y columnas de la 'sam'
+
         los valores de la MCS son importes y necesitamos cantidades, pero podemos elegir un sistema
         de unidades para las cantidades de forma que todos los productos y factores tengan
         precio igual a 1.
@@ -333,6 +335,7 @@ class datos(object):
         # variable de holgura para corregir que las aportaciones a la seguridad social y las ayudas del gobierno
         # no son proporcionales a la producción bruta (Z)
         self.Apz0 = 0.                                                          # () escalar
+        self.PobAct = ecua.poblacion_activa_PobAct(INDICE_F_TRA, self.FF0, PARO_INICIAL)
 
 class parametros(object):
     def __init__(self, datos, ncon, nsec, INDICE_F_TRA):

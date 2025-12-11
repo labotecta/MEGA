@@ -201,3 +201,13 @@ def coeficiente_ayudas_gobierno_hogares_cagh(AgH, Td, Tz, Tm):
     cagh[cagh == np.inf] = 0       # antes de np.nan_to_num porque puede cambiar el inf por un número
     cagh = np.nan_to_num(cagh)     # si no hay datos (NAN) se sustituye por 0
     return cagh
+
+def poblacion_activa_PobAct(INDICE_F_TRA, FF0, paro):
+    '''
+    Población activa
+    FF0  = aportación inicial de factores por los hogares
+    paro = tasa de paro inicial en tanto por uno
+    '''
+    pobact = FF0[:,INDICE_F_TRA].sum() / (1. - paro)
+    return pobact
+
