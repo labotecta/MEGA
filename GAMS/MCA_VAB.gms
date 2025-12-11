@@ -226,11 +226,12 @@ Equation
    eqDs(i)     'sumministro de la demanda local de productos i'
    eqpzd(i)    'producción bruta de la función de transformación'
    eqE(i)      'exportaciones de los productos i'
+   eqpfl     
 
    eqAlp(l,h)  'ahorro a largo plazo del factor h por el hogar l'
 
    eqpqd(i)    'condición de equilibrio del mercado para el producto compuesto de los sectores i'
-*   eqpf(h)     'condición de equilibrio del mercado para los factores h'
+   eqpf(h)     'condición de equilibrio del mercado para los factores h'
    obj         'utilidad [ficticia]'
 ;
 
@@ -274,17 +275,18 @@ eqDs(i)..    D(i)     =e= (theta(i) ** phi(i) * xid(i) * (1 + tauz(i) + CssE(i) 
 
 * el Alp es la diferencia entre las utilizaciones de los sectores (F) y las aportaciones iniciales de los hogares (FF)
 eqAlp(l,h).. Alp(l,h) =e= sum(i,F(h,i)) * rf(l,h) - FF(l,h);
+eqpfl..      pf['L']  =e= 1. - 0.5 * (sum(i,F0('L',i)) - sum(i,F('L',i))) / (sum(i,F0('L',i)) / 0.9);
 
 * condición de equilibrio del mercado
 
 eqpqd(i)..   Q(i)     =e= sum(l, Xp(l,i)) + Xg(i) + Xv(i) + sum(j, X(i,j));
 * es redundante, porque hemos definido Alp como la diferencia entre las utilizaciones de los sectores (F) y las aportaciones iniciales de los hogares (FF)
-*eqpf(h)..    sum(i,F(h,i)) =e= sum(l,FF(l,h)) + sum(l,Alp(l,h));
+eqpf(h)..    sum(i,F(h,i)) =e= sum(l,FF(l,h)) + sum(l,Alp(l,h));
 
 * función objetivo ficticia
-*obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz;
+obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz;
 * función objetivo ficticia, con la condición de que el uso de factores sea mínimo (resten lo mínimo)
-obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz - sum(j,F('L',j)) - sum(j,F('K',j));
+*obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz - sum(j,F('L',j)) - sum(j,F('K',j));
 
 * inicialización de variables
 Y.l(j)    = Y0(j);
@@ -351,7 +353,7 @@ Alp.lo(l,h) = 0.0000;
 
 * precio de referencia
 
-pf.fx('L') = 1.;
+*pf.fx('L') = 1.;
 pf.fx('K') = 1.;
 epsilon.fx = 1.;
 
@@ -409,7 +411,7 @@ pd.lo(i)    = 0.0000;
 epsilon.lo  = 0.0000;
 
 * precio de referencia
-pf.fx('L') = 1.;
+*pf.fx('L') = 1.;
 pf.fx('K') = 1.;
 epsilon.fx = 1.;
 
@@ -434,11 +436,42 @@ execute_unload 'precios_excel.gdx'
 * -----------------------------------------------------------------------------
 
 * precios de referencia
-pf.fx('L') = 1.;
+*pf.fx('L') = 1.;
 pf.fx('K') = 1.;
 epsilon.fx = 1.;
 
-DeAd('C2','AP3') = 1000.
+DeAd('C2','AP3') = 1000;
+
+display FF,F0,Y0,X0,Xp0,Xg0,Xv0,Q0,Z0,E0,M0,D0,Tz0,Tm0,Sp0,Td0,AgE0,AgH0,Sg0,Sf,
+        CssE0,CssH0,PssH0,Alp0,DeAd;
+
+* inicia el solver desde el principio
+option bRatio = 1;
+
+option nlp=CONOPT;
+
+* resuelve mca maximizando UU mediante nlp;
+solve mca maximizing UU using nlp;
+
+execute_unload 'demanda_excel.gdx'
+   Y.l,F.l,FF,X.l,Z.l,Xp.l,Xg.l,Xv.l,E.l,M.l,Q.l,D.l,pf.l,py.l,pz.l,pq.l,pe.l,pm.l,pd.l,epsilon,
+   Sp.l,Sg.l,Td.l,Tz.l,Tm.l,CssH.l,CssE.l,PssH0,AgE.l,AgH.l,Apz.l,Sf,
+   alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xid,xie,theta,ssp,ssg,taud,tauz,taum,ctzsse,ctzssh,cage,cagh,
+   Alp.l
+;
+
+
+* -----------------------------------------------------------------------------
+* Escenario 3. 1000 demanda adicional de AP3 por C2 y arancel para AP3
+* -----------------------------------------------------------------------------
+
+* precios de referencia
+*pf.fx('L') = 1.;
+pf.fx('K') = 1.;
+epsilon.fx = 1.;
+
+DeAd('C2','AP3') = 1000;
+taum('AP3') = 0.003825;
 
 display FF,F0,Y0,X0,Xp0,Xg0,Xv0,Q0,Z0,E0,M0,D0,Tz0,Tm0,Sp0,Td0,AgE0,AgH0,Sg0,Sf,
         CssE0,CssH0,PssH0,Alp0,DeAd;
