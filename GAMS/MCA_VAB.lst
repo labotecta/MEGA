@@ -1,4 +1,4 @@
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 1
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 1
 Modelo ampliado con MCS: MCA-ESP-05
 C o m p i l a t i o n
 
@@ -222,7 +222,7 @@ C o m p i l a t i o n
  231     eqAlp(l,h)  'ahorro a largo plazo del factor h por el hogar l'
  232   
  233     eqpqd(i)    'condición de equilibrio del mercado para el producto compuesto de los sectores i'
- 234     eqpf(h)     'condición de equilibrio del mercado para los factores h'
+ 234  *   eqpf(h)     'condición de equilibrio del mercado para los factores h'
  235     obj         'utilidad [ficticia]'
  236  ;
  237   
@@ -266,18 +266,18 @@ C o m p i l a t i o n
  275   
  276  * el Alp es la diferencia entre las utilizaciones de los sectores (F) y las aportaciones iniciales de los hogares (FF)
  277  eqAlp(l,h).. Alp(l,h) =e= sum(i,F(h,i)) * rf(l,h) - FF(l,h);
- 278  eqpfl..      pf['L']  =e= 1. - 0.5 * (sum(i,F0('L',i)) - sum(i,F('L',i))) / (sum(i,F0('L',i)) / 0.9);
- 279   
- 280  * condición de equilibrio del mercado
- 281   
- 282  eqpqd(i)..   Q(i)     =e= sum(l, Xp(l,i)) + Xg(i) + Xv(i) + sum(j, X(i,j));
- 283  * es redundante, porque hemos definido Alp como la diferencia entre las utilizaciones de los sectores (F) y las aportaciones iniciales de los hogares (FF)
- 284  eqpf(h)..    sum(i,F(h,i)) =e= sum(l,FF(l,h)) + sum(l,Alp(l,h));
- 285   
- 286  * función objetivo ficticia
- 287  obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz;
- 288  * función objetivo ficticia, con la condición de que el uso de factores sea mínimo (resten lo mínimo)
- 289  *obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz - sum(j,F('L',j)) - sum(j,F('K',j));
+ 278  * curva de Phillips con K = 0.5 y paro = 10%
+ 279  eqpfl..      pf['L']  =e= 1. - 0.5 * (sum(i,F0('L',i)) - sum(i,F('L',i))) / (sum(i,F0('L',i)) / 0.9);
+ 280   
+ 281  * condición de equilibrio del mercado
+ 282   
+ 283  eqpqd(i)..   Q(i)     =e= sum(l, Xp(l,i)) + Xg(i) + Xv(i) + sum(j, X(i,j));
+ 284   
+ 285  * es redundante, porque hemos definido Alp como la diferencia entre las utilizaciones de los sectores (F) y las aportaciones iniciales de los hogares (FF)
+ 286  * eqpf(h)..    sum(i,F(h,i)) =e= sum(l,FF(l,h)) + sum(l,Alp(l,h));
+ 287   
+ 288  * función objetivo ficticia
+ 289  obj..       UU        =e= sum(l, prod(i, Xp(l,i) ** alpha(l,i))) - 100000. * Apz * Apz;
  290   
  291  * inicialización de variables
  292  Y.l(j)    = Y0(j);
@@ -356,7 +356,7 @@ C o m p i l a t i o n
  365   
  366  * salvar a un fichero para después exportar (manualmente) a excel
  367   
- 368  execute_unload 'base_excel.gdx'
+ 368  execute_unload 'vab_base_excel_alp.gdx'
  369     Y.l,F.l,FF,X.l,Z.l,Xp.l,Xg.l,Xv.l,E.l,M.l,Q.l,D.l,pf.l,py.l,pz.l,pq.l,pe.l,pm.l,pd.l,epsilon,
  370     Sp.l,Sg.l,Td.l,Tz.l,Tm.l,CssH.l,CssE.l,PssH0,AgE.l,AgH.l,Apz.l,Sf,
  371     alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xid,xie,theta,ssp,ssg,taud,tauz,taum,ctzsse,ctzssh,cage,cagh
@@ -414,7 +414,7 @@ C o m p i l a t i o n
  423  * resuelve mca maximizando UU mediante nlp;
  424  solve mca maximizing UU using nlp;
  425   
- 426  execute_unload 'precios_excel.gdx'
+ 426  execute_unload 'vab_precios_excel_alp.gdx'
  427     Y.l,F.l,FF,X.l,Z.l,Xp.l,Xg.l,Xv.l,E.l,M.l,Q.l,D.l,pf.l,py.l,pz.l,pq.l,pe.l,pm.l,pd.l,epsilon,
  428     Sp.l,Sg.l,Td.l,Tz.l,Tm.l,CssH.l,CssE.l,PssH0,AgE.l,AgH.l,Apz.l,Sf,
  429     alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xid,xie,theta,ssp,ssg,taud,tauz,taum,ctzsse,ctzssh,cage,cagh,
@@ -444,7 +444,7 @@ C o m p i l a t i o n
  453  * resuelve mca maximizando UU mediante nlp;
  454  solve mca maximizing UU using nlp;
  455   
- 456  execute_unload 'demanda_excel.gdx'
+ 456  execute_unload 'vab_demanda_excel_alp.gdx'
  457     Y.l,F.l,FF,X.l,Z.l,Xp.l,Xg.l,Xv.l,E.l,M.l,Q.l,D.l,pf.l,py.l,pz.l,pq.l,pe.l,pm.l,pd.l,epsilon,
  458     Sp.l,Sg.l,Td.l,Tz.l,Tm.l,CssH.l,CssE.l,PssH0,AgE.l,AgH.l,Apz.l,Sf,
  459     alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xid,xie,theta,ssp,ssg,taud,tauz,taum,ctzsse,ctzssh,cage,cagh,
@@ -475,7 +475,7 @@ C o m p i l a t i o n
  484  * resuelve mca maximizando UU mediante nlp;
  485  solve mca maximizing UU using nlp;
  486   
- 487  execute_unload 'demanda_excel.gdx'
+ 487  execute_unload 'vab_demanda_aranceles_excel_alp.gdx'
  488     Y.l,F.l,FF,X.l,Z.l,Xp.l,Xg.l,Xv.l,E.l,M.l,Q.l,D.l,pf.l,py.l,pz.l,pq.l,pe.l,pm.l,pd.l,epsilon,
  489     Sp.l,Sg.l,Td.l,Tz.l,Tm.l,CssH.l,CssE.l,PssH0,AgE.l,AgH.l,Apz.l,Sf,
  490     alpha,beta,b,ax,ay,mu,lambda,deltam,deltad,gamma,xid,xie,theta,ssp,ssg,taud,tauz,taum,ctzsse,ctzssh,cage,cagh,
@@ -483,8 +483,8 @@ C o m p i l a t i o n
  492  ;
 
 
-COMPILATION TIME     =        0.750 SECONDS      3 MB  51.1.0 2d039df5 WEX-WEI
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 2
+COMPILATION TIME     =        0.734 SECONDS      3 MB  51.1.0 2d039df5 WEX-WEI
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 2
 Modelo ampliado con MCS: MCA-ESP-05
 E x e c u t i o n
 
@@ -773,7 +773,7 @@ AP1 0.010,    AP3 0.008
 
 C1       1.000       1.000
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 3
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 3
 Modelo ampliado con MCS: MCA-ESP-05
 Equation Listing    SOLVE mca Using NLP From line 364
 
@@ -1063,18 +1063,11 @@ eqpqd(AP3)..  - X(AP3,AP1) - X(AP3,AP2) - X(AP3,AP3) - X(AP3,AP4) - X(AP3,AP5) -
 REMAINING 3 ENTRIES SKIPPED
 
 
----- eqpf  =E=  condición de equilibrio del mercado para los factores h
-
-eqpf(L)..  F(L,AP1) + F(L,AP2) + F(L,AP3) + F(L,AP4) + F(L,AP5) + F(L,AP6) - Alp(C1,L) - Alp(C2,L) =E= 334418 ; (LHS = 334418)
-     
-eqpf(K)..  F(K,AP1) + F(K,AP2) + F(K,AP3) + F(K,AP4) + F(K,AP5) + F(K,AP6) - Alp(C1,K) - Alp(C2,K) =E= 378983 ; (LHS = 378983)
-     
-
 ---- obj  =E=  utilidad [ficticia]
 
 obj..  - (0.440645138467315)*Xp(C1,AP1) - (0.440645138467315)*Xp(C1,AP2) - (0.440645138467315)*Xp(C1,AP3) - (0.440645138467315)*Xp(C1,AP4) - (0.440645138467315)*Xp(C1,AP5) - (0.440645138467315)*Xp(C1,AP6) - (0.440613842402272)*Xp(C2,AP1) - (0.440613842402272)*Xp(C2,AP2) - (0.440613842402272)*Xp(C2,AP3) - (0.440613842402272)*Xp(C2,AP4) - (0.440613842402272)*Xp(C2,AP5) - (0.440613842402272)*Xp(C2,AP6) + (0)*Apz + UU =E= 0 ; (LHS = -212555.703522754, INFES = 212555.703522754 ****)
      
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 4
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 4
 Modelo ampliado con MCS: MCA-ESP-05
 Column Listing      SOLVE mca Using NLP From line 364
 
@@ -1113,7 +1106,6 @@ F(L,AP1)
        -0.1484  eqctzsse(AP1)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP2)
                 (.LO, .L, .UP, .M = 0, 3737, +INF, 0)
@@ -1122,7 +1114,6 @@ F(L,AP2)
        -0.365   eqctzsse(AP2)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP3)
                 (.LO, .L, .UP, .M = 0, 56233, +INF, 0)
@@ -1131,7 +1122,6 @@ F(L,AP3)
        -0.3062  eqctzsse(AP3)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 REMAINING 9 ENTRIES SKIPPED
 
@@ -1854,19 +1844,16 @@ Alp(C1,L)
       (-0.2176) eqTd(C1)
        -0.0629  eqctzssh(C1)
         1       eqAlp(C1,L)
-       -1       eqpf(L)
 
 Alp(C1,K)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.2176) eqTd(C1)
         1       eqAlp(C1,K)
-       -1       eqpf(K)
 
 Alp(C2,L)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.2151) eqTd(C2)
         1       eqAlp(C2,L)
-       -1       eqpf(L)
 
 REMAINING ENTRY SKIPPED
 
@@ -1876,7 +1863,7 @@ UU
                 (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
         1       obj
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 5
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 5
 Modelo ampliado con MCS: MCA-ESP-05
 Range Statistics    SOLVE mca Using NLP From line 364
 
@@ -1887,21 +1874,21 @@ RHS       [min, max] : [ 5.500E-01, 3.790E+05] - Zero values observed as well
 Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
 Matrix    [min, max] : [ 5.227E-12, 1.451E+06] - Zero values observed as well
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 6
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 6
 Modelo ampliado con MCS: MCA-ESP-05
 Model Statistics    SOLVE mca Using NLP From line 364
 
 
 MODEL STATISTICS
 
-BLOCKS OF EQUATIONS          31     SINGLE EQUATIONS          186
+BLOCKS OF EQUATIONS          30     SINGLE EQUATIONS          184
 BLOCKS OF VARIABLES          31     SINGLE VARIABLES          186
-NON ZERO ELEMENTS           816     NON LINEAR N-Z            384
+NON ZERO ELEMENTS           800     NON LINEAR N-Z            384
 CODE LENGTH               1,215     CONSTANT POOL             179
 
 
-GENERATION TIME      =        0.016 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 7
+GENERATION TIME      =        0.000 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 7
 Modelo ampliado con MCS: MCA-ESP-05
 Solution Report     SOLVE mca Using NLP From line 364
 
@@ -1916,7 +1903,7 @@ Solution Report     SOLVE mca Using NLP From line 364
 **** MODEL STATUS      2 Locally Optimal
 **** OBJECTIVE VALUE           212555.7035
 
- RESOURCE USAGE, LIMIT          0.016 10000000000.000
+ RESOURCE USAGE, LIMIT          0.000 10000000000.000
  ITERATION COUNT, LIMIT         1    2147483647
  EVALUATION ERRORS              0             0
 --- *** This solver runs with a demo license. No commercial use.
@@ -1929,10 +1916,10 @@ Solution Report     SOLVE mca Using NLP From line 364
     Will use up to 4 threads.
  
  
-    The user model has 186 constraints and 186 variables
-    with 816 Jacobian elements, 384 of which are nonlinear.
+    The user model has 184 constraints and 186 variables
+    with 800 Jacobian elements, 384 of which are nonlinear.
  
-    The pre-triangular part of the model has 39 constraints and variables.
+    The pre-triangular part of the model has 37 constraints and 39 variables.
     The post-triangular part of the model has 1 constraints and variables.
  
     Preprocessed model has 146 constraints and 146 variables
@@ -1945,10 +1932,10 @@ Solution Report     SOLVE mca Using NLP From line 364
     Largest unscaled residual is 4.25E-06 based on scale factor 1.31E+05
  
  
- CONOPT time Total                            0.003 seconds
+ CONOPT time Total                            0.000 seconds
    of which: Function evaluations             0.000 =  0.0%
-             1st Derivative evaluations       0.001 = 33.3%
-             Interval derivative evals        0.001 = 33.3%
+             1st Derivative evaluations       0.000 =  0.0%
+             Interval derivative evals        0.000 =  0.0%
  
 
 ---- EQU eqpy  producción del factor compuesto de los sectores i
@@ -2276,13 +2263,6 @@ AP3          .              .              .            -0.0296
 AP4          .              .              .            -0.0483      
 AP5          .              .              .            -0.0633      
 AP6          .              .              .            -0.0409      
-
----- EQU eqpf  condición de equilibrio del mercado para los factores h
-
-         LOWER          LEVEL          UPPER         MARGINAL
-
-L    334418.0000    334418.0000    334418.0000          .          
-K    378983.0000    378983.0000    378983.0000          .          
 
                            LOWER          LEVEL          UPPER         MARGINAL
 
@@ -2636,7 +2616,7 @@ C2.K          .              .            +INF             .
                              0 INFEASIBLE
                              0  UNBOUNDED
                              0     ERRORS
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 8
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 8
 Modelo ampliado con MCS: MCA-ESP-05
 E x e c u t i o n
 
@@ -2645,7 +2625,7 @@ E x e c u t i o n
 
                       ( ALL       0.000 )
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 9
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 9
 Modelo ampliado con MCS: MCA-ESP-05
 Equation Listing    SOLVE mca Using NLP From line 424
 
@@ -2935,18 +2915,11 @@ eqpqd(AP3)..  - X(AP3,AP1) - X(AP3,AP2) - X(AP3,AP3) - X(AP3,AP4) - X(AP3,AP5) -
 REMAINING 3 ENTRIES SKIPPED
 
 
----- eqpf  =E=  condición de equilibrio del mercado para los factores h
-
-eqpf(L)..  F(L,AP1) + F(L,AP2) + F(L,AP3) + F(L,AP4) + F(L,AP5) + F(L,AP6) - Alp(C1,L) - Alp(C2,L) =E= 334418 ; (LHS = 334418)
-     
-eqpf(K)..  F(K,AP1) + F(K,AP2) + F(K,AP3) + F(K,AP4) + F(K,AP5) + F(K,AP6) - Alp(C1,K) - Alp(C2,K) =E= 378983 ; (LHS = 378983)
-     
-
 ---- obj  =E=  utilidad [ficticia]
 
 obj..  - (0.440645138467315)*Xp(C1,AP1) - (0.440645138467315)*Xp(C1,AP2) - (0.440645138467315)*Xp(C1,AP3) - (0.440645138467315)*Xp(C1,AP4) - (0.440645138467315)*Xp(C1,AP5) - (0.440645138467315)*Xp(C1,AP6) - (0.440613842402272)*Xp(C2,AP1) - (0.440613842402272)*Xp(C2,AP2) - (0.440613842402272)*Xp(C2,AP3) - (0.440613842402272)*Xp(C2,AP4) - (0.440613842402272)*Xp(C2,AP5) - (0.440613842402272)*Xp(C2,AP6) + (0)*Apz + UU =E= 0 ; (LHS = 0)
      
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 10
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 10
 Modelo ampliado con MCS: MCA-ESP-05
 Column Listing      SOLVE mca Using NLP From line 424
 
@@ -2985,7 +2958,6 @@ F(L,AP1)
        -0.1484  eqctzsse(AP1)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP2)
                 (.LO, .L, .UP, .M = 0, 3737, +INF, 0)
@@ -2994,7 +2966,6 @@ F(L,AP2)
        -0.365   eqctzsse(AP2)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP3)
                 (.LO, .L, .UP, .M = 0, 56233, +INF, 0)
@@ -3003,7 +2974,6 @@ F(L,AP3)
        -0.3062  eqctzsse(AP3)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 REMAINING 9 ENTRIES SKIPPED
 
@@ -3726,19 +3696,16 @@ Alp(C1,L)
       (-0.1088) eqTd(C1)
        -0.0629  eqctzssh(C1)
         1       eqAlp(C1,L)
-       -1       eqpf(L)
 
 Alp(C1,K)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.2176) eqTd(C1)
         1       eqAlp(C1,K)
-       -1       eqpf(K)
 
 Alp(C2,L)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.1075) eqTd(C2)
         1       eqAlp(C2,L)
-       -1       eqpf(L)
 
 REMAINING ENTRY SKIPPED
 
@@ -3748,7 +3715,7 @@ UU
                 (.LO, .L, .UP, .M = -INF, 212555.703522754, +INF, 0)
         1       obj
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 11
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 11
 Modelo ampliado con MCS: MCA-ESP-05
 Range Statistics    SOLVE mca Using NLP From line 424
 
@@ -3759,21 +3726,21 @@ RHS       [min, max] : [ 5.500E-01, 3.790E+05] - Zero values observed as well
 Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
 Matrix    [min, max] : [ 2.614E-12, 2.903E+06] - Zero values observed as well
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 12
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 12
 Modelo ampliado con MCS: MCA-ESP-05
 Model Statistics    SOLVE mca Using NLP From line 424
 
 
 MODEL STATISTICS
 
-BLOCKS OF EQUATIONS          31     SINGLE EQUATIONS          186
+BLOCKS OF EQUATIONS          30     SINGLE EQUATIONS          184
 BLOCKS OF VARIABLES          31     SINGLE VARIABLES          186
-NON ZERO ELEMENTS           816     NON LINEAR N-Z            384
+NON ZERO ELEMENTS           800     NON LINEAR N-Z            384
 CODE LENGTH               1,215     CONSTANT POOL             179
 
 
-GENERATION TIME      =        0.016 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 13
+GENERATION TIME      =        0.015 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 13
 Modelo ampliado con MCS: MCA-ESP-05
 Solution Report     SOLVE mca Using NLP From line 424
 
@@ -3801,10 +3768,10 @@ Solution Report     SOLVE mca Using NLP From line 424
     Will use up to 4 threads.
  
  
-    The user model has 186 constraints and 186 variables
-    with 816 Jacobian elements, 384 of which are nonlinear.
+    The user model has 184 constraints and 186 variables
+    with 800 Jacobian elements, 384 of which are nonlinear.
  
-    The pre-triangular part of the model has 39 constraints and variables.
+    The pre-triangular part of the model has 37 constraints and 39 variables.
     The post-triangular part of the model has 1 constraints and variables.
  
     Preprocessed model has 146 constraints and 146 variables
@@ -3817,8 +3784,8 @@ Solution Report     SOLVE mca Using NLP From line 424
     Largest unscaled residual is 4.61E-06 based on scale factor 1.31E+05
  
  
- CONOPT time Total                            0.006 seconds
-   of which: Function evaluations             0.002 = 33.3%
+ CONOPT time Total                            0.015 seconds
+   of which: Function evaluations             0.000 =  0.0%
              1st Derivative evaluations       0.000 =  0.0%
              Interval derivative evals        0.000 =  0.0%
  
@@ -4148,13 +4115,6 @@ AP3          .              .              .            -0.0296
 AP4          .              .              .            -0.0483      
 AP5          .              .              .            -0.0633      
 AP6          .              .              .            -0.0409      
-
----- EQU eqpf  condición de equilibrio del mercado para los factores h
-
-         LOWER          LEVEL          UPPER         MARGINAL
-
-L    334418.0000    334418.0000    334418.0000          .          
-K    378983.0000    378983.0000    378983.0000          .          
 
                            LOWER          LEVEL          UPPER         MARGINAL
 
@@ -4508,7 +4468,7 @@ C2.K          .              .            +INF             .
                              0 INFEASIBLE
                              0  UNBOUNDED
                              0     ERRORS
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 14
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 14
 Modelo ampliado con MCS: MCA-ESP-05
 E x e c u t i o n
 
@@ -4646,7 +4606,7 @@ C2 96804.000
 
 C2    1000.000
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 15
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 15
 Modelo ampliado con MCS: MCA-ESP-05
 Equation Listing    SOLVE mca Using NLP From line 454
 
@@ -4936,18 +4896,11 @@ eqpqd(AP3)..  - X(AP3,AP1) - X(AP3,AP2) - X(AP3,AP3) - X(AP3,AP4) - X(AP3,AP5) -
 REMAINING 3 ENTRIES SKIPPED
 
 
----- eqpf  =E=  condición de equilibrio del mercado para los factores h
-
-eqpf(L)..  F(L,AP1) + F(L,AP2) + F(L,AP3) + F(L,AP4) + F(L,AP5) + F(L,AP6) - Alp(C1,L) - Alp(C2,L) =E= 334418 ; (LHS = 334418)
-     
-eqpf(K)..  F(K,AP1) + F(K,AP2) + F(K,AP3) + F(K,AP4) + F(K,AP5) + F(K,AP6) - Alp(C1,K) - Alp(C2,K) =E= 378983 ; (LHS = 378983)
-     
-
 ---- obj  =E=  utilidad [ficticia]
 
 obj..  - (0.440645138477474)*Xp(C1,AP1) - (0.440645138469008)*Xp(C1,AP2) - (0.440645138468037)*Xp(C1,AP3) - (0.440645138469073)*Xp(C1,AP4) - (0.44064513846674)*Xp(C1,AP5) - (0.440645138466688)*Xp(C1,AP6) - (0.440613842412431)*Xp(C2,AP1) - (0.440613842403966)*Xp(C2,AP2) - (0.440613842402995)*Xp(C2,AP3) - (0.44061384240403)*Xp(C2,AP4) - (0.440613842401697)*Xp(C2,AP5) - (0.440613842401646)*Xp(C2,AP6) - (2.85463480225453E-7)*Apz + UU =E= 0 ; (LHS = 0)
      
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 16
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 16
 Modelo ampliado con MCS: MCA-ESP-05
 Column Listing      SOLVE mca Using NLP From line 454
 
@@ -4986,7 +4939,6 @@ F(L,AP1)
        -0.1484  eqctzsse(AP1)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP2)
                 (.LO, .L, .UP, .M = 0, 3736.99999991249, +INF, 0)
@@ -4995,7 +4947,6 @@ F(L,AP2)
        -0.365   eqctzsse(AP2)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP3)
                 (.LO, .L, .UP, .M = 0, 56232.9999992841, +INF, 0)
@@ -5004,7 +4955,6 @@ F(L,AP3)
        -0.3062  eqctzsse(AP3)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 REMAINING 9 ENTRIES SKIPPED
 
@@ -5727,19 +5677,16 @@ Alp(C1,L)
       (-0.2176) eqTd(C1)
        -0.0629  eqctzssh(C1)
         1       eqAlp(C1,L)
-       -1       eqpf(L)
 
 Alp(C1,K)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.2176) eqTd(C1)
         1       eqAlp(C1,K)
-       -1       eqpf(K)
 
 Alp(C2,L)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.2151) eqTd(C2)
         1       eqAlp(C2,L)
-       -1       eqpf(L)
 
 REMAINING ENTRY SKIPPED
 
@@ -5749,7 +5696,7 @@ UU
                 (.LO, .L, .UP, .M = -INF, 212555.703522132, +INF, 0)
         1       obj
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 17
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 17
 Modelo ampliado con MCS: MCA-ESP-05
 Range Statistics    SOLVE mca Using NLP From line 454
 
@@ -5760,21 +5707,21 @@ RHS       [min, max] : [ 5.500E-01, 3.790E+05] - Zero values observed as well
 Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
 Matrix    [min, max] : [ 5.227E-12, 1.451E+06] - Zero values observed as well
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 18
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 18
 Modelo ampliado con MCS: MCA-ESP-05
 Model Statistics    SOLVE mca Using NLP From line 454
 
 
 MODEL STATISTICS
 
-BLOCKS OF EQUATIONS          31     SINGLE EQUATIONS          186
+BLOCKS OF EQUATIONS          30     SINGLE EQUATIONS          184
 BLOCKS OF VARIABLES          31     SINGLE VARIABLES          186
-NON ZERO ELEMENTS           816     NON LINEAR N-Z            384
+NON ZERO ELEMENTS           800     NON LINEAR N-Z            384
 CODE LENGTH               1,215     CONSTANT POOL             179
 
 
-GENERATION TIME      =        0.000 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 19
+GENERATION TIME      =        0.031 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 19
 Modelo ampliado con MCS: MCA-ESP-05
 Solution Report     SOLVE mca Using NLP From line 454
 
@@ -5802,10 +5749,10 @@ Solution Report     SOLVE mca Using NLP From line 454
     Will use up to 4 threads.
  
  
-    The user model has 186 constraints and 186 variables
-    with 816 Jacobian elements, 384 of which are nonlinear.
+    The user model has 184 constraints and 186 variables
+    with 800 Jacobian elements, 384 of which are nonlinear.
  
-    The pre-triangular part of the model has 39 constraints and variables.
+    The pre-triangular part of the model has 37 constraints and 39 variables.
     The post-triangular part of the model has 1 constraints and variables.
  
     Preprocessed model has 146 constraints and 146 variables
@@ -5818,10 +5765,10 @@ Solution Report     SOLVE mca Using NLP From line 454
     Largest unscaled residual is 1.07E-05 based on scale factor 5.24E+05
  
  
- CONOPT time Total                            0.003 seconds
+ CONOPT time Total                            0.000 seconds
    of which: Function evaluations             0.000 =  0.0%
              1st Derivative evaluations       0.000 =  0.0%
-             Interval derivative evals        0.001 = 33.3%
+             Interval derivative evals        0.000 =  0.0%
  
 
 ---- EQU eqpy  producción del factor compuesto de los sectores i
@@ -6149,13 +6096,6 @@ AP3          .              .              .            -0.0296
 AP4          .              .              .            -0.0484      
 AP5          .              .              .            -0.0633      
 AP6          .              .              .            -0.0409      
-
----- EQU eqpf  condición de equilibrio del mercado para los factores h
-
-         LOWER          LEVEL          UPPER         MARGINAL
-
-L    334418.0000    334418.0000    334418.0000          .          
-K    378983.0000    378983.0000    378983.0000          .          
 
                            LOWER          LEVEL          UPPER         MARGINAL
 
@@ -6509,7 +6449,7 @@ C2.K          .              .            +INF             .
                              0 INFEASIBLE
                              0  UNBOUNDED
                              0     ERRORS
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 20
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 20
 Modelo ampliado con MCS: MCA-ESP-05
 E x e c u t i o n
 
@@ -6647,7 +6587,7 @@ C2 96804.000
 
 C2    1000.000
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 21
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 21
 Modelo ampliado con MCS: MCA-ESP-05
 Equation Listing    SOLVE mca Using NLP From line 485
 
@@ -6937,18 +6877,11 @@ eqpqd(AP3)..  - X(AP3,AP1) - X(AP3,AP2) - X(AP3,AP3) - X(AP3,AP4) - X(AP3,AP5) -
 REMAINING 3 ENTRIES SKIPPED
 
 
----- eqpf  =E=  condición de equilibrio del mercado para los factores h
-
-eqpf(L)..  F(L,AP1) + F(L,AP2) + F(L,AP3) + F(L,AP4) + F(L,AP5) + F(L,AP6) - Alp(C1,L) - Alp(C2,L) =E= 334418 ; (LHS = 334418)
-     
-eqpf(K)..  F(K,AP1) + F(K,AP2) + F(K,AP3) + F(K,AP4) + F(K,AP5) + F(K,AP6) - Alp(C1,K) - Alp(C2,K) =E= 378983 ; (LHS = 378983)
-     
-
 ---- obj  =E=  utilidad [ficticia]
 
 obj..  - (0.440653323575018)*Xp(C1,AP1) - (0.440606291208318)*Xp(C1,AP2) - (0.440616576711223)*Xp(C1,AP3) - (0.440600375231832)*Xp(C1,AP4) - (0.440654725165616)*Xp(C1,AP5) - (0.440776946459991)*Xp(C1,AP6) - (0.447970550038171)*Xp(C2,AP1) - (0.447922736680172)*Xp(C2,AP2) - (0.413516045337872)*Xp(C2,AP3) - (0.447916722466873)*Xp(C2,AP4) - (0.44797197490289)*Xp(C2,AP5) - (0.448096225730866)*Xp(C2,AP6) - (39.7833785293924)*Apz + UU =E= 0 ; (LHS = 0)
      
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 22
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 22
 Modelo ampliado con MCS: MCA-ESP-05
 Column Listing      SOLVE mca Using NLP From line 485
 
@@ -6987,7 +6920,6 @@ F(L,AP1)
        -0.1484  eqctzsse(AP1)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP2)
                 (.LO, .L, .UP, .M = 0, 3744.36058743596, +INF, 0)
@@ -6996,7 +6928,6 @@ F(L,AP2)
        -0.365   eqctzsse(AP2)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 F(L,AP3)
                 (.LO, .L, .UP, .M = 0, 56484.2250282819, +INF, 0)
@@ -7005,7 +6936,6 @@ F(L,AP3)
        -0.3062  eqctzsse(AP3)
   -1.345621E-6  eqpfl
        -1       eqAlp(C1,L)
-        1       eqpf(L)
 
 REMAINING 9 ENTRIES SKIPPED
 
@@ -7728,19 +7658,16 @@ Alp(C1,L)
       (-0.2178) eqTd(C1)
        -0.0629  eqctzssh(C1)
         1       eqAlp(C1,L)
-       -1       eqpf(L)
 
 Alp(C1,K)
                 (.LO, .L, .UP, .M = 0, 688.363127936233, +INF, 0)
       (-0.2176) eqTd(C1)
         1       eqAlp(C1,K)
-       -1       eqpf(K)
 
 Alp(C2,L)
                 (.LO, .L, .UP, .M = 0, 0, +INF, 0)
       (-0.2152) eqTd(C2)
         1       eqAlp(C2,L)
-       -1       eqpf(L)
 
 REMAINING ENTRY SKIPPED
 
@@ -7750,7 +7677,7 @@ UU
                 (.LO, .L, .UP, .M = -INF, 212952.68154443, +INF, 0)
         1       obj
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 23
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 23
 Modelo ampliado con MCS: MCA-ESP-05
 Range Statistics    SOLVE mca Using NLP From line 485
 
@@ -7761,21 +7688,21 @@ RHS       [min, max] : [ 5.500E-01, 3.790E+05] - Zero values observed as well
 Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
 Matrix    [min, max] : [ 2.610E-11, 1.453E+06] - Zero values observed as well
 
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 24
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 24
 Modelo ampliado con MCS: MCA-ESP-05
 Model Statistics    SOLVE mca Using NLP From line 485
 
 
 MODEL STATISTICS
 
-BLOCKS OF EQUATIONS          31     SINGLE EQUATIONS          186
+BLOCKS OF EQUATIONS          30     SINGLE EQUATIONS          184
 BLOCKS OF VARIABLES          31     SINGLE VARIABLES          186
-NON ZERO ELEMENTS           816     NON LINEAR N-Z            384
+NON ZERO ELEMENTS           800     NON LINEAR N-Z            384
 CODE LENGTH               1,215     CONSTANT POOL             179
 
 
 GENERATION TIME      =        0.000 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 25
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 25
 Modelo ampliado con MCS: MCA-ESP-05
 Solution Report     SOLVE mca Using NLP From line 485
 
@@ -7790,7 +7717,7 @@ Solution Report     SOLVE mca Using NLP From line 485
 **** MODEL STATUS      2 Locally Optimal
 **** OBJECTIVE VALUE           212769.0653
 
- RESOURCE USAGE, LIMIT          0.016 10000000000.000
+ RESOURCE USAGE, LIMIT          0.015 10000000000.000
  ITERATION COUNT, LIMIT         4    2147483647
  EVALUATION ERRORS              0             0
 --- *** This solver runs with a demo license. No commercial use.
@@ -7803,10 +7730,10 @@ Solution Report     SOLVE mca Using NLP From line 485
     Will use up to 4 threads.
  
  
-    The user model has 186 constraints and 186 variables
-    with 816 Jacobian elements, 384 of which are nonlinear.
+    The user model has 184 constraints and 186 variables
+    with 800 Jacobian elements, 384 of which are nonlinear.
  
-    The pre-triangular part of the model has 39 constraints and variables.
+    The pre-triangular part of the model has 37 constraints and 39 variables.
     The post-triangular part of the model has 1 constraints and variables.
  
     Preprocessed model has 146 constraints and 146 variables
@@ -7819,10 +7746,10 @@ Solution Report     SOLVE mca Using NLP From line 485
     Largest unscaled residual is 1.15E-05 based on scale factor 5.24E+05
  
  
- CONOPT time Total                            0.003 seconds
+ CONOPT time Total                            0.000 seconds
    of which: Function evaluations             0.000 =  0.0%
              1st Derivative evaluations       0.000 =  0.0%
-             Interval derivative evals        0.002 = 66.7%
+             Interval derivative evals        0.000 =  0.0%
  
 
 ---- EQU eqpy  producción del factor compuesto de los sectores i
@@ -8150,13 +8077,6 @@ AP3          .              .              .            -0.0306
 AP4          .              .              .            -0.0488      
 AP5          .              .              .            -0.0635      
 AP6          .              .              .            -0.0411      
-
----- EQU eqpf  condición de equilibrio del mercado para los factores h
-
-         LOWER          LEVEL          UPPER         MARGINAL
-
-L    334418.0000    334418.0000    334418.0000          .          
-K    378983.0000    378983.0000    378983.0000          .          
 
                            LOWER          LEVEL          UPPER         MARGINAL
 
@@ -8510,12 +8430,12 @@ C2.K          .              .            +INF             .
                              0 INFEASIBLE
                              0  UNBOUNDED
                              0     ERRORS
-GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/10/25 22:51:04 Page 26
+GAMS 51.1.0  2d039df5 Sep 13, 2025          WEX-WEI x86 64bit/MS Windows - 12/12/25 16:16:19 Page 26
 Modelo ampliado con MCS: MCA-ESP-05
 E x e c u t i o n
 
 
-EXECUTION TIME       =        0.188 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
+EXECUTION TIME       =        0.203 SECONDS      4 MB  51.1.0 2d039df5 WEX-WEI
 
 
 USER: GAMS Demo, for EULA and demo limitations see   G250826+0003Cc-GEN
