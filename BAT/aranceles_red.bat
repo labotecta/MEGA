@@ -1,0 +1,60 @@
+@echo off
+TITLE "+1000 AP3 con Aranceles"
+mode CON cols=118 lines=30
+cd C:\MEGA\MEGA
+start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--PREFIJO             =aranceles_demanda ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                6 ^
+--NSAM                3 ^
+--NCASO               0 14 ^
+--DEM_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 1000. 0. 0. 0. ^
+--DEM_ADICIONAL_TIPO  0 ^
+--AYD_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
+--ARANCELES           0. 0. 0.004073 0. 0. 0. ^
+--OR_PRE_REFERENCIA   0 ^
+--PRECIO_F_REFERENCIA 1.0 ^
+--VALOR_F_TRA         0 ^
+--PARO_INICIAL        0.10 ^
+--ALFA_PHILLIPS       -0.5 ^
+--GE_FIX              epsilon ^
+--GE_FIX_LON          1 ^
+--GE_FIX_LIMITES      1.0 1.0 ^
+--FF_ENDOGENA         True ^
+--AHORRO_L_PLAZO      True ^
+--OPT_DESVIOS         1 ^
+--PRIMERA_VALORACION  False ^
+--SAL_CALIBRADO       False ^
+--SALIDA_VEC_OPT      False ^
+--SALIDA_DESVIOS      False ^
+--SAL_AUXILIARES      False ^
+--SAL_GRAFICOS_EVOL   False ^
+--SAL_GRAFICO_CES_DM  False ^
+--SAL_ISOCUANTA       False ^
+--SAL_VARIACIONES     True  ^
+--DECIMALES           1 ^
+--GE_RESTRICCIONES    False ^
+--GE_TOLERANCIA       1.e-11 ^
+--GE_VERIFICAR        1.e-08 ^
+--GE_HISTORIAL        500 ^
+--GE_SOLUCIONES       1000 ^
+--GE_PRE_MIN          3.0 ^
+--GE_PRE_MAX          3.0 ^
+--GE_VAR_MIN          9.0 ^
+--GE_VAR_MAX          9.0 ^
+--GE_VAR_CERO         10000.0 ^
+--GE_MAX_ITER         1000000 ^
+--GE_ACTUALIZACION    immediate ^
+--GE_RECONBINACION    0.90 ^
+--GE_DIM_POBLACION    5 ^
+--GE_WORKERS          32 ^
+--GE_SEMILLA          42 ^
+--GE_IMG_FIL          5 ^
+--GE_IMG_COL          6 ^
+--GE_ESTRATEGIA       best1bin ^
+--METRICA_ERROR       0 ^
+--POT_DESVIOS         2 ^
+--SENDA_DATOS         C:/MEGA/Datos ^
+--SENDA_SALIDAS       C:/MEGA/Salidas ^
+--SENDA_GRAFICOS      C:/MEGA/Graficos
