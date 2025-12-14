@@ -27,43 +27,54 @@ def valores_opciones():
         'sigma',                # 13
         'aranceles',            # 14
     '''
-    parser.add_argument('--PREFIJO'            , type=str  , default='', help="un literal que se añade al principio del nombre de los archivos de salida")
-    #parser.add_argument('--NCASO'              , type=int  , default=[0,14], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
-    parser.add_argument('--NCASO'              , type=int  , default=[0], nargs='*', help="número de esenario a utilizar, se pueden combinar varios")
-    
+    # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los ficheros de salida en
+    # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Demanda', help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--NCASO'              , type=int  , default=[0], nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14]")
+    # las matrices se especifican aplanadas como vectores
     parser.add_argument('--DEM_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 1000., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para los hogares")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0    , help="se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
-    parser.add_argument('--AYD_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
+    parser.add_argument('--AYD_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
     parser.add_argument('--ARANCELES'          , type=float, default=[0., 0., 0.003825, 0., 0., 0.], nargs='*', help="para el escenario 14")
+    # hay que especificar estos números porque luego hay que redimensionar las matrices aplanadas
+    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
 
     parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True  , help="Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
+    # AHORRO_L_PLAZO solo tiene sentido si FF_ENDOGENA es True y entonces es necesario que sea True para evitar la retroalimentación de la demanda final
+    # sea endógeno (VALOR_F_TRA=0)
     parser.add_argument('--AHORRO_L_PLAZO'     , type=sab  , default=True  , help="llevar a la cuenta ALP (Ahorro Largo Plazo) los excesos de factores aportados sobre sus valores iniciales")
     '''
-    el precio del capital (OR_PRE_REFERENCIA=0) exogeno igual a 1, el PRECIO_F_REFERENCIA, no formará parte del vetor solución
-    
+    cuando FF_ENDOGENA, hay que especificar
+        OR_PRE_REFERENCIA   = 0
+        PRECIO_F_REFERENCIA = 1.0
+        VALOR_F_TRA         = 1.0 salvo que el precio del trabajo se quiera como endógeno en cuyo caso VALOR_F_TRA = 0
+
+    si (OR_PRE_REFERENCIA=0) el precio del capital (PRECIO_F_REFERENCIA) es exogeno = 1.0 y no formará parte del vector solución
     parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=0, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
     parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0   , help="precio que se fija para el factor de referencia")
     
-    el precio del trabajo formará parte del vector solución, puede ser:
+    si OR_PRE_REFERENCIA = 0 el precio del trabajo formará parte del vector solución, puede ser:
         endogeno : si VALOR_F_TRA = -1
         fijo     : será acotado al valor VALOR_F_TRA si es > 0
         calculado: si VALOR_F_TRA = 0
     '''
-    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
-    parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
-    parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
     parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=0, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
     parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0   , help="precio que se fija para el factor de referencia")
     parser.add_argument('--VALOR_F_TRA'        , type=float, default=0     , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
     parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10  , help="tanto por uno de paro para la curva Phillips")
-    #parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.4566, help="relación desempleo salarios")
-    parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5, help="relación desempleo salarios")
+    parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5  , help="relación desempleo salarios, en la bibliografía se encuentra -0.4566") 
 
+    parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon','M'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
+    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1, 6], nargs='*', help="número de parejas para cada variable en GE_FIX")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=str, default=[1.0, 1.0, '*', '*', '*', '*', 'M0', 'M0', '*', '*', '*', '*', '*', '*'] , nargs='*', help="una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+    '''
     parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
     parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1], nargs='*', help="número de parejas para cada variable en GE_FIX")
-    parser.add_argument('--GE_FIX_LIMITES'     , type=float, default=[1.0, 1.0] , nargs='*', help="una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=str  , default=[1.0, 1.0] , nargs='*', help="una pareja para cada indice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+    '''
     parser.add_argument('--NSAM'               , type=int  , default=3    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
-
     parser.add_argument('--PRECIO_INI'         , type=float, default=0.5,  help="para el caso 5 'pre_ini'")
     parser.add_argument('--FACTOR_CSSH'        , type=float, default=[0.95, 1.0], nargs='*', help="para afectar los coeficientes de la seguridad social de los hohares, caso 8")
     parser.add_argument('--FACTOR_CSSE'        , type=float, default=[1.0 , 1.0, 1.0, 1.0, 1.0, 1.0], nargs='*', help="para afectar los coeficientes de la seguridad social de las empresas, caso 8")
@@ -80,7 +91,7 @@ def valores_opciones():
     parser.add_argument('--SIGMA_ESCENARIO'    , type=float, default=[4.,2.,2.,2.,2.,2.], nargs='*', help="valor de sigma para el escenario 13")
 
     parser.add_argument('--OPT_DESVIOS'        , type=int  , default=1     , help="incluye desvíos redundantes, suele mejorar los resultados y acelerar la convergencia")
-    parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False , help="calcular una primera valoración de modelo")
+    parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=True  , help="calcular una primera valoración de modelo")
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False , help="salida de los valores iniciales de las variables y sus límites")
     parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False , help="salida con el detalla de las desviaciones")
@@ -109,7 +120,7 @@ def valores_opciones():
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
     '''
-    parser.add_argument('--GE_SEMILLA'         , type=int  , default=42    , help="valor inicial del generador de números aleatorios")
+    parser.add_argument('--GE_SEMILLA'         , type=int  , default=333   , help="valor inicial del generador de números aleatorios")
     parser.add_argument('--GE_IMG_FIL'         , type=int  , default=5     , help="número de filas del mapa de gráficos con la evolución de los precios y las variables")
     parser.add_argument('--GE_IMG_COL'         , type=int  , default=6     , help="número de columnas del mapa de gráficos con la evolución de los precios y las variables")
     '''

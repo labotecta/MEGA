@@ -1,5 +1,12 @@
 '''
-Se necesita float64, con float32 no es suficiente
+Se necesita float64, con float32 no es suficiente.
+
+Aúnque scipy es muy eficiente por estar compilada en C, el punto débil es la función objetivo
+que está íntegramente en Python.
+
+Otro asunto sobre el que reflexionar, es la conveniencia de normalizar las desviaciones de las variables en el
+resultado de la función objetivo. La aplicación no los normaliza, se trata de desviaciones en importes y todos
+tienen el mismo peso, sea cual sea el importe absoluto de la variable.
 '''
 import os
 import sys
@@ -27,7 +34,7 @@ import demanda       as deho
 import exterior      as exte
 import restricciones as restri
 
-VERSION = '1.0.7'
+VERSION = '1.0.8'
 # 4 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 #               0            1             2              3
 etq_sam  = ['1_hogar','2_hogares','3_hogares_AMP','MCA-ESP-05']
@@ -52,23 +59,22 @@ etq_caso = [
 
 if __name__ == '__main__':
     '''
-    with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+    with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
         log.write('lectura de parámetros\n')
     '''
-
-# Extrae los argumento de la línea de comandos
+# extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto,
+# ajustando las dimensiones de las matrices 'reshape' cuando corresponde
 try:
     args = argumentos.valores_opciones()
 except BaseException as e:
-    '''
     if __name__ == '__main__':
-        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+        '''
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
             log.write('Error en la lectura de parámetros\n')
             log.write(str(e))
-    '''
+        '''
     print('Error en la lectura de parámetros')
     sys.exit()
-
 nfac = args.NFAC
 ndem = args.NDEM
 nsec = args.NSEC
@@ -78,7 +84,7 @@ FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
         '''
-        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
             log.write('Error. El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac) + '\n')
         '''
         print('Error. El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
@@ -88,7 +94,7 @@ COE_VAB             = np.array(args.COE_VAB, dtype=np.float64)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
         '''
-        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
             log.write('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec) + '\n')
         '''
         print('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
@@ -98,7 +104,7 @@ DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
         '''
-        with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
             log.write('Error. El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL)) + '\n')
         '''
         print('Error. El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
@@ -147,7 +153,7 @@ else:
     if k != n:
         if __name__ == '__main__':
             '''
-            with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+            with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
                 log.write('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n) + '\n')
             '''
             print('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
@@ -155,7 +161,7 @@ else:
     if len(args.GE_FIX_LIMITES) != sum(args.GE_FIX_LON) * 2:
         if __name__ == '__main__':
             '''
-            with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+            with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
                 log.write('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES) + '\n')
             '''
             print('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES))
@@ -166,7 +172,7 @@ else:
         # para cada variable 'i'
         sec = []
         for j in range(args.GE_FIX_LON[i]):
-            # para cada par de la variable
+            # para cada par (lim inferior, lim superior) de la variable
             sec.append(args.GE_FIX_LIMITES[ni:(ni + 2)])
             ni += 2
         GE_FIX_LIMITES[i] = sec
@@ -186,12 +192,12 @@ SENDA_SALIDAS       = args.SENDA_SALIDAS
 SENDA_GRAFICOS      = args.SENDA_GRAFICOS
 if __name__ == '__main__':
     '''
-    with open('erroresMEGA.log', "a", encoding="utf-8") as log:
+    with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
         log.write('OK\n')
     '''
 
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
-# valores desagregados por producto porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
+# valores desagregados por producto, porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
 AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
 aviso_workers = False
 if GE_WORKERS != 1:
@@ -207,7 +213,7 @@ os.makedirs(SENDA_GRAFICOS, exist_ok=True)  # crear el directorio si no existe
 # --------------------------------------------------------------------
 # ATENCION el factor trabajo debe ser la columna 'INDICE_F_TRA' de 'h'
 # --------------------------------------------------------------------
-INDICE_F_TRA = 1        # índice del factor trabajo, es mejor cambiar la definición de la lista 'h' que cambiar este índice
+INDICE_F_TRA = 1        # índice del factor trabajo, es mejor cambiar el orden en la definición de la lista 'h' que cambiar este índice
 
 if   NSAM == 0:
     # Con un solo hogar (consumidor)
@@ -348,29 +354,34 @@ else:
     print('Número de MCS {} incorrecto'.format(NSAM))
     sys.exit()
 
-nsec = len(ind)         # número de sectores
 nfac = len(h)           # número de factores
 ndem = len(dem)         # número de hogares
+nsec = len(ind)         # número de sectores
 
-# componer el nombre de los ficheros de salida en función de las opciones
-CASO  = PREFIJO + h[INDICE_F_TRA] + '_Desv_{:1d}_'.format(OPT_DESVIOS) 
-CASO += 'Fref_{:1d}_'.format(OR_PRE_REFERENCIA) + 'Pref_{:04.2f}_'.format(PRECIO_F_REFERENCIA) + ('PfL_{:05.3f}_'.format(VALOR_F_TRA) if  VALOR_F_TRA != -1 else '')
-CASO += ('END' if FF_ENDOGENA else 'EXO') + ('_Alp' if AHORRO_L_PLAZO else '')
-CASO += '_DimPb_{:03}_W_{:03}_'.format(GE_DIM_POBLACION, GE_WORKERS) + etq_sam[NSAM]
-for nc in NCASO:
-    CASO += '_' + etq_caso[nc] 
-CASO += '_' + GE_ESTRATEGIA + '_' + 'Mcu' if METRICA_ERROR == 0 else ('Mab' if METRICA_ERROR == 1 else 'Mpt' + str(POT_DESVIOS))
-CASO += '_Da_{:1}'.format(DEM_ADICIONAL_TIPO) if abs(DEM_ADICIONAL).sum() != 0 else ''
-CASO += '_Ay_' if abs(AYD_ADICIONAL).sum() != 0 else ''
-CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(GE_FIX)) if len(GE_FIX) > 0 else '')
-CASO += '_{:05}'.format(GE_SEMILLA)
+if len(PREFIJO) > 1 and PREFIJO[0] == '=':
+    # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los
+    # ficheros de salida en lugar de componerlos a partir de las opciones seleccionadas
+    CASO = PREFIJO[1:]
+else:
+    # componer el nombre de los ficheros de salida en función de las opciones
+    CASO  = PREFIJO + h[INDICE_F_TRA] + '_Desv_{:1d}_'.format(OPT_DESVIOS) 
+    CASO += 'Fref_{:1d}_'.format(OR_PRE_REFERENCIA) + 'Pref_{:04.2f}_'.format(PRECIO_F_REFERENCIA) + ('PfL_{:05.3f}_'.format(VALOR_F_TRA) if  VALOR_F_TRA != -1 else '')
+    CASO += ('END' if FF_ENDOGENA else 'EXO') + ('_Alp' if AHORRO_L_PLAZO else '')
+    CASO += '_DimPb_{:03}_W_{:03}_'.format(GE_DIM_POBLACION, GE_WORKERS) + etq_sam[NSAM]
+    for nc in NCASO:
+        CASO += '_' + etq_caso[nc] 
+    CASO += '_' + GE_ESTRATEGIA + '_' + 'Mcu' if METRICA_ERROR == 0 else ('Mab' if METRICA_ERROR == 1 else 'Mpt' + str(POT_DESVIOS))
+    CASO += '_Da_{:1}'.format(DEM_ADICIONAL_TIPO) if abs(DEM_ADICIONAL).sum() != 0 else ''
+    CASO += '_Ay_' if abs(AYD_ADICIONAL).sum() != 0 else ''
+    CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(GE_FIX)) if len(GE_FIX) > 0 else '')
+    CASO += '_{:05}'.format(GE_SEMILLA)
 FICHERO_IMG     = CASO
 SENDA_FI_SALIDA = '{}/{}'.format(SENDA_SALIDAS, CASO)
 FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
 FI_HISTORIAL    = SENDA_FI_SALIDA + '_his.csv'
 FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
 
-# preparar para usar la función 'imprime' que llama a la del módulo 'mfun', pasándole el nombre del fichero donde escribir
+# preparar para usar la función 'imprime' que llama a la del módulo 'mfun' del mismo nombre, pasándole el nombre del fichero donde escribir
 mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
@@ -668,22 +679,45 @@ def salida_calibrado(parametros):
     mfun.cierre(dem)
     imprime('')
 
+def completa_pf(pf, F):
+    if OR_PRE_REFERENCIA == 1:
+        # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución, luego
+        # si es 1, el trabajo es el que no forma parte y estará prefijado (PRECIO_F_REFERENCIA) o debemos calcularlo (precio_factor_trabajo_pFL)
+
+        # Como el vector de prueba no incluye el precio del último factor (el trabajo), añadimos el precio del
+        # último factor con valor 'PRECIO_F_REFERENCIA' si VALOR_F_TRA > 0 o lo calculamos con la curva Phillips si VALOR_F_TRA = 0
+        if VALOR_F_TRA == 0:
+            pf = np.append(pf, deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.PobAct, ALFA_PHILLIPS, datos.pF0[INDICE_F_TRA], datos.F0, F))
+        else:
+            # se fja el precio del capital en PRECIO_F_REFERENCIA
+            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]))
+    else:
+        # Como el vector de prueba no incluye el precio del primer factor (el capital), insertamos al principio el
+        # precio del primer factor con valor 'PRECIO_F_REFERENCIA' 
+        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]))
+        # si VALOR_F_TRA = -1 el precio del factor trabajo es endógeno
+        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
+        if VALOR_F_TRA == 0:
+            # El precio del factor trabajo se calcula con la curva Phillips
+            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.PobAct, ALFA_PHILLIPS, datos.pF0[INDICE_F_TRA], datos.F0, F)
+    return pf
+
 def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     '''
-    Elemento esencial de la función objetivo que calcula el demérito (o penalización) de la solución de
+    Elemento esencial de la función objetivo que calcula el demérito (penalización, o falta de aptitud) de la solución de
     prueba 'vec_opt'.
+    
     Esta función calcula una pareja de valores para cada variable y los pasa a la
     función 'fun_objetivo', que su vez los pasa a la función 'calcula_desvios' que los resta entre sí y
-    devuelve un valor escalar que es el mismo que devuelve 'fun_objetivo'.
+    devuelve un valor escalar que es el valor que devolverá 'fun_objetivo'.
     Esta secuencia de llamadas es útil porque en otras partes de la aplicación necesitamos los valores
     calculados por esta función y no sirve llamar a 'fun_objetivo' que solo devuelve un escalar, así
     mismo, en otros momentos necesitamos calcular los desvíos y de aquí que estos se calculen en
     una función a propósito.
-    '''
-    '''
+
     No tiene sentido que la función 'differential_evolution' pruebe valores para otras variables que no sean las
     que aquí se extraen, porque su valor no se usará ya que son recalculadas inmediatamente en
-    esta función con independencia del valor que tengan en el vector de prueba
+    esta función, con independencia del valor que tengan en el vector de prueba
     '''
     # extraemos los precios del vector de prueba 'vec_opt'
     py = extrae_var(vec_opt, 'pY', 0, nsec)
@@ -709,26 +743,7 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
     
     # el precio del otro factor se añade al principio o al final de 'pf'
-    if OR_PRE_REFERENCIA == 1:
-        # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución, luego
-        # si es 1, el trabajo es el que no forma parte y estará prefijado (PRECIO_F_REFERENCIA) o debemos calcularlo (precio_factor_trabajo_pFL)
-
-        # Como el vector de prueba no incluye el precio del último factor (el trabajo), añadimos el precio del
-        # último factor con valor 'PRECIO_F_REFERENCIA' si VALOR_F_TRA > 0 o lo calculamos con la curva Phillips si VALOR_F_TRA = 0
-        if VALOR_F_TRA == 0:
-            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
-        else:
-            # se fja el precio del capital en PRECIO_F_REFERENCIA
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        # Como el vector de prueba no incluye el precio del primer factor (el capital), insertamos al principio el
-        # precio del primer factor con valor 'PRECIO_F_REFERENCIA' 
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
-        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
-        if VALOR_F_TRA == 0:
-            # El precio del factor trabajo se calcula con la curva Phillips
-            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+    pf = completa_pf(pf, F)
 
     # calculamos los precios del comercio internacional en moneda local
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)        # 6.14 y 6.15
@@ -781,12 +796,14 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     pz = prod.coste_unitario_produccion_pz(ay, py, ax, pq)                              # 6. 5 alternativa
 
     if  FF_ENDOGENA:
-        # se calcula la aportación de factores (FF) como igual a la necesidad de factores (F) por los sectores
+        # se calcula la aportación de factores (FF) como igual a la necesidad de factores (F) por los sectores.
         # en el equilibrio (F) debe ser igual al parámetro de factores necesarios por unidad de
         # produción (ay) por la producción bruta (Z) (6.4)
         FF = deho.aportacion_factores_FF(datos.FF0, F)
         if AHORRO_L_PLAZO:
             # se ahorra a largo plazo (Alp) el exceso de ingresos (FF) respecto a los iniciales (FF0)
+            # lo que significa que no se usará en comprar productos o invertir en los sectores
+            # si AHORRO_L_PLAZO = False, el modelo se retroalimenta además de por los consumos internos, por la demanda final.
             Alp = FF - datos.FF0
             FF = datos.FF0
         else:
@@ -839,7 +856,6 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     # gastos         : Sp + Td + CssH 
     #--------------------------------------------------------------------------------------------------
     Xp = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)    # 6.13
-
     # función CES de sustitución con la que determinar el óptimo entre importar (M) o
     # producir localmente (D), la demanda del producto de Armington (Q)
     #--------------------------------------------------------------------------------------------------
@@ -904,7 +920,6 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     CssEr = gob.seguridad_social_empresas_CssE(parametros.ctzsse, Fr, INDICE_F_TRA)
     CssHr = gob.seguridad_social_hogares_CssH(parametros.ctzssh, FFr, Alpr, INDICE_F_TRA)
     Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, epsilon, datos.Sf0)   # 6.10
-
     Xpr   = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)    # 6.13
     Qr    = exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta)                      # 6.17
     Mr    = exte.importacion_maxima_utilidad_armington_M(parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum)       # 6.18
@@ -1038,7 +1053,7 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
     else:
         des_factores   = abs(F.sum(axis=0) - FF.sum(axis=0)).flatten()  # 6.24
         des_Alp        = np.zeros(ndem, dtype=np.float64)
-    
+
     des_Fi         = abs(F    - Fi  ).flatten()    
     des_F          = abs(Fr   - F   ).flatten()
 
@@ -1376,15 +1391,7 @@ def diferencias_cantidades_finales_iniciales(vec_opt_ini, vec_opt, res_ecuacione
     vec = vec_opt - vec_opt_ini
 
     pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
-    if OR_PRE_REFERENCIA == 1:
-        if VALOR_F_TRA == 0:
-            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
-        else:
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        if VALOR_F_TRA == 0:
-            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+    pf = completa_pf(pf, F)
     imprime('{:10}            {:9.5f}'.format('pF_' + h[0], pf[0]))
     imprime('{:10}            {:9.5f}'.format('pF_' + h[1], pf[1]))
     mfun.i_tabla('precios', etq_precios[1:npre_sol], [], vec[1:npre_sol], True, 5)
@@ -1499,15 +1506,7 @@ def diferencias_importes_finales_iniciales(vec_opt_ini, vec_opt, res_ecuaciones,
     vec = vec_opt - vec_opt_ini
 
     pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
-    if OR_PRE_REFERENCIA == 1:
-        if VALOR_F_TRA == 0:
-            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
-        else:
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        if VALOR_F_TRA == 0:
-            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+    pf = completa_pf(pf, F)
     py = extrae_var(vec_opt, 'pY', 0, nsec)
     pq = extrae_var(vec_opt, 'pQ', 0, nsec)
     pd = extrae_var(vec_opt, 'pD', 0, nsec)
@@ -1628,21 +1627,7 @@ def datos_grafico_solucion(v):
         Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
     pf = extrae_var(v,'pF', 0, nfac - 1)
-    if OR_PRE_REFERENCIA == 1:
-        # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-        if VALOR_F_TRA == 0:
-            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS))
-        else:
-            # se fja el precio del capital en PRECIO_F_REFERENCIA
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
-        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
-        if VALOR_F_TRA == 0:
-            # El precio del factor trabajo se calcula con la curva Phillips
-            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+    pf = completa_pf(pf, F)
     py = extrae_var(v,'pY', 0, nsec)
     pq = extrae_var(v,'pQ', 0, nsec)
     pd = extrae_var(v,'pD', 0, nsec)
@@ -2622,21 +2607,7 @@ if __name__ == '__main__':
             Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
         ) = res_ecuaciones
         pf = extrae_var(vec_opt,'pF', 0, nfac - 1)
-        if OR_PRE_REFERENCIA == 1:
-            # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-            if VALOR_F_TRA == 0:
-                pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS))
-            else:
-                # se fja el precio del capital en PRECIO_F_REFERENCIA
-                pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        else:
-            # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio (0) el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
-            pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-            # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
-            # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
-            if VALOR_F_TRA == 0:
-                # El precio del factor trabajo se calcula con la curva Phillips
-                pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+        pf = completa_pf(pf, F)
         py = extrae_var(vec_opt,'pY', 0, nsec)
         pq = extrae_var(vec_opt,'pQ', 0, nsec)
         pd = extrae_var(vec_opt,'pD', 0, nsec)
@@ -2692,7 +2663,7 @@ if __name__ == '__main__':
         if vf < GE_TOLERANCIA:
             # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
             mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
-            imprime()
+            imprime('')
             imprime('')
             raise StopIteration
         if GE_HISTORIAL > 0:
@@ -3060,21 +3031,7 @@ if __name__ == '__main__':
     imprime('-----------------------------------------------------------')
     imprime('')
     pf = extrae_var(sol,'pF', 0, nfac - 1)
-    if OR_PRE_REFERENCIA == 1:
-        # Como el vector de prueba no incluye el precio del último factor, añadimos el precio del último factor con valor 'PRECIO_F_REFERENCIA'
-        if VALOR_F_TRA == 0:
-            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS))
-        else:
-            # se fja el precio del capital en PRECIO_F_REFERENCIA
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        # Como el vector de prueba no incluye el precio del primer factor, insertamos al principio el precio del primer factor con valor 'PRECIO_F_REFERENCIA'
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
-        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
-        if VALOR_F_TRA == 0:
-            # El precio del factor trabajo se calcula con la curva Phillips
-            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
+    pf = completa_pf(pf, F)
     # verificar la solución, se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
     vec_veri_sol = (
                 pf,
@@ -3133,27 +3090,7 @@ if __name__ == '__main__':
     imprime('--------- ---------- ----------')
 
     pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
-    if OR_PRE_REFERENCIA == 1:
-        # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución, luego
-        # si es 1, el trabajo es el que no forma parte y estará prefijado (PRECIO_F_REFERENCIA) o debemos calcularlo (precio_factor_trabajo_pFL)
-
-        # Como el vector de prueba no incluye el precio del último factor (el trabajo), añadimos el precio del
-        # último factor con valor 'PRECIO_F_REFERENCIA' si VALOR_F_TRA > 0 o lo calculamos con la curva Phillips si VALOR_F_TRA = 0
-        if VALOR_F_TRA == 0:
-            pf = np.append(deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, Fi, ALFA_PHILLIPS))
-        else:
-            # se fja el precio del capital en PRECIO_F_REFERENCIA
-            pf = np.append(pf, np.array([PRECIO_F_REFERENCIA]), axis=0)
-    else:
-        # Como el vector de prueba no incluye el precio del primer factor (el capital), insertamos al principio el
-        # precio del primer factor con valor 'PRECIO_F_REFERENCIA' 
-        pf = np.insert(pf, 0, np.array([PRECIO_F_REFERENCIA]), axis=0)
-        # si VALOR_F_TRA = -1 el precio del fcator trabajo es endógeno
-        # si VALOR_F_TRA > 0 el precio del factor trabajo está acotado a VALOR_F_TRA 
-        if VALOR_F_TRA == 0:
-            # El precio del factor trabajo se calcula con la curva Phillips
-            pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.pF0[INDICE_F_TRA], datos.PobAct, datos.F0, F, ALFA_PHILLIPS)
-
+    pf = completa_pf(pf, F)
     imprime('{:10}            {:9.5f}'.format('pF_' + h[0], pf[0]))
     imprime('{:10}            {:9.5f}'.format('pF_' + h[1], pf[1]))
     mfun.tabla_1Dl(etq_precios[1:npre_sol], vec_opt_ini[1:npre_sol], sol[1:npre_sol])

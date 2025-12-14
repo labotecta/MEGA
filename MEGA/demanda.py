@@ -104,7 +104,7 @@ def aportacion_factores_FF(FF0, F):
     #assert all(abs(FF.sum(axis=0) - F.sum(axis=0)) < 0.0001), 'aportación:\n{}\nuso:\n{}'.format(FF.sum(axis=0), F.sum(axis=0))
     return FF
 
-def precio_factor_trabajo_pFL(INDICE_F_TRA, pF0L, PobAct, F0, F, alfa):
+def precio_factor_trabajo_pFL(INDICE_F_TRA, PobAct, alfa, pF0L, F0, F):
     '''
     tasa de inflacion = C + alfa * tasa desempleo 
     C    =  0,4957
@@ -128,3 +128,4 @@ def precio_factor_trabajo_pFL(INDICE_F_TRA, pF0L, PobAct, F0, F, alfa):
     var_desempleo = (F0[:,INDICE_F_TRA].sum() - F[:,INDICE_F_TRA].sum()) / PobAct
     var_pFL = alfa * var_desempleo
     return pF0L + var_pFL
+    
