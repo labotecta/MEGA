@@ -886,6 +886,11 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     
     # Leontief para comparar, no tiene otro uso
     Zl = prod.produccion_sector_Z(X, ax, Yd, ay)                                                                                    # 6. 5 original
+
+    # recalcular los parámetros ax ay no afecta a los resultados
+    #ax = ecua.coeficientes_consumos_intermedios_ax(X, Z)
+    #ay = ecua.coeficientes_factor_compuesto_ay(Yd, Z)
+
     '''
     Para calcular el demerito de la solución de prueba 'vec_opt', que recibe está función como argumento,
     recalculamos las variables para ver cuánto se diferencian del cálculo previo.
@@ -1620,12 +1625,13 @@ def diferencias_importes_finales_iniciales(vec_opt_ini, vec_opt, res_ecuaciones,
     imprime('')
     imprime('')
 
-def datos_grafico_solucion(v):
+def datos_grafico_solucion(datos, v):
     res_ecuaciones = sec_ecuaciones(v, False)
     (Apz,Fi,Ei,Mi,Di,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
         Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
+    # precios
     pf = extrae_var(v,'pF', 0, nfac - 1)
     pf = completa_pf(pf, F)
     py = extrae_var(v,'pY', 0, nsec)
@@ -1641,6 +1647,15 @@ def datos_grafico_solucion(v):
         pq.flatten(),
         [eP]
     ))
+    # consumos
+    y_dcan =  (Xp[0] - datos.Xp0[0]      ).flatten()
+    y_dimp = ((Xp[0] - datos.Xp0[0]) * pq).flatten()
+    for i in range(1, Xp.shape[0]):
+        y_dcan = np.concatenate((y_dcan,  (Xp[i] - datos.Xp0[i]      ).flatten()))
+        y_dimp = np.concatenate((y_dimp, ((Xp[i] - datos.Xp0[i]) * pq).flatten()))
+    y_dcan = np.concatenate((y_dcan,  (Xg - datos.Xg0      ).flatten()))
+    y_dimp = np.concatenate((y_dimp, ((Xg - datos.Xg0) * pq).flatten()))
+    # producciones
     y_can = np.concatenate((
         Z.flatten(),
         E.flatten(),
@@ -1655,7 +1670,7 @@ def datos_grafico_solucion(v):
         (M  * pm).flatten(),
         (Q  * pq).flatten()
     ))
-    # variación de los factores suministrados por los hogares
+    # factores suministrados por los hogares
     y_sfc_c = FF[0] - datos.FF0[0]
     y_sfc_i = (FF[0] - datos.FF0[0]) * pf
     for i in range(1, ndem):
@@ -1667,7 +1682,7 @@ def datos_grafico_solucion(v):
             y_sfc_i,
             (FF[i] - datos.FF0[i]) * pf
         )) 
-    # variación de los factores utilizados por los sectores
+    # factores utilizados por los sectores
     y_ufc_c = F[0] - datos.F0[0]
     y_ufc_i = (F[0] - datos.F0[0]) * pf
     for i in range(1, nsec):
@@ -1679,7 +1694,7 @@ def datos_grafico_solucion(v):
             y_ufc_i,
             (F[i] - datos.F0[i]) * pf
         )) 
-    return (y_pre, y_can, y_imp, y_sfc_c, y_ufc_c, y_sfc_i, y_ufc_i)
+    return (y_pre, y_dcan, y_dimp, y_can, y_imp, y_sfc_c, y_ufc_c, y_sfc_i, y_ufc_i)
 
 def grafico_evolucion(n_filas_img, n_cols_img, x, y, y_ref, v_marca_x, etq_x, titulo, sufijo):
     if n_filas_img == 1:
@@ -2883,6 +2898,8 @@ if __name__ == '__main__':
         nimg_real = min(nimg, nsol)
         titulo  = []
         y_pre   = []
+        y_dcan  = []
+        y_dimp  = []
         y_can   = []
         y_imp   = []
         y_sfc_c = []
@@ -2893,14 +2910,16 @@ if __name__ == '__main__':
         for v in soluciones[0:nimg_real]:
             titulo.append(n * GE_SOLUCIONES)
             n += 1
-            (y1, y2, y3, y4, y5, y6, y7) = datos_grafico_solucion(v[1])
+            (y1, y2, y3, y4, y5, y6, y7, y8, y9) = datos_grafico_solucion(datos, v[1])
             y_pre.append(y1)
-            y_can.append(y2)
-            y_imp.append(y3)
-            y_sfc_c.append(y4)
-            y_ufc_c.append(y5)
-            y_sfc_i.append(y6)
-            y_ufc_i.append(y7)
+            y_dcan.append(y2)
+            y_dimp.append(y3)
+            y_can.append(y4)
+            y_imp.append(y5)
+            y_sfc_c.append(y6)
+            y_ufc_c.append(y7)
+            y_sfc_i.append(y8)
+            y_ufc_i.append(y9)
         x_sol   = []
         ref_sol = []
         vli_sol = []
@@ -2941,6 +2960,24 @@ if __name__ == '__main__':
 
         grafico_evolucion(nfil, ncol, x, y_pre, ref_y, v_marca_x, etq_x, titulo, 'Pre')
 
+        # parrillas (mosaico de graficos) variación de consumos
+        v_marca_x = []
+        p = 0.5
+        etq_x = []
+        v_marca_x.append(p)
+        for i in range(ndem):
+            etq_x.append('Xp' + str(i + 1))
+            p += Xp.shape[1]
+            v_marca_x.append(p)
+        etq_x.append('Xg')
+        x  = []
+        for i in range(len(y_dcan[0])):
+            x.append(i + 1)
+        ref_y = np.zeros(((ndem + 1) * nsec),dtype=np.float64)
+
+        grafico_evolucion(nfil, ncol, x, y_dcan, ref_y, v_marca_x, etq_x, titulo, 'VdemCtd')
+        grafico_evolucion(nfil, ncol, x, y_dimp, ref_y, v_marca_x, etq_x, titulo, 'VdemImp')
+
         # parrillas (mosaico de graficos) de cantidades e importes
         etq_x = ['Z','E','D','M','Q']
         x  = []
@@ -2975,8 +3012,8 @@ if __name__ == '__main__':
         eli_sol.append(copy.deepcopy(etq_x))
         eli_sol.append(copy.deepcopy(etq_x))
 
-        grafico_evolucion(nfil, ncol, x, y_can, ref_y, v_marca_x, etq_x, titulo, 'Ctd')
-        grafico_evolucion(nfil, ncol, x, y_imp, ref_y, v_marca_x, etq_x, titulo, 'Imp')
+        grafico_evolucion(nfil, ncol, x, y_can, ref_y, v_marca_x, etq_x, titulo, 'Pro_Ctd')
+        grafico_evolucion(nfil, ncol, x, y_imp, ref_y, v_marca_x, etq_x, titulo, 'Pro_Imp')
 
         # parrillas (mosaico de graficos) variaciones en el suministro de factores
         etq_x = dem
@@ -2989,8 +3026,8 @@ if __name__ == '__main__':
         for i in range(ndem):
             v_marca_x.append(p)
             p += nfac
-        grafico_evolucion(nfil, ncol, x, y_sfc_c, ref_y, v_marca_x, etq_x, titulo, 'VsFc')
-        grafico_evolucion(nfil, ncol, x, y_sfc_i, ref_y, v_marca_x, etq_x, titulo, 'VsFi')
+        grafico_evolucion(nfil, ncol, x, y_sfc_c, ref_y, v_marca_x, etq_x, titulo, 'V_apor_Fac_Ctd')
+        grafico_evolucion(nfil, ncol, x, y_sfc_i, ref_y, v_marca_x, etq_x, titulo, 'V_apor_Fac_Imp')
 
         # parrillas (mosaico de graficos) variaciones en el uso de factores
         etq_x = ind
@@ -3003,14 +3040,14 @@ if __name__ == '__main__':
             v_marca_x.append(p)
             p += nfac
         ref_y = np.zeros((nsec * nfac),dtype=np.float64)
-        grafico_evolucion(nfil, ncol, x, y_ufc_c, ref_y, v_marca_x, etq_x, titulo, 'VuFc')
-        grafico_evolucion(nfil, ncol, x, y_ufc_i, ref_y, v_marca_x, etq_x, titulo, 'VuFi')
+        grafico_evolucion(nfil, ncol, x, y_ufc_c, ref_y, v_marca_x, etq_x, titulo, 'V_uso_Fac_Ctd')
+        grafico_evolucion(nfil, ncol, x, y_ufc_i, ref_y, v_marca_x, etq_x, titulo, 'V_uso_Fac_Imp')
 
         # gráfico de la última solución
         titulo = ['Precios', 'Cantidades', 'Importes']
         MUESTRA_PROGRESO = False
-        (y1, y2, y3, y4, y5, y6, y7) = datos_grafico_solucion(soluciones[-1][1])
-        y_sol = [y1 ,y2, y3]
+        (y1, y2, y3, y4, y5, y6, y7, y8, y9) = datos_grafico_solucion(datos, soluciones[-1][1])
+        y_sol = [y1, y4, y5]
         grafico_resumen(x_sol, y_sol, ref_sol, vli_sol, eli_sol, titulo)
     if SAL_AUXILIARES:
         # escribir el fichero con el historial 
