@@ -1060,12 +1060,11 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
         des_Alp        = np.zeros(ndem, dtype=np.float64)
 
     des_Fi         = abs(F    - Fi  ).flatten()    
-    des_F          = abs(Fr   - F   ).flatten()
-
     des_Ei         = abs(E    - Ei  ).flatten()    
-    des_E          = abs(Er   - E   ).flatten()    
-
     des_Mi         = abs(M    - Mi  ).flatten()    
+
+    des_F          = abs(Fr   - F   ).flatten()
+    des_E          = abs(Er   - E   ).flatten()    
     des_M          = abs(Mr   - M   ).flatten()    
 
     des_FF         = abs(FFr  - FF  ).flatten()
@@ -1074,7 +1073,7 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
 
     des_Z          = abs(Zr   - Z   ).flatten()
     des_X          = abs(Xr   - X   ).flatten()    
-    des_Xp         = abs(Xpr  - Xp  ).flatten()    
+    des_Xp         = abs(Xpr  - Xp  ).flatten()
     des_Xg         = abs(Xgr  - Xg  ).flatten()    
     des_Xv         = abs(Xvr  - Xv  ).flatten()    
     des_Q          = abs(Qr   - Q   ).flatten()    
@@ -1087,7 +1086,6 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
     des_AgH        = abs(AgHr - AgH ).flatten()    
     des_CssE       = abs(CssEr- CssE).flatten()    
     des_CssH       = abs(CssHr- CssH).flatten()
-    
     if OPT_DESVIOS == 0:
         # Se incluyen desvíos redundantes, pero puede acelerar la convergencia y producir mejores resultados
         des_Di         = abs(Dt   - Di  ).flatten()
@@ -1097,8 +1095,8 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
         des_Yd         = abs(Ydr  - Yd  ).flatten()    
         desvios = np.concatenate(
             (   des_produccion,des_factores,des_Apz,des_ebp,
-                des_Fi,des_Ei,des_Mi,des_Di,
-                des_F,des_M,des_E,
+                des_Fi,des_Mi,des_Ei,des_Di,
+                des_F ,des_M ,des_E,
                 des_Da,des_Dt,
                 des_Dat,
                 des_Yp,des_Yd,
@@ -1110,8 +1108,8 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
     else:
         desvios = np.concatenate(
             (   des_produccion,des_factores,des_Apz,des_ebp,
-                des_Fi,des_Ei,des_M,
-                des_F,des_M,des_E,
+                des_Fi,des_Mi,des_Ei,
+                des_F ,des_M ,des_E,
                 des_Dat,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
@@ -2568,6 +2566,7 @@ if __name__ == '__main__':
         imprime('Métrica del error: Valor absoluto')
     else:
         imprime('Métrica del error: Desvios elevados a {}'.format(POT_DESVIOS))
+    imprime('Cálculo desvios                  : {}'.format('Redundante' if OPT_DESVIOS==0 else 'Simple'))
     imprime('-------------------------------------------------------------------')
     imprime('-------------------------------------------------------------------')
     imprime('')
