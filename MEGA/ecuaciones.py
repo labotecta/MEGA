@@ -1,9 +1,10 @@
 import numpy as np
 
-def CobbDouglas_alfa(X):
+def demanda_CobbDouglas_alfa(X):
     '''
     calcula los valores del parámetro alfa de la funcion de utilidad.
     igual a la fracción de producto demandado por cada consumidor, dividido por su total demandado
+    al normalizarlos a 1 no se necesitan los precios de los productos ni la renta de los hogares
     
     argumentos:
         X: demanda de los hogares a cada sector len(dem) x len(ind)
@@ -17,7 +18,33 @@ def CobbDouglas_alfa(X):
             alfa[k,i] = X[k,i] / suma[k]
     return alfa
 
-def CobbDouglas_beta(F):
+def demanda_CobbDouglas_esencial_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
+    '''
+    calcula los valores del parámetro alfa de la funcion de utilidad con consumos esenciales (Stone Geary).
+    
+    argumentos:
+        renta    : ingresos de  cada hogar
+        X        : cantidad demandada por cada hogar a cada sector len(dem) x len(ind)
+        con_esen : cantidad de consumo esencial de cada producto por cada hogar
+        pQ       : precio de los produtos
+    '''
+    nfac = FF.shape[1]
+    ndem = Xp.shape[0]
+    nsec = Xp.shape[1]
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)                 # ingreso total de cada hogar
+    for consu in range(ndem):
+        for factor in range(nfac):
+            ingreso_neto[consu] += FF[consu,factor] * pf[factor]
+    gasto_esencial      = (con_esen * pq).sum(axis=1)       # gasto esencial de cada hogar
+    renta_disponible    = ingreso_neto - gasto_esencial          # renta una vez pagados los consumos esenciales
+    consumo_no_esencial = Xp - con_esen                      # cantidad de consumo de cada producto por encima del esencial
+    alfa = np.zeros((ndem,nsec), dtype=np.float64)
+    for k in range(ndem):
+        for i in range(nsec):
+            alfa[k,i] = consumo_no_esencial[k,i] * pq[i] / renta_disponible[k]
+    return alfa
+
+def demanda_CobbDouglas_beta(F):
     '''
     Obtiene, para cada sector, los coeficientes de participación (beta) de los factores en la función de producción
     F : utilización de factores por cada sector (2, 2)
@@ -31,7 +58,7 @@ def CobbDouglas_beta(F):
             beta[i,j] = F[i,j] / denominador[i]
     return beta
 
-def CobbDouglas_b(Y, F, beta):
+def demanda_CobbDouglas_b(Y, F, beta):
     '''
     El factor de escala, en el contexto de la función de producción, se refiere a cómo cambia
     la producción cuando todos los factores de producción se incrementan en la misma proporción

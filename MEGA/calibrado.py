@@ -338,7 +338,7 @@ class datos(object):
         self.PobAct = ecua.poblacion_activa_PobAct(INDICE_F_TRA, self.FF0, PARO_INICIAL)
 
 class parametros(object):
-    def __init__(self, datos, ncon, nsec, INDICE_F_TRA):
+    def __init__(self, datos, ncon, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES):
         # elasticidad de sustitución, entre local e importación, del producto de Argminton (CES)
         # la elasticidad de sustitución es la misma en cualquier punto a lo largo de una isocuanta, sin importar cual sea la relación en que son utilizados los insumos. 
         # variable exógena puesta a 2.
@@ -420,12 +420,14 @@ class parametros(object):
         calibrar
         '''
         # coeficientes de participación (alfa) de los productos en la utilidad de la demanda
-        self.alfa = ecua.CobbDouglas_alfa(datos.Xp0)
-        
+        self.alfa = ecua.demanda_CobbDouglas_alfa(datos.Xp0)
+        if DEM_ESENCIALES:
+            self.alfa_esen = ecua.demanda_CobbDouglas_esencial_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+
         # coeficientes de participación (beta) de los factores en la función del factor compuesto de cada sector
-        self.beta  = ecua.CobbDouglas_beta(datos.F0)
+        self.beta  = ecua.demanda_CobbDouglas_beta(datos.F0)
         # coeficiente de escala de la función del factor compuesto
-        self.b     = ecua.CobbDouglas_b(datos.Y0, datos.F0, self.beta)
+        self.b     = ecua.demanda_CobbDouglas_b(datos.Y0, datos.F0, self.beta)
         
         # coeficientes de consumos intermedios
         self.ax    = ecua.coeficientes_consumos_intermedios_ax(datos.X0, datos.Z0)

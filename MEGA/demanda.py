@@ -39,7 +39,7 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
 
     FF : factores aportados por cada hogar (consumidor). Variable endógena
 
-    'ingreso' : '(ff.dot(pf)-Sp-Td-CssH)' ingresos de cada hogar por la venta de todos sus factores más
+    'ingreso' : '(FF.dot(pf)-Sp-Td-CssH)' ingresos de cada hogar por la venta de todos sus factores más
     los ingresos de la seguridad social y las ayudas del gobierno (Agh), menos la cantidad que ahorran (Sp),
     los impuestos directos (Td), y la cotización a la seguridad social (CssH). Es un vector len(dem)
 
@@ -50,10 +50,10 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
     finalmente trasponemos el resultado para que la demanda sea un vector (num productos, 1)
     con la misma forma que los precios
 
+    nfac = FF.shape[1]
     ndem = alfa.shape[0]
     nsec = alfa.shape[1]
     Xp = np.zeros((ndem, nsec), dtype=np.float64)
-    nfac = FF.shape[1]
 
     # ingresos de cada consumidor, incluidas las ayudas del gobierno y los ingresos recibidos de
     # la seguridad social, y netos de ahorros e impuestos
@@ -73,6 +73,47 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
         # se añade 'inc_dem' a la cantidad demandada 
         Xp = ((alfa.T * (FF.dot(pf) + AgH + PssH - (Sp + Td + CssH))).T) / pq  + inc_dem
 
+    return Xp
+
+def demanda_maxima_utilidad_CobbDouglas_esencial_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem):
+    '''
+    devuelve la matriz con las cantidades óptimas de productos demandados Xp
+
+    FF : factores aportados por cada hogar (consumidor). Variable endógena
+
+    'ingreso' : '(FF.dot(pf)-Sp-Td-CssH)' ingresos de cada hogar por la venta de todos sus factores más
+    los ingresos de la seguridad social y las ayudas del gobierno (Agh), menos la cantidad que ahorran (Sp),
+    los impuestos directos (Td), y la cotización a la seguridad social (CssH). Es un vector len(dem)
+
+    el importe óptimo de cada producto lo dividimos por el precio de cada producto (pq) para pasarlo a cantidad.
+    pp tiene las dimensiones (num productos, 1)
+    trasponemos alfa para que tenga la misma dimensión que el precio y la
+    división sea componente a componente [0]/[0], [1]/[1], ...
+    finalmente trasponemos el resultado para que la demanda sea un vector (num productos, 1)
+    con la misma forma que los precios
+    '''
+
+    nfac = FF.shape[1]
+    ndem = alfa.shape[0]
+    nsec = alfa.shape[1]
+
+    # ingresos de cada consumidor, incluidas las ayudas del gobierno y los ingresos recibidos de
+    # la seguridad social, y netos de ahorros e impuestos
+    ingreso_neto   = AgH + PssH - (Sp + Td + CssH)             # ingreso total de cada hogar
+    for consu in range(ndem):
+        # ingresos del consumidor 'consu' por la prestación de factores
+        for factor in range(nfac):
+            ingreso_neto[consu] += FF[consu,factor] * pf[factor]
+    gasto_esencial   = (con_esen * pq).sum(axis=1)        # gasto esencial de cada hogar
+    renta_disponible = ingreso_neto - gasto_esencial
+    # consumo optimo de productos
+    Xp = np.zeros((ndem, nsec), dtype=np.float64)
+    for consu in range(ndem):
+        for sector in range(nsec):
+            if inc_dem_tipo == 0:
+                Xp[consu,sector] = con_esen[consu,sector] + (alfa[consu,sector] * renta_disponible[consu] + inc_dem[consu,sector]) / pq[sector]
+            else:
+                Xp[consu,sector] = con_esen[consu,sector] + (alfa[consu,sector] * renta_disponible[consu]) / pq[sector] + inc_dem[consu,sector]
     return Xp
 
 def aportacion_factores_FF(FF0, F):
