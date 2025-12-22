@@ -53,7 +53,7 @@ etq_caso = [
     'dem_alfa',                 #  9
     'dem_alfa_factores',        # 10
     'dem_factores',             # 11
-    # si se usa el caso 0 para ayudas están no irán destinadas de forma diferenciada a los productos, para esto hay que modificar los alfa  
+    # usar el caso 0 para ayudas no es equivalente al caso 12 porque estas no irán destinadas de forma diferenciada a los productos, para esto hay que modificar los alfa  
     'alfa_ayudas',              # 12
     'sigma',                    # 13
     'aranceles',                # 14

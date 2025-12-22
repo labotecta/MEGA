@@ -10,6 +10,10 @@ def sab(v):
 def valores_opciones():
     parser = argparse.ArgumentParser()
     '''
+    # habría que eliminar 9, 10 y 11 los incrementos de demanda se deben hacer con el caso 0 ya que DEM_ADICIONAL se añade a los consumos calculados con sus respectivas preferencias
+
+    # usar el caso 0 para ayudas no es equivalente al caso 12 porque estas no irán destinadas de forma diferenciada a los productos, para esto hay que modificar los alfa  
+
     NCASO
         'base',                 #  0
         'alfa',                 #  1
