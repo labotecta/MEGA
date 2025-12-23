@@ -18,6 +18,20 @@ def demanda_CobbDouglas_alfa(X):
             alfa[k,i] = X[k,i] / suma[k]
     return alfa
 
+def demanda_CobbDouglas_esencial_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
+    '''
+    para comprobar que todas las rentas son mayore que cero
+    '''
+    nfac = FF.shape[1]
+    ndem = Xp.shape[0]
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)                 # ingreso total de cada hogar
+    for consu in range(ndem):
+        for factor in range(nfac):
+            ingreso_neto[consu] += FF[consu,factor] * pf[factor]
+    gasto_esencial   = (con_esen * pq).sum(axis=1)       # gasto esencial de cada hogar
+    renta_disponible = ingreso_neto - gasto_esencial          # renta una vez pagados los consumos esenciales
+    return renta_disponible
+
 def demanda_CobbDouglas_esencial_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
     '''
     calcula los valores del parámetro alfa de la funcion de utilidad con consumos esenciales (Stone Geary).
