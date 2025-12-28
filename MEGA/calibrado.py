@@ -423,13 +423,13 @@ class parametros(object):
         # coeficientes de participación (alfa) de los productos en la utilidad de la demanda
         self.alfa = ecua.demanda_CobbDouglas_alfa(datos.Xp0)
         if DEM_ESENCIALES:
-            renta = ecua.demanda_CobbDouglas_esencial_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+            renta = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
             if np.any(renta <= 0):
                 print('Renta menor o igual a 0')
                 for i in range(len(renta)):
                     print('{:3} {:12.5e}'.format(i + 1, renta[i]))
                 sys.exit()
-            self.alfa_esen = ecua.demanda_CobbDouglas_esencial_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+            self.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
 
         # coeficientes de participación (beta) de los factores en la función del factor compuesto de cada sector
         self.beta  = ecua.demanda_CobbDouglas_beta(datos.F0)

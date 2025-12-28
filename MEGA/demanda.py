@@ -75,9 +75,9 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
 
     return Xp
 
-def demanda_maxima_utilidad_CobbDouglas_esencial_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem):
+def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem):
     '''
-    devuelve la matriz con las cantidades óptimas de productos demandados Xp
+    devuelve la matriz con las cantidades óptimas de productos demandados Xp calculada con la función Stone Geary
 
     FF : factores aportados por cada hogar (consumidor). Variable endógena
 

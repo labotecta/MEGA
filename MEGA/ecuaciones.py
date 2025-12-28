@@ -18,9 +18,9 @@ def demanda_CobbDouglas_alfa(X):
             alfa[k,i] = X[k,i] / suma[k]
     return alfa
 
-def demanda_CobbDouglas_esencial_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
+def demanda_StoneGeary_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
     '''
-    para comprobar que todas las rentas son mayore que cero
+    para comprobar que todas las rentas son mayores que los consumos esenciales
     '''
     nfac = FF.shape[1]
     ndem = Xp.shape[0]
@@ -32,7 +32,7 @@ def demanda_CobbDouglas_esencial_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen
     renta_disponible = ingreso_neto - gasto_esencial          # renta una vez pagados los consumos esenciales
     return renta_disponible
 
-def demanda_CobbDouglas_esencial_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
+def demanda_StoneGeary_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
     '''
     calcula los valores del parámetro alfa de la funcion de utilidad con consumos esenciales (Stone Geary).
     

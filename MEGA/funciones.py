@@ -46,8 +46,11 @@ def i_tabla(rot, cab, etq, valores, pie, DECIMALES=6):
         else:
             if rot != '':
                 imprime('{:12}'.format(''), False)
+        suma = 0.
         for j in range (ncols):
+            suma += valores[j]
             imprime(' {:12.{prec}f}'.format(valores[j], prec=DECIMALES), False)
+        imprime(' {:12.{prec}f}'.format(suma, prec=DECIMALES), False)
         imprime('')
     else:
         # matriz 2D
@@ -59,8 +62,11 @@ def i_tabla(rot, cab, etq, valores, pie, DECIMALES=6):
             else:
                 if rot != '':
                     imprime('{:12}'.format(''), False)
+            suma = 0.
             for j in range (ncols):
+                suma += valores[i,j]
                 imprime(' {:12.{prec}f}'.format(valores[i,j], prec=DECIMALES), False)
+            imprime(' {:12.{prec}f}'.format(suma, prec=DECIMALES), False)
             imprime('')
     if pie:
         i_pie(rot, cab)

@@ -75,9 +75,10 @@ except BaseException as e:
         '''
     print('Error en la lectura de parámetros')
     sys.exit()
-nfac = args.NFAC
-ndem = args.NDEM
-nsec = args.NSEC
+
+nfac = args.NFAC    # número de factores
+ndem = args.NDEM    # número de hogares
+nsec = args.NSEC    # número de sectores
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
 NCASO               = np.array(args.NCASO, dtype=int)
@@ -154,6 +155,7 @@ GE_VAR_MAX          = np.float64(args.GE_VAR_MAX)
 GE_VAR_CERO         = np.float64(args.GE_VAR_CERO)
 if len(args.GE_FIX) == 0 or args.GE_FIX[0] == '':
     GE_FIX = []
+    GE_FIX_LIMITES = np.zeros(0, dtype=list)
 else:
     GE_FIX = args.GE_FIX
     k = len(args.GE_FIX)
@@ -228,6 +230,7 @@ if __name__ == '__main__':
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
 # valores desagregados por producto, porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
 AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
+
 aviso_workers = False
 if GE_WORKERS != 1:
     # aunque se modifica automáticamente, no está de más especificarlo por transparencia
@@ -383,9 +386,30 @@ else:
     print('Número de MCS {} incorrecto'.format(NSAM))
     sys.exit()
 
-nfac = len(h)           # número de factores
-ndem = len(dem)         # número de hogares
-nsec = len(ind)         # número de sectores
+if nfac != len(h):
+    if __name__ == '__main__':
+        '''
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error. El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
+        '''
+        print('Error. El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
+    sys.exit()
+if ndem != len(dem):
+    if __name__ == '__main__':
+        '''
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error. El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
+        '''
+        print('Error. El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
+    sys.exit()
+if nsec != len(ind):
+    if __name__ == '__main__':
+        '''
+        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
+            log.write('Error. El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
+        '''
+        print('Error. El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
+    sys.exit()
 
 if len(PREFIJO) > 1 and PREFIJO[0] == '=':
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los
@@ -404,6 +428,7 @@ else:
     CASO += '_Ay_' if abs(AYD_ADICIONAL).sum() != 0 else ''
     CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(GE_FIX)) if len(GE_FIX) > 0 else '')
     CASO += '_{:05}'.format(GE_SEMILLA)
+
 FICHERO_IMG     = CASO
 SENDA_FI_SALIDA = '{}/{}'.format(SENDA_SALIDAS, CASO)
 FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
@@ -719,6 +744,125 @@ def salida_calibrado(parametros):
     mfun.cierre(dem)
     imprime('')
 
+def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
+          ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_min, ge_var_max,
+          ind_pvec_desde, ge_fix, ge_fix_limites, ge_incluye_xp, con_esenciales):
+    # definir el rango de variación de los precios y variables
+    bnds = []
+    for i in range(nvec_opt):
+        bnds.append((0.,0.))
+
+    # precios
+    for i in range(npre_sol):
+        if i == 0 and or_pre_referencia != indice_f_tra and valor_f_tra > 0:
+            # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución
+            # el que forma parte es el otro, luego si OR_PRE_REFERENCIA es el capital (!= INDICE_F_TRA),
+            # el incluido en la solución es el trabajo y lo hacemos igual a VALOR_F_TRA, salvo que sea 0 o -1
+            vi = valor_f_tra
+            vs = valor_f_tra
+        else:
+            v = vec_opt[i]
+            if abs(v) < ge_tolerancia:
+                # para evitar que los precios inicialmente a 0 queden acotados a (0,0)
+                vi = 0.
+                vs = 3.
+            else:
+                vi = v / ge_pre_min
+                vs = v * ge_pre_max
+        bnds[i] = ((vi,vs))
+
+    # variables
+    if len(ge_fix) > 0:
+        # se va a guardar la fila de 'GE_FIX_LIMITES' y el puntero que le corresponde, porque luego necesitamos ordenar
+        # 'pt' por punteros de menor a mayor
+        pt = np.zeros((len(ge_fix), 2), dtype=int)
+        n = 0
+        for clave in ge_fix:
+            # fila de 'GE_FIX_LIMITES'
+            pt[n,0] = n  
+            # puntero al inicio de la variable
+            pt[n,1] = ind_pvec_desde[clave]
+            n += 1
+        # ordenar 'pt'
+        filas = np.argsort(pt[:,1]);
+        pt = pt[filas]
+    else:
+        pt = np.zeros((1, 2), dtype=int)
+        pt[0,1] = -1
+
+    # desde el principio por si se han establecido límites manualmente para algún precio
+    i = 0
+    for ii in range(0, nvec_opt):
+        n = 0
+        esta = False
+        if i <= pt[-1, 1]:
+            # 'i' aún no ha superado el último puntero
+            for nf in range(len(ge_fix)):
+                if i == pt[nf,1]:
+                    # se han especificado limites (en la fila n) para esta variable
+                    n = pt[nf,0]
+                    esta = True
+                    for j in range(len(ge_fix_limites[n])):
+                        # para cada pareja 'j' de limites del vector 'n'
+                        
+                        # límite inferior
+                        if type(ge_fix_limites[n][j][0]) is str:
+                            if ge_fix_limites[n][j][0] == '*':
+                                # no se ha fijado valor, se usa el criterio general
+                                v = vec_opt[i]
+                                if abs(v) < 0.001:
+                                    vi = np.float64(-ge_var_cero)
+                                else:
+                                    vi = v / ge_var_min
+                            else:
+                                vi = vec_opt[i]
+                        else:
+                            vi = ge_fix_limites[n][j][0]
+
+                        # límite superior
+                        if type(ge_fix_limites[n][j][1]) is str:
+                            if ge_fix_limites[n][j][1] == '*':
+                                # no se ha fijado valor, se usa el criterio general
+                                v = vec_opt[i]
+                                if abs(v) < 0.001:
+                                    vs = np.float64(+ge_var_cero)
+                                else:
+                                    vs = v * ge_var_max
+                            else:
+                                vs = vec_opt[i]
+                        else:
+                            vs = ge_fix_limites[n][j][1]
+                        bnds[i] = ((vi,vs))
+                        i += 1
+                    break
+        if i < npre_sol:
+            # ignorar si no se han establecido límites manualmente para algún precio
+            i += 1
+        else:
+            if esta == False:
+                # criterio general
+                v = vec_opt[i]
+                # para evitar que las variables inicialmente a 0 queden acotadas a (0,0)
+                if abs(v) < 0.001:
+                    vi = np.float64(-ge_var_cero)
+                    vs = np.float64(+ge_var_cero)
+                else:
+                    vi = v / ge_var_min
+                    vs = v * ge_var_max
+                bnds[i] = ((vi,vs))
+                i += 1
+        if i == nvec_opt:
+            break
+    if ge_incluye_xp and abs(con_esenciales).sum() != 0:
+        # acotar consumos de los hogares Xp
+        i = ind_pvec_desde['Xp']
+        for j in range(ndem):
+            for k in range(nsec):
+                vi = con_esenciales[j][k]
+                bnds[i] = (vi,bnds[i][1])
+                i += 1
+    return bnds
+
 def completa_pf(pf, F):
     if OR_PRE_REFERENCIA == 1:
         # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución, luego
@@ -742,14 +886,15 @@ def completa_pf(pf, F):
             pf[INDICE_F_TRA] = deho.precio_factor_trabajo_pFL(INDICE_F_TRA, datos.PobAct, ALFA_PHILLIPS, datos.pF0[INDICE_F_TRA], datos.F0, F)
     return pf
 
-def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
+def sec_ecuaciones(vec_opt, muestra_progreso):
     '''
     Elemento esencial de la función objetivo que calcula el demérito (penalización, o falta de aptitud) de la solución de
     prueba 'vec_opt'.
     
-    Esta función calcula una pareja de valores para cada variable y los pasa a la
-    función 'fun_objetivo', que su vez los pasa a la función 'calcula_desvios' que los resta entre sí y
-    devuelve un valor escalar que es el valor que devolverá 'fun_objetivo'.
+    Esta función calcula una pareja de valores para cada variable y los pasa a la función 'fun_objetivo'
+    en realidad es 'fun_objetivo' quien llama a esta función para luego pasar el resultado a
+    la función 'calcula_desvios' que los resta entre sí y devuelve un valor escalar que
+    es el valor que devolverá 'fun_objetivo'.
     Esta secuencia de llamadas es útil porque en otras partes de la aplicación necesitamos los valores
     calculados por esta función y no sirve llamar a 'fun_objetivo' que solo devuelve un escalar, así
     mismo, en otros momentos necesitamos calcular los desvíos y de aquí que estos se calculen en
@@ -758,12 +903,19 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     No tiene sentido que la función 'differential_evolution' pruebe valores para otras variables que no sean las
     que aquí se extraen, porque su valor no se usará ya que son recalculadas inmediatamente en
     esta función, con independencia del valor que tengan en el vector de prueba
+
+    Podría pensarse en mejorar la eficiencia de esta función si en el momento en que los dos
+    cálculos de una variable difieran significtivamente, no seguir calculando, pero es un error,
+    necesitamos asignar un valor a cada solución de prueba y poder diferenciar unas de otras por su
+    verdadero mérito lo que exige calcular todas las parejas de valores.
     '''
     # extraemos los precios del vector de prueba 'vec_opt'
     py = extrae_var(vec_opt, 'pY', 0, nsec)
     pq = extrae_var(vec_opt, 'pQ', 0, nsec)
     pd = extrae_var(vec_opt, 'pD', 0, nsec)
     epsilon = extrae_var(vec_opt, 'epsilon', 0, 0)
+    
+    # variable de holgura
     Apz = extrae_var(vec_opt, 'Apz', 0, nsec)
 
     # extraemos los valores de las 'variables de inicio' del vector de prueba 'vec_opt'
@@ -777,20 +929,25 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     Ei = copy.deepcopy(E)
     Mi = copy.deepcopy(M)
     Di = copy.deepcopy(D)
-    
-    if GE_INCLUYE_XP:
-        Xpi = copy.deepcopy(extrae_var(vec_opt, 'Xp', ndem, nsec))
 
     # el precio de los factores tiene un tratamiento especial, en el vector solución solo se incluye
     # un precio: el del capital o el del trabajo, según OR_PRE_REFERENCIA sea 0 o 1
     pf = extrae_var(vec_opt, 'pF', 0, nfac - 1)
-    
     # el precio del otro factor se añade al principio o al final de 'pf'
     pf = completa_pf(pf, F)
-
     # calculamos los precios del comercio internacional en moneda local
-    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)        # 6.14 y 6.15
+    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)            # 6.14 y 6.15
+    
+    if GE_INCLUYE_XP:
+        # el vector solución incluye los consumos de los hogares, necesario si se quiere acotar el
+        # valor de los mismos, por ejemplo, para usar una función de utilidad con consumos esenciales
+        Xpi = copy.deepcopy(extrae_var(vec_opt, 'Xp', ndem, nsec))
 
+    # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes
+    # se pueden recalcular mediante:
+    #   ax = ecua.coeficientes_consumos_intermedios_ax(X, Z)
+    #   ay = ecua.coeficientes_factor_compuesto_ay(Yd, Z)
+    # pero los resultados no cambian practicamente nada.
     ax = parametros.ax
     ay = parametros.ay
     
@@ -802,17 +959,17 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
 
     # Producción
     #--------------------------------------------------------------------------------------------------
-    # 'Y' factor compuesto optimo para por cada sector, dadas las utilizaciones de factores de
-    # producción F y la función de producción Cobb Douglas correspondiente
-    # en el equilibrio debe ser igual a la necesidad (Yd) de factor compuesto dada una producción bruta Z (6. 4)
+    # (Y) factor compuesto óptimo para por cada sector, dadas las utilizaciones de factores de
+    # producción (F) y la función de producción Cobb Douglas correspondiente.
+    # en el equilibrio debe ser igual a la necesidad (Yd) de factor compuesto dada una producción bruta (Z) (6. 4)
     Yp = prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)           # 6. 1
     
-    # traemos el cálculo de Z aquí porque solo depende de las endógenas E y D que forman parte del vector de prueba
+    # traemos el cálculo de (Z) aquí porque solo depende de las endógenas (E) y (D) que forman parte del vector de prueba
     # el reparto de la producción bruta de un sector (Z) entre exportación (E) y suministro local (D) debe cumplir la
     # relación siguiente
     Z  = exte.restriccion_producción_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi) # 6.20
 
-    # dada la producción Z del sector 'i' (demanda de su producto) calculamos la utilización (X) de
+    # dada la producción (Z) del sector 'i' (demanda de su producto) calculamos la utilización (X) de
     # consumos intermedios 'j', que hace 'i' por aplicación de los coeficientes 'ax' deducidos de la MCS
     X = prod.consumo_intermedio_X(Z, ax)                                                # 6. 3
 
@@ -820,24 +977,22 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     # producción bruta (Z) por lo que necesita por unidad de producción (ay)
     Yd = prod.utilizacion_factor_compuesto_Y(Z, ay)                                     # 6. 4
 
-    # recalculamos los F óptimos de los sectores. En el equilibrio los (F) recalculados deben coincidir con los
+    # recalculamos los (F) óptimos de los sectores. En el equilibrio los (F) recalculados deben coincidir con los
     # (Fi) utilizados en el cálculo de 'Yp' que se ha hecho antes.
     # Esta ecuación determina la combinación óptima de factores, el total de los mismos (Yp) para cada sector debe coincidir
-    # con (Yd) que es el obtenido en la ecuación (6.4), es decir, igual al parámetro de factores necesarios por
-    # unidad de produción (ay) por la producción bruta (Z)
-    # de momento usamos la media de los dos cálculos de Y
+    # con (Yd) que es el obtenido en la ecuación (6.4), es decir, igual al producto del parámetro de factores necesarios por
+    # unidad de produción (ay) por la producción bruta (Z).
+    # de momento usamos la media de los dos cálculos de (Y)
     F = prod.uso_optimo_factores_F(parametros.beta, pf, py, (Yp + Yd) / 2.)             # 6. 2
 
-    # La variación de la suma del factor compuesto respecto del factor compuesto de la MCS
-    # es la variación de factores de producción que deben aportar los hogares FF
-    # en el caso de que los FF sean constantes la ecuación de cierre exige que la suma de
-    # variaciones sea cero
-    # Si FF es endógena este es lo que hay que incrementar FF0
-
-    # producción bruta
-    # se usa la ecuación alternativa que no necesita el cálculo de un valor mínimo
+    # producción bruta, se usa la ecuación alternativa que no necesita el cálculo de un valor mínimo
     pz = prod.coste_unitario_produccion_pz(ay, py, ax, pq)                              # 6. 5 alternativa
 
+    # La variación de la suma del factor compuesto, respecto del factor compuesto de la MCS,
+    # es la variación de factores de producción que deben aportar los hogares (FF).
+    # en el caso de que los (FF) sean constantes la ecuación de cierre exige que la suma de
+    # variaciones sea cero.
+    # Si (FF) es endógena, esto es lo que hay que incrementar (FF0)
     if  FF_ENDOGENA:
         # se calcula la aportación de factores (FF) como igual a la necesidad de factores (F) por los sectores.
         # en el equilibrio (F) debe ser igual al parámetro de factores necesarios por unidad de
@@ -867,7 +1022,7 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     AgH  = gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, AYD_ADI_DEM)
 
     # Ahorro (privado -hogares- y del gobierno). Se invertirán íntegramente en los sectores
-    # las calculamos antes que 6. 9 y 6.10 porque mo dependen de los resultados de estas y sin
+    # las calculamos antes que 6. 9 y 6.10, porque mo dependen de los resultados de estas y sin
     # embargo 6. 9 y 6.10 si dependen de ellos. El ahorro a corto plazo es por tanto sin Alp
     #--------------------------------------------------------------------------------------------------
     Sp = ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
@@ -881,9 +1036,9 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     #--------------------------------------------------------------------------------------------------
     # cotizaciones a la seguridad social, un porcentaje del factor trabajo:
 
-    #   de las empresas (F es la utilización de factores de cada sector)
+    #   de las empresas. (F) es la utilización de factores de cada sector
     CssE = gob.seguridad_social_empresas_CssE(parametros.ctzsse, F, INDICE_F_TRA)
-    #   de los hogares (FF es la prestación de factores de cada hogar -consumidor- que es exógena)
+    #   de los hogares. (FF) es la prestación de factores de cada hogar (consumidor)
     CssH = gob.seguridad_social_hogares_CssH(parametros.ctzssh, FF, Alp, INDICE_F_TRA)
 
     # los pagos de la seguridad social a los hogares (pensiones -PssH0-) es un valor constante fijado de antemano (exógena).
@@ -899,8 +1054,10 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     # gastos         : Sp + Td + CssH 
     #--------------------------------------------------------------------------------------------------
     if DEM_ESENCIALES:
-        Xp = deho.demanda_maxima_utilidad_CobbDouglas_esencial_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)   # 6.13
+        # función de demanda con consumos esenciales (Stone Geary)
+        Xp = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)  # 6.13
     else:
+        # función de demanda Cobb Douglas
         Xp = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)                        # 6.13
 
     # función CES de sustitución con la que determinar el óptimo entre importar (M) o
@@ -915,7 +1072,7 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     # Función CET de transformación de la producción bruta (Z), en producto para exportación (E) y para suministro local (D)
     #--------------------------------------------------------------------------------------------------
     
-    # Cálculo circular, Z es función (6.20) de E y D y luego E y D son función (6.21 y 6.22) de Z
+    # Cálculo circular, (Z) es función (6.20) de (E) y (D) y luego (E) y (D) son función (6.21 y 6.22) de (Z)
     # hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en
     # el cálculo de (E) y (D), es decir, hay que incrementar (pz) por los pagos a la seguridad social al
     # igual que con los impuestos a la producción (tauz), en la misma línea hay que descontar las ayudas (AgE)
@@ -929,21 +1086,18 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
 
     # restricción a la balanza de pagos, las importaciones deben ser igual a las exportaciones más
     # la balanza de pagos inicial (datos.Sf0) que es exógena, en moneda extranjera
-    ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, datos.Sf0)                                               # 6.16
+    ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, datos.Sf0)                                    # 6.16
     
     # Leontief para comparar, no tiene otro uso
     Zl = prod.produccion_sector_Z(X, ax, Yd, ay)                                                                                    # 6. 5 original
 
-    # recalcular los parámetros ax ay no afecta a los resultados
-    #ax = ecua.coeficientes_consumos_intermedios_ax(X, Z)
-    #ay = ecua.coeficientes_factor_compuesto_ay(Yd, Z)
-
     '''
     Para calcular el demerito de la solución de prueba 'vec_opt', que recibe está función como argumento,
     recalculamos las variables para ver cuánto se diferencian del cálculo previo.
+    para que el demérito sea el correcto hay que recalcular todas las variables.
     '''
-    Zr    = exte.restriccion_producción_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi)             # 6.20
 
+    Zr    = exte.restriccion_producción_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi)             # 6.20
     Ypr   = prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)            # 6. 1
     Fr    = prod.uso_optimo_factores_F(parametros.beta, pf, py, Ypr)                        # 6. 2
     Xr    = prod.consumo_intermedio_X(Zr, ax)                                               # 6. 3
@@ -973,7 +1127,7 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     CssHr = gob.seguridad_social_hogares_CssH(parametros.ctzssh, FFr, Alpr, INDICE_F_TRA)
     Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, epsilon, datos.Sf0)   # 6.10
     if DEM_ESENCIALES:
-        Xpr   = deho.demanda_maxima_utilidad_CobbDouglas_esencial_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)   # 6.13
+        Xpr   = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)    # 6.13
     else:
         Xpr   = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)                        # 6.13
     Qr    = exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta)                      # 6.17
@@ -983,7 +1137,7 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     Dtr   = exte.produccion_para_local_D(parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz)         # 6.22
     ebpr  = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, datos.Sf0)                                        # 6.16
 
-    if MUESTRA_PROGRESO:
+    if muestra_progreso:
         respre = np.concatenate((pz, np.array(pe), np.array(pm)))
         imprime('{:10}      {:9.5f}'.format('pF_' + h[0], pf[0]))
         imprime('{:10}      {:9.5f}'.format('pF_' + h[1], pf[1]))
@@ -1064,9 +1218,6 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
             mfun.i_tabla(''  , []                   , ['% paro',]     , paro                 , False, 2)
             imprime('')
         imprime('')
-    else:
-        global iteracion
-        iteracion += 1
     if GE_INCLUYE_XP == False:
         Xpi = Xp
     res_ecuaciones = (Apz,Fi,Ei,Mi,Di,Xpi,
@@ -1075,7 +1226,7 @@ def sec_ecuaciones(vec_opt, MUESTRA_PROGRESO):
     )
     return res_ecuaciones
 
-def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
+def calcula_desvios(res_ecuaciones, muestra_progreso):
     '''
     Calcula los desvíos (penalización) correspondientes a la ejecución de las ecuaciones 'sec_ecuaciones'
     '''
@@ -1184,7 +1335,7 @@ def calcula_desvios(res_ecuaciones, MUESTRA_PROGRESO):
         else:
             dist = (abs(desvios) ** POT_DESVIOS).sum()
 
-    if MUESTRA_PROGRESO and SALIDA_DESVIOS:
+    if muestra_progreso and SALIDA_DESVIOS:
         mfun.tabla_2De(['equilib Q',] , des_produccion)
         mfun.tabla_2De(['equilib F',] , des_factores)
         mfun.tabla_2De(['des Fi',]    , des_Fi)
@@ -1349,7 +1500,7 @@ def veri_solucion(vec_veri_sol, titulo, tolerancia):
     desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, AgE, AgH)                  # 6.12
     nvar_end += 1
     if DEM_ESENCIALES:
-        desviacion[12] = Xp- deho.demanda_maxima_utilidad_CobbDouglas_esencial_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL) # 6.13
+        desviacion[12] = Xp- deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL) # 6.13
     else:
         desviacion[12] = Xp- deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL) # 6.13
     nvar_end += Xp.size
@@ -1757,6 +1908,176 @@ def datos_grafico_solucion(datos, v):
             (F[i] - datos.F0[i]) * pf
         )) 
     return (y_pre, y_dcan, y_dimp, y_can, y_imp, y_sfc_c, y_ufc_c, y_sfc_i, y_ufc_i)
+
+def parrilla_graficos():
+    # generar gráficos de evolución
+    print('')
+    print('Generando gráficos ...')
+    print('')
+    nsol = len(soluciones)
+    ncol = GE_IMG_COL
+    nimg = GE_IMG_FIL * GE_IMG_COL
+    if nimg > nsol:
+        nfil = nsol // ncol
+        if nfil * ncol < nsol:
+            nfil += 1
+        nimg = nfil * ncol
+    else:
+        nfil = GE_IMG_FIL
+    nimg_real = min(nimg, nsol)
+    titulo  = []
+    y_pre   = []
+    y_dcan  = []
+    y_dimp  = []
+    y_can   = []
+    y_imp   = []
+    y_sfc_c = []
+    y_ufc_c = []
+    y_sfc_i = []
+    y_ufc_i = []
+    n       = 0
+    for v in soluciones[0:nimg_real]:
+        titulo.append(n * GE_SOLUCIONES)
+        n += 1
+        (y1, y2, y3, y4, y5, y6, y7, y8, y9) = datos_grafico_solucion(datos, v[1])
+        y_pre.append(y1)
+        y_dcan.append(y2)
+        y_dimp.append(y3)
+        y_can.append(y4)
+        y_imp.append(y5)
+        y_sfc_c.append(y6)
+        y_ufc_c.append(y7)
+        y_sfc_i.append(y8)
+        y_ufc_i.append(y9)
+    x_sol   = []
+    ref_sol = []
+    vli_sol = []
+    eli_sol = []
+
+    # parrilla (mosaico de gráficos) de precios
+    etq_x = ['pF','pY','pZ','pD','pQ','Cz']
+    x   = []
+    for i in range(len(y_pre[0])):
+        x.append(i + 1)
+    ref_y = np.concatenate((
+        datos.pF0.flatten(),
+        datos.pY0.flatten(),
+        datos.pZ0.flatten(),
+        datos.pD0.flatten(),
+        datos.pQ0.flatten(),
+        [datos.epsilon]
+    ))
+    v_marca_x = []
+    p = 0.5
+    v_marca_x.append(p)
+    p += len(datos.pF0)
+    v_marca_x.append(p)
+    p += len(datos.pY0)
+    v_marca_x.append(p)
+    p += len(datos.pZ0)
+    v_marca_x.append(p)
+    p += len(datos.pD0)
+    v_marca_x.append(p)
+    p += len(datos.pQ0)
+    v_marca_x.append(p)
+
+    # para precios de la última solución
+    x_sol.append(x)
+    ref_sol.append(copy.deepcopy(ref_y))
+    vli_sol.append(copy.deepcopy(v_marca_x))
+    eli_sol.append(copy.deepcopy(etq_x))
+
+    grafico_evolucion(nfil, ncol, x, y_pre, ref_y, v_marca_x, etq_x, titulo, 'Pre')
+
+    # parrillas (mosaico de graficos) variación de consumos
+    v_marca_x = []
+    p = 0.5
+    etq_x = []
+    v_marca_x.append(p)
+    for i in range(ndem):
+        etq_x.append('Xp' + str(i + 1))
+        p += Xp.shape[1]
+        v_marca_x.append(p)
+    etq_x.append('Xg')
+    x  = []
+    for i in range(len(y_dcan[0])):
+        x.append(i + 1)
+    ref_y = np.zeros(((ndem + 1) * nsec),dtype=np.float64)
+
+    grafico_evolucion(nfil, ncol, x, y_dcan, ref_y, v_marca_x, etq_x, titulo, 'VdemCtd')
+    grafico_evolucion(nfil, ncol, x, y_dimp, ref_y, v_marca_x, etq_x, titulo, 'VdemImp')
+
+    # parrillas (mosaico de graficos) de cantidades e importes
+    etq_x = ['Z','E','D','M','Q']
+    x  = []
+    for i in range(len(y_can[0])):
+        x.append(i + 1)
+    ref_y = np.concatenate((
+        datos.Z0.flatten(),
+        datos.E0.flatten(),
+        datos.D0.flatten(),
+        datos.M0.flatten(),
+        datos.Q0.flatten()
+    ))
+    v_marca_x = []
+    p = 0.5
+    v_marca_x.append(p)
+    p += len(Z)
+    v_marca_x.append(p)
+    p += len(E)
+    v_marca_x.append(p)
+    p += len(Da)
+    v_marca_x.append(p)
+    p += len(M)
+    v_marca_x.append(p)
+
+    # para cantidades e importes de la última solución
+    x_sol.append(copy.deepcopy(x))
+    x_sol.append(copy.deepcopy(x))
+    ref_sol.append(copy.deepcopy(ref_y))
+    ref_sol.append(copy.deepcopy(ref_y))
+    vli_sol.append(copy.deepcopy(v_marca_x))
+    vli_sol.append(copy.deepcopy(v_marca_x))
+    eli_sol.append(copy.deepcopy(etq_x))
+    eli_sol.append(copy.deepcopy(etq_x))
+
+    grafico_evolucion(nfil, ncol, x, y_can, ref_y, v_marca_x, etq_x, titulo, 'Pro_Ctd')
+    grafico_evolucion(nfil, ncol, x, y_imp, ref_y, v_marca_x, etq_x, titulo, 'Pro_Imp')
+
+    # parrillas (mosaico de graficos) variaciones en el suministro de factores
+    etq_x = dem
+    x  = []
+    for i in range(len(y_sfc_c[0])):
+        x.append(i + 1)
+    ref_y = np.zeros((ndem * nfac),dtype=np.float64)
+    v_marca_x = []
+    p = 0.5
+    for i in range(ndem):
+        v_marca_x.append(p)
+        p += nfac
+    grafico_evolucion(nfil, ncol, x, y_sfc_c, ref_y, v_marca_x, etq_x, titulo, 'V_apor_Fac_Ctd')
+    grafico_evolucion(nfil, ncol, x, y_sfc_i, ref_y, v_marca_x, etq_x, titulo, 'V_apor_Fac_Imp')
+
+    # parrillas (mosaico de graficos) variaciones en el uso de factores
+    etq_x = ind
+    x  = []
+    for i in range(len(y_ufc_c[0])):
+        x.append(i + 1)
+    v_marca_x = []
+    p = 0.5
+    for i in range(nsec):
+        v_marca_x.append(p)
+        p += nfac
+    ref_y = np.zeros((nsec * nfac),dtype=np.float64)
+    grafico_evolucion(nfil, ncol, x, y_ufc_c, ref_y, v_marca_x, etq_x, titulo, 'V_uso_Fac_Ctd')
+    grafico_evolucion(nfil, ncol, x, y_ufc_i, ref_y, v_marca_x, etq_x, titulo, 'V_uso_Fac_Imp')
+
+    # gráfico de la última solución
+    titulo = ['Precios', 'Cantidades', 'Importes']
+    MUESTRA_PROGRESO = False
+    (y1, y2, y3, y4, y5, y6, y7, y8, y9) = datos_grafico_solucion(datos, soluciones[-1][1])
+    y_sol = [y1, y4, y5]
+    grafico_resumen(x_sol, y_sol, ref_sol, vli_sol, eli_sol, titulo)
 
 def grafico_evolucion(n_filas_img, n_cols_img, x, y, y_ref, v_marca_x, etq_x, titulo, sufijo):
     if n_filas_img == 1:
@@ -2412,13 +2733,13 @@ for nc in NCASO:
             # modificar preferencias (alfa) de consumo con la demanda adicional
             Xp0 = datos.Xp0 + DEM_ADICIONAL
             if DEM_ESENCIALES:
-                renta = ecua.demanda_CobbDouglas_esencial_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+                renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
                 if np.any(renta <= 0):
                     imprime('Renta menor o igual a 0')
                     for i in range(len(renta)):
                         imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
                     sys.exit()
-                parametros.alfa_esen = ecua.demanda_CobbDouglas_esencial_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+                parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
             else:
                 parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
         
@@ -2445,13 +2766,13 @@ for nc in NCASO:
             # modificar preferencias (alfa) de consumo porque las ayudas son para adquirir productos en concreto
             Xp0 = datos.Xp0 + AYD_ADICIONAL
             if DEM_ESENCIALES:
-                renta = ecua.demanda_CobbDouglas_esencial_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+                renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
                 if np.any(renta <= 0):
                     imprime('Renta menor o igual a 0')
                     for i in range(len(renta)):
                         imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
                     sys.exit()
-                parametros.alfa_esen = ecua.demanda_CobbDouglas_esencial_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+                parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
             else:
                 parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
 
@@ -2520,8 +2841,6 @@ for nc in NCASO:
 if __name__ == '__main__':
     imprime('')
 
-global iteracion
-iteracion = 0
 if __name__ == '__main__':
     # sin el precio del último factor ya que su valor se fija de forma exógena
     pf0 = datos.pF0[0:nfac-1].flatten()
@@ -2597,7 +2916,6 @@ if __name__ == '__main__':
     imprime('-------------------------------------------------------------------')
     imprime('')
 
-    iteracion = 0
     # se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
     ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, datos.pWm, datos.M0, datos.Sf0)
     vec_veri_sol = (
@@ -2632,7 +2950,6 @@ if __name__ == '__main__':
                 datos.AgH0,
                 datos.Alp0,
     )
-    vec_veri_sol_ini = copy.deepcopy(vec_veri_sol)
     # verifica solución
     veri_solucion(vec_veri_sol, 'Verifica con los valores iniciales', GE_VERIFICAR)
     imprime('')
@@ -2692,9 +3009,9 @@ if __name__ == '__main__':
     historial   = []
     soluciones  = []
     mensaje_fin = []
+    vfa         = 1.0e+18
 
-    # función que 'differential_evolution' llamará despues de probar cada posible solución 
-    vfa = 1.0e+18
+    # función que 'differential_evolution' llamará después de probar cada posible solución 
     def vigila(intermediate_result):
         vf  = intermediate_result.fun   # valor de la función objetivo
         nit = intermediate_result.nit   # número de iteraciones
@@ -2707,7 +3024,8 @@ if __name__ == '__main__':
         if nit % GE_PROGRESO == 0:
             global vfa
             if (vfa - vf) < GE_TOLERANCIA:
-                # no progresa significativamente, por lo que se da por terminada la minimización
+                # no progresa significativamente, por lo que se da por terminada la minimización.
+                # es importante que GE_TOLERANCIA sea lo suficientemente grande par que no se camcele antes de tiempo
                 mensaje_fin.append('nit:{:9} mejora:{:12.5e} no progresa más'.format(nit, vfa - vf))
                 raise StopIteration
             vfa = vf
@@ -2719,129 +3037,12 @@ if __name__ == '__main__':
             if GE_SOLUCIONES > 0 and (nit == 1 or (nit % GE_SOLUCIONES == 0)):
                 # guardar el vector solución que, al final, se escribirá en un fichero CSV
                 soluciones.append([nit,intermediate_result.x])
-
+    
     # definir el rango de variación de los precios y variables
-    bnds = []
-    for i in range(nvec_opt):
-        bnds.append((0.,0.))
-
-    # precios
-    for i in range(npre_sol):
-        if i == 0 and OR_PRE_REFERENCIA != INDICE_F_TRA and VALOR_F_TRA > 0:
-            # el precio del factor OR_PRE_REFERENCIA no forma parte del vector solución
-            # el que forma parte es el otro, luego si OR_PRE_REFERENCIA es el capital (!= INDICE_F_TRA),
-            # el incluido en la solución es el trabajo y lo hacemos igual a VALOR_F_TRA, salvo que sea 0 o -1
-            vi = VALOR_F_TRA
-            vs = VALOR_F_TRA
-        else:
-            v = vec_opt[i]
-            if abs(v) < GE_TOLERANCIA:
-                # para evitar que los precios inicialmente a 0 queden acotados a (0,0)
-                vi = 0.
-                vs = 3.
-            else:
-                vi = v / GE_PRE_MIN
-                vs = v * GE_PRE_MAX
-        bnds[i] = ((vi,vs))
-
-    # variables
-    if len(GE_FIX) > 0:
-        # se va a guardar la fila de 'GE_FIX_LIMITES' y el puntero que le corresponde, porque luego necesitamos ordenar
-        # 'pt' por punteros de menor a mayor
-        pt = np.zeros((len(GE_FIX), 2), dtype=int)
-        n = 0
-        for clave in GE_FIX:
-            # fila de 'GE_FIX_LIMITES'
-            pt[n,0] = n  
-            # puntero al inicio de la variable
-            pt[n,1] = ind_pvec_desde[clave]
-            n += 1
-        # ordenar 'pt'
-        filas = np.argsort(pt[:,1]);
-        pt = pt[filas]
-    else:
-        pt = np.zeros((1, 2), dtype=int)
-        pt[0,1] = -1
-
-    # desde el principio por si se han establecido límites manualmente para algún precio
-    i = 0
-    for ii in range(0, nvec_opt):
-        n = 0
-        esta = False
-        if i <= pt[-1, 1]:
-            # 'i' aún no ha superado el último puntero
-            for nf in range(len(GE_FIX)):
-                if i == pt[nf,1]:
-                    # se han especificado limites (en la fila n) para esta variable
-                    n = pt[nf,0]
-                    esta = True
-                    for j in range(len(GE_FIX_LIMITES[n])):
-                        # para cada pareja 'j' de limites del vector 'n'
-                        
-                        # límite inferior
-                        if type(GE_FIX_LIMITES[n][j][0]) is str:
-                            if GE_FIX_LIMITES[n][j][0] == '*':
-                                # no se ha fijado valor, se usa el criterio general
-                                v = vec_opt[i]
-                                if abs(v) < 0.001:
-                                    vi = np.float64(-GE_VAR_CERO)
-                                else:
-                                    vi = v / GE_VAR_MIN
-                            else:
-                                vi = vec_opt[i]
-                        else:
-                            vi = GE_FIX_LIMITES[n][j][0]
-
-                        # límite superior
-                        if type(GE_FIX_LIMITES[n][j][1]) is str:
-                            if GE_FIX_LIMITES[n][j][1] == '*':
-                                # no se ha fijado valor, se usa el criterio general
-                                v = vec_opt[i]
-                                if abs(v) < 0.001:
-                                    vs = np.float64(+GE_VAR_CERO)
-                                else:
-                                    vs = v * GE_VAR_MAX
-                            else:
-                                vs = vec_opt[i]
-                        else:
-                            vs = GE_FIX_LIMITES[n][j][1]
-                        bnds[i] = ((vi,vs))
-                        i += 1
-                    break
-        if i < npre_sol:
-            # ignorar si no se han establecido límites manualmente para algún precio
-            i += 1
-        else:
-            if esta == False:
-                # criterio general
-                v = vec_opt[i]
-                # para evitar que las variables inicialmente a 0 queden acotadas a (0,0)
-                if abs(v) < 0.001:
-                    vi = np.float64(-GE_VAR_CERO)
-                    vs = np.float64(+GE_VAR_CERO)
-                else:
-                    vi = v / GE_VAR_MIN
-                    vs = v * GE_VAR_MAX
-                bnds[i] = ((vi,vs))
-                i += 1
-        if i == nvec_opt:
-            break
-    if GE_INCLUYE_XP and abs(CON_ESENCIALES).sum() != 0:
-        # acotar consumos de los hogares Xp
-        i = ind_pvec_desde['Xp']
-        for j in range(ndem):
-            for k in range(nsec):
-                vi = CON_ESENCIALES[j][k]
-                bnds[i] = (vi,bnds[i][1])
-                i += 1
-
-    if GE_RESTRICCIONES:
-        restricciones = restri.restricciones_M_E(nvec_opt, ind_pvec_desde, datos,GE_TIPO_RE)
-    else:
-        restricciones = []
-
+    bnds = cotas(ndem,nsec, vec_opt, nvec_opt, npre_sol, OR_PRE_REFERENCIA, INDICE_F_TRA, VALOR_F_TRA,
+                 GE_TOLERANCIA, GE_PRE_MIN, GE_PRE_MAX, GE_VAR_CERO, GE_VAR_MIN, GE_VAR_MAX,
+                 ind_pvec_desde, GE_FIX, GE_FIX_LIMITES, GE_INCLUYE_XP,CON_ESENCIALES)
     # hacer compatible el vector de prueba inicial con los límites de variación de las variables
-
     for i in range(len(vec_opt)):
         if vec_opt[i]  < bnds[i][0]:
             vec_opt[i] = bnds[i][0]
@@ -2860,6 +3061,12 @@ if __name__ == '__main__':
             imprime('{:12.5e} {:12.5e} {:12.5e}'.format(bnds[i][0], vec_opt[i], bnds[i][1]))
         imprime('------------ ------------ ------------')
         imprime('')
+    
+    if GE_RESTRICCIONES:
+        # restricciones para 'differential_evolution', estás son un ejemplo
+        restricciones = restri.restricciones_M_E(nvec_opt, ind_pvec_desde, datos,GE_TIPO_RE)
+    else:
+        restricciones = []
 
     print('Evolución de la minimización')
     print('')
@@ -2904,6 +3111,7 @@ if __name__ == '__main__':
                 seed=GE_SEMILLA,
                 constraints=restricciones,
         )
+
     t_fin = timer()
     sol = rmin.x
     imprime('Valoración final')
@@ -2922,174 +3130,7 @@ if __name__ == '__main__':
         # guardar el vector solución que, al final, se escribirá en un fichero CSV
         soluciones.append([rmin.nit,sol])
     if SAL_GRAFICOS_EVOL:
-        # generar gráficos de evolución
-        print('')
-        print('Generando gráficos ...')
-        print('')
-        nsol = len(soluciones)
-        ncol = GE_IMG_COL
-        nimg = GE_IMG_FIL * GE_IMG_COL
-        if nimg > nsol:
-            nfil = nsol // ncol
-            if nfil * ncol < nsol:
-                nfil += 1
-            nimg = nfil * ncol
-        else:
-            nfil = GE_IMG_FIL
-        nimg_real = min(nimg, nsol)
-        titulo  = []
-        y_pre   = []
-        y_dcan  = []
-        y_dimp  = []
-        y_can   = []
-        y_imp   = []
-        y_sfc_c = []
-        y_ufc_c = []
-        y_sfc_i = []
-        y_ufc_i = []
-        n       = 0
-        for v in soluciones[0:nimg_real]:
-            titulo.append(n * GE_SOLUCIONES)
-            n += 1
-            (y1, y2, y3, y4, y5, y6, y7, y8, y9) = datos_grafico_solucion(datos, v[1])
-            y_pre.append(y1)
-            y_dcan.append(y2)
-            y_dimp.append(y3)
-            y_can.append(y4)
-            y_imp.append(y5)
-            y_sfc_c.append(y6)
-            y_ufc_c.append(y7)
-            y_sfc_i.append(y8)
-            y_ufc_i.append(y9)
-        x_sol   = []
-        ref_sol = []
-        vli_sol = []
-        eli_sol = []
-
-        # parrilla (mosaico de gráficos) de precios
-        etq_x = ['pF','pY','pZ','pD','pQ','Cz']
-        x   = []
-        for i in range(len(y_pre[0])):
-            x.append(i + 1)
-        ref_y = np.concatenate((
-            datos.pF0.flatten(),
-            datos.pY0.flatten(),
-            datos.pZ0.flatten(),
-            datos.pD0.flatten(),
-            datos.pQ0.flatten(),
-            [datos.epsilon]
-        ))
-        v_marca_x = []
-        p = 0.5
-        v_marca_x.append(p)
-        p += len(datos.pF0)
-        v_marca_x.append(p)
-        p += len(datos.pY0)
-        v_marca_x.append(p)
-        p += len(datos.pZ0)
-        v_marca_x.append(p)
-        p += len(datos.pD0)
-        v_marca_x.append(p)
-        p += len(datos.pQ0)
-        v_marca_x.append(p)
-
-        # para precios de la última solución
-        x_sol.append(x)
-        ref_sol.append(copy.deepcopy(ref_y))
-        vli_sol.append(copy.deepcopy(v_marca_x))
-        eli_sol.append(copy.deepcopy(etq_x))
-
-        grafico_evolucion(nfil, ncol, x, y_pre, ref_y, v_marca_x, etq_x, titulo, 'Pre')
-
-        # parrillas (mosaico de graficos) variación de consumos
-        v_marca_x = []
-        p = 0.5
-        etq_x = []
-        v_marca_x.append(p)
-        for i in range(ndem):
-            etq_x.append('Xp' + str(i + 1))
-            p += Xp.shape[1]
-            v_marca_x.append(p)
-        etq_x.append('Xg')
-        x  = []
-        for i in range(len(y_dcan[0])):
-            x.append(i + 1)
-        ref_y = np.zeros(((ndem + 1) * nsec),dtype=np.float64)
-
-        grafico_evolucion(nfil, ncol, x, y_dcan, ref_y, v_marca_x, etq_x, titulo, 'VdemCtd')
-        grafico_evolucion(nfil, ncol, x, y_dimp, ref_y, v_marca_x, etq_x, titulo, 'VdemImp')
-
-        # parrillas (mosaico de graficos) de cantidades e importes
-        etq_x = ['Z','E','D','M','Q']
-        x  = []
-        for i in range(len(y_can[0])):
-            x.append(i + 1)
-        ref_y = np.concatenate((
-            datos.Z0.flatten(),
-            datos.E0.flatten(),
-            datos.D0.flatten(),
-            datos.M0.flatten(),
-            datos.Q0.flatten()
-        ))
-        v_marca_x = []
-        p = 0.5
-        v_marca_x.append(p)
-        p += len(Z)
-        v_marca_x.append(p)
-        p += len(E)
-        v_marca_x.append(p)
-        p += len(Da)
-        v_marca_x.append(p)
-        p += len(M)
-        v_marca_x.append(p)
-
-        # para cantidades e importes de la última solución
-        x_sol.append(copy.deepcopy(x))
-        x_sol.append(copy.deepcopy(x))
-        ref_sol.append(copy.deepcopy(ref_y))
-        ref_sol.append(copy.deepcopy(ref_y))
-        vli_sol.append(copy.deepcopy(v_marca_x))
-        vli_sol.append(copy.deepcopy(v_marca_x))
-        eli_sol.append(copy.deepcopy(etq_x))
-        eli_sol.append(copy.deepcopy(etq_x))
-
-        grafico_evolucion(nfil, ncol, x, y_can, ref_y, v_marca_x, etq_x, titulo, 'Pro_Ctd')
-        grafico_evolucion(nfil, ncol, x, y_imp, ref_y, v_marca_x, etq_x, titulo, 'Pro_Imp')
-
-        # parrillas (mosaico de graficos) variaciones en el suministro de factores
-        etq_x = dem
-        x  = []
-        for i in range(len(y_sfc_c[0])):
-            x.append(i + 1)
-        ref_y = np.zeros((ndem * nfac),dtype=np.float64)
-        v_marca_x = []
-        p = 0.5
-        for i in range(ndem):
-            v_marca_x.append(p)
-            p += nfac
-        grafico_evolucion(nfil, ncol, x, y_sfc_c, ref_y, v_marca_x, etq_x, titulo, 'V_apor_Fac_Ctd')
-        grafico_evolucion(nfil, ncol, x, y_sfc_i, ref_y, v_marca_x, etq_x, titulo, 'V_apor_Fac_Imp')
-
-        # parrillas (mosaico de graficos) variaciones en el uso de factores
-        etq_x = ind
-        x  = []
-        for i in range(len(y_ufc_c[0])):
-            x.append(i + 1)
-        v_marca_x = []
-        p = 0.5
-        for i in range(nsec):
-            v_marca_x.append(p)
-            p += nfac
-        ref_y = np.zeros((nsec * nfac),dtype=np.float64)
-        grafico_evolucion(nfil, ncol, x, y_ufc_c, ref_y, v_marca_x, etq_x, titulo, 'V_uso_Fac_Ctd')
-        grafico_evolucion(nfil, ncol, x, y_ufc_i, ref_y, v_marca_x, etq_x, titulo, 'V_uso_Fac_Imp')
-
-        # gráfico de la última solución
-        titulo = ['Precios', 'Cantidades', 'Importes']
-        MUESTRA_PROGRESO = False
-        (y1, y2, y3, y4, y5, y6, y7, y8, y9) = datos_grafico_solucion(datos, soluciones[-1][1])
-        y_sol = [y1, y4, y5]
-        grafico_resumen(x_sol, y_sol, ref_sol, vli_sol, eli_sol, titulo)
+        parrilla_graficos()
     if SAL_AUXILIARES:
         # escribir el fichero con el historial 
         with open(FI_HISTORIAL, "w", encoding="utf-8") as sal:
@@ -3108,16 +3149,18 @@ if __name__ == '__main__':
     imprime('La distancia (error de la función objetivo) es {:9.3e}'.format(dist))
     imprime('-----------------------------------------------------------')
     imprime('')
+    # verificar la solución, se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
     pf = extrae_var(sol,'pF', 0, nfac - 1)
     pf = completa_pf(pf, F)
-    # verificar la solución, se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
+    epsilon = extrae_var(sol,'epsilon', 0, 0)
+    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
     vec_veri_sol = (
                 pf,
                 extrae_var(sol,'pY', 0, nsec),
                 pz,
                 extrae_var(sol,'pQ', 0, nsec),
                 extrae_var(sol,'pD', 0, nsec),
-                extrae_var(sol,'epsilon', 0, 0),
+                epsilon,
                 Apz,
                 F,
                 Z,
@@ -3170,8 +3213,6 @@ if __name__ == '__main__':
     imprime('{:10}            {:9.5f}'.format('pF_' + h[1], pf[1]))
     mfun.tabla_1Dl(etq_precios[1:npre_sol], vec_opt_ini[1:npre_sol], sol[1:npre_sol])
     imprime('--------- ---------- ----------')
-    epsilon = extrae_var(sol,'epsilon', 0, 0)
-    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
     respre = np.concatenate((pzi, np.array(datos.pWe * datos.epsilon_ini), np.array(datos.pWm * datos.epsilon_ini)))
     mfun.i_tabla('' , etq_precios[npre_sol:len(etq_precios)] , [], respre           , True ,  5)
     respre = np.concatenate((pz, np.array(pe), np.array(pm)))
