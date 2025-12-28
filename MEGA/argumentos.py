@@ -36,12 +36,12 @@ def valores_opciones():
     parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
     parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
     parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
-    parser.add_argument('--PREFIJO'            , type=str  , default='=_' , help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Prueba' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
     '''
     parser.add_argument('--GE_SEMILLA'         , type=int  , default=42   , help="valor inicial del generador de números aleatorios")
-    parser.add_argument('--NCASO'              , type=int  , default=[10], nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14]")
+    parser.add_argument('--NCASO'              , type=int  , default=[10,12], nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
 
     #-----------------------------------------------------
     # las matrices se especifican aplanadas como vectores.
