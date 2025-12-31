@@ -23,19 +23,23 @@ def produccion_factor_compuesto_Y(F, beta, b):
 def consumo_intermedio_X(Z, ax):
     '''
     ecuación 6.3
-    dada la producción Z del sector 'i' (demanda de su producto) calculamos la utilización X que hace 'i' de consumos intermedios 'j'
+    dada la producción bruta Z del sector 'i' calculamos la utilización X que hace 'i' de consumos intermedios 'j'
     por aplicación de los coeficientes (ax) deducidos de la MCS
-    Z   : producción del sector para cubrir su demanda
+    Z   : producción bruta del sector
     ax  : compras necesarias de un sector a otros sectores (y a el mismo) para producir una unidad
-    '''
     '''
     nsec = ax.shape[0]
     X = np.zeros((nsec,nsec), dtype=np.float64)
     for i in range(nsec):
         for j in range(nsec):
-            X[i,j] = ax[j,i] * Z[j] # los consumos están en las columnas de X, por eso los índices están traspuestos [j,i]
+            # X[j,i] son las compras de 'i' a los sectores 'j'
+            # Z[i] producción bruta del sector 'i'
+            # ax[i,j] compras intermedias, por unidad de producción bruta, que hace el sector 'i' a los sectores 'j'
+            X[j,i] = ax[i,j] * Z[i] # los consumos están en las columnas de X, por eso los índices están traspuestos [j,i]
+    return X
     '''
     return ax.T * Z
+    '''
 
 def utilizacion_factor_compuesto_Y(Z, ay):
     '''

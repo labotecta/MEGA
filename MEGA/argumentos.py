@@ -1,4 +1,6 @@
 import argparse
+import numpy as np
+
 def sab(v):
     if v.lower() in ('yes', 'true', 't', 'y', 'si', 's'):
         return True
@@ -41,27 +43,27 @@ def valores_opciones():
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
     '''
     parser.add_argument('--GE_SEMILLA'         , type=int  , default=42   , help="valor inicial del generador de números aleatorios")
-    parser.add_argument('--NCASO'              , type=int  , default=[10,12], nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
+    parser.add_argument('--NCASO'              , type=int  , default=[0], nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
 
     #-----------------------------------------------------
     # las matrices se especifican aplanadas como vectores.
     #-----------------------------------------------------
     
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
-    parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0    , help="se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
+    parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0    , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--DEM_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para los hogares")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 1000., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
-    parser.add_argument('--CON_ESENCIALES'     , type=float, default=[8118.*0.7,15120.*0.65,87781.*0.80,3767.*0.75,307653.*0.90,1878.*0.5,1111.*0.9,2069.*0.9,12012.*0.9,516.*0.9,42096.*0.9,257.*0.9], nargs='*', help="consumos esenciales para los hogares")
+    parser.add_argument('--CON_ESENCIALES'     , type=float, default=[np.round(8118.*0.7,0), np.round(15120.*0.65),np.round(87781.*0.80),np.round(3767.*0.75),np.round(307653.*0.90),np.round(1878.*0.5),np.round(1111.*0.9),np.round(2069.*0.9),np.round(12012.*0.9),np.round(516.*0.9),np.round(42096.*0.9),np.round(257.*0.9)], nargs='*', help="consumos esenciales para los hogares")
     # 'DEM_ESENCIALES' = True: usar los 'CON_ESENCIALES' en el cálculo de productos demandados (Stone-Geary)
-    parser.add_argument('--DEM_ESENCIALES'     , type=sab, default=True, help="demanda con consumos esenciales para los hogares")
+    parser.add_argument('--DEM_ESENCIALES'     , type=sab, default=False, help="demanda con consumos esenciales para los hogares")
 
-    parser.add_argument('--ARANCELES'          , type=float, default=[0., 0., 0.003825, 0., 0., 0.], nargs='*', help="para el escenario 14")
+    parser.add_argument('--ARANCELES'          , type=float, default=[0., 0., 0.003174, 0., 0., 0.], nargs='*', help="para el escenario 14")
 
-    parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True , help="Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
+    parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=False , help="Las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
     # AHORRO_L_PLAZO solo se usa si FF_ENDOGENA es True. Si se quiere evitar la retroalimentación de la demanda final es necesario que sea True 
     parser.add_argument('--AHORRO_L_PLAZO'     , type=sab  , default=False , help="llevar a la cuenta ALP (Ahorro Largo Plazo) los excesos de factores aportados sobre sus valores iniciales")
     '''
@@ -79,37 +81,46 @@ def valores_opciones():
         fijo     : será acotado al valor VALOR_F_TRA si es > 0
         calculado: si VALOR_F_TRA = 0
     '''
-    parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=0, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
+    parser.add_argument('--OR_PRE_REFERENCIA'  , type=int  , default=1, help="factor de referencia = ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_REFERENCIA'")
     parser.add_argument('--PRECIO_F_REFERENCIA', type=float, default=1.0   , help="precio que se fija para el factor de referencia")
-    parser.add_argument('--VALOR_F_TRA'        , type=float, default=0    , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
+    parser.add_argument('--VALOR_F_TRA'        , type=float, default=-1    , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
     parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10  , help="tanto por uno de paro para la curva Phillips")
     parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5  , help="relación desempleo salarios, en la bibliografía se encuentra -0.4566") 
-    '''
-    parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon','M'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
-    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1, 6], nargs='*', help="número de parejas para cada variable en GE_FIX")
-    parser.add_argument('--GE_FIX_LIMITES'     , type=str, default=[1.0, 1.0, '*', '*', '*', '*', 'M0', 'M0', '*', '*', '*', '*', '*', '*'] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
-    parser.add_argument('--GE_FIX'             , type=str  , default=['M'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
-    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[6], nargs='*', help="número de parejas para cada variable en GE_FIX")
-    parser.add_argument('--GE_FIX_LIMITES'     , type=str, default=['*', '*', '*', '*', 'M0', 'M0', '*', '*', '*', '*', '*', '*'] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
-    parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
-    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1], nargs='*', help="número de parejas para cada variable en GE_FIX")
-    parser.add_argument('--GE_FIX_LIMITES'     , type=str  , default=[1.0, 1.0] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
     '''
     parser.add_argument('--GE_FIX'             , type=str  , default=[] , nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
     parser.add_argument('--GE_FIX_LON'         , type=int  , default=[0], nargs='*', help="número de parejas para cada variable en GE_FIX")
     parser.add_argument('--GE_FIX_LIMITES'     , type=str, default=[]   , nargs='*', help="una pareja para cada índice de la variable") 
 
-    parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False , help="calcular una primera valoración de modelo")
+    parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
+    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1], nargs='*', help="número de parejas para cada variable en GE_FIX")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=str  , default=[1.0, 1.0] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+
+    parser.add_argument('--GE_FIX'             , type=str  , default=['M'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
+    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[6], nargs='*', help="número de parejas para cada variable en GE_FIX")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=str, default=['*', '*', '*', '*', 'M0', 'M0', '*', '*', '*', '*', '*', '*'] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+
+    parser.add_argument('--GE_FIX'             , type=str  , default=['epsilon','M'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
+    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1, 6], nargs='*', help="número de parejas para cada variable en GE_FIX")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=str, default=[1.0, 1.0, '*', '*', '*', '*', 'M0', 'M0', '*', '*', '*', '*', '*', '*'] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
+    '''
+    parser.add_argument('--GE_FIX'             , type=str  , default=[] , nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
+    parser.add_argument('--GE_FIX_LON'         , type=int  , default=[0], nargs='*', help="número de parejas para cada variable en GE_FIX")
+    parser.add_argument('--GE_FIX_LIMITES'     , type=str  , default=[]   , nargs='*', help="una pareja para cada índice de la variable") 
+
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False , help="salida de los valores iniciales de las variables y sus límites")
+    parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False , help="calcular una primera valoración de modelo")
     parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False , help="salida con el detalla de las desviaciones")
     parser.add_argument('--SAL_AUXILIARES'     , type=sab  , default=False , help="imprimir los valores del historial y la evolución de la solución")
     parser.add_argument('--SAL_GRAFICOS_EVOL'  , type=sab  , default=False , help="generar gráficos de las evoluciones")
     parser.add_argument('--SAL_GRAFICO_CES_DM' , type=sab  , default=False , help="generar graficos de isocuantas CES")
     parser.add_argument('--SAL_ISOCUANTA'      , type=sab  , default=False , help="generar gráficos adicionales de isocuantas")
     parser.add_argument('--SAL_VARIACIONES'    , type=sab  , default=True  , help="imprime las diferencias entre los valores iniciales y finales de las variables")
+    parser.add_argument('--SAL_MCS'            , type=sab  , default=True  , help="imprime la MCS")
+    parser.add_argument('--SAL_VAR_MCS'        , type=sab  , default=True  , help="imprime las diferencias entre los valores iniciales y finales de la MCS")
 
-    parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=True , help="incluir Xp en el vector solución")
+
+    parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_RESTRICCIONES'   , type=sab  , default=False , help="restricciones en cantidad de importación (M) y exportación (E)")
     parser.add_argument('--GE_TIPO_RE'         , type=int  , default=1     , help="0: lineal; 1: No lineal")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11, help="límite para considerar el objetivo alcanzado")

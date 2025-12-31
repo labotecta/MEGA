@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 
 def ini(fichero):
     global FICHERO_LOG
@@ -50,7 +50,8 @@ def i_tabla(rot, cab, etq, valores, pie, DECIMALES=6):
         for j in range (ncols):
             suma += valores[j]
             imprime(' {:12.{prec}f}'.format(valores[j], prec=DECIMALES), False)
-        imprime(' {:12.{prec}f}'.format(suma, prec=DECIMALES), False)
+        if ncols > 1:
+            imprime(' S={:12.{prec}f}'.format(suma, prec=DECIMALES), False)
         imprime('')
     else:
         # matriz 2D
@@ -66,7 +67,8 @@ def i_tabla(rot, cab, etq, valores, pie, DECIMALES=6):
             for j in range (ncols):
                 suma += valores[i,j]
                 imprime(' {:12.{prec}f}'.format(valores[i,j], prec=DECIMALES), False)
-            imprime(' {:12.{prec}f}'.format(suma, prec=DECIMALES), False)
+            if ncols > 1:
+                imprime(' S={:12.{prec}f}'.format(suma, prec=DECIMALES), False)
             imprime('')
     if pie:
         i_pie(rot, cab)
@@ -86,11 +88,11 @@ def cabecera(rot, etq):
     imprime('{:10}'.format(rot), False)
     ncols = len(etq)
     for j in range(ncols):
-        imprime(' {:>9}'.format(etq[j]), False)
+        imprime(' {:>11}'.format(etq[j]), False)
     imprime('')
     imprime('----------', False)
     for j in range(ncols):
-        imprime(' ---------', False)
+        imprime(' -----------', False)
     imprime('')
 
 def cuerpo(vector, DECIMALES=6):
@@ -99,7 +101,7 @@ def cuerpo(vector, DECIMALES=6):
         imprime(' {:9.{prec}f}'.format(vector[j], prec=DECIMALES), False)
     imprime('')
 
-def cuerpo2D(etq, vector, DECIMALES=6):
+def cuerpo2D(etq, vector, DECIMALES=7):
     if len(vector.shape) == 1:
         nfils = 1
         ncols = vector.shape[0]
@@ -110,22 +112,22 @@ def cuerpo2D(etq, vector, DECIMALES=6):
     for i in range(nfils):
         imprime('{:10}'.format(etq[i]), False)
         for j in range(ncols):
-            imprime(' {:9.{prec}f}'.format(vector[i,j], prec=DECIMALES), False)
+            imprime(' {:11.{prec}f}'.format(vector[i,j], prec=DECIMALES), False)
         imprime('')
 
 def cierre(etq):
     imprime('{:10}'.format(''), False)
     for j in range(len(etq)):
-        imprime(' ---------', False)
+        imprime(' -----------', False)
     imprime('')
 
 def tabla_1D(etq, valores, DECIMALES=6):
     for i in range(len(valores)):
         imprime('{:10} {:9.{prec}f} '.format(etq[i], valores[i], prec=DECIMALES))
 
-def tabla_1Dl(etq, valores_a, valores_b, DECIMALES=5):
+def tabla_1Dl(etq, valores_a, valores_b, DECIMALES=7):
     for i in range(len(valores_a)):
-        imprime('{:10} {:9.{prec}f}  {:9.{prec}f} '.format(etq[i], valores_a[i], valores_b[i], prec=DECIMALES))
+        imprime('{:10} {:11.{prec}f}  {:11.{prec}f} '.format(etq[i], valores_a[i], valores_b[i], prec=DECIMALES))
 
 def tabla_2D(etq, valores, DECIMALES=6):
     if len(valores.shape) == 0:

@@ -49,7 +49,7 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
     división sea componente a componente [0]/[0], [1]/[1], ...
     finalmente trasponemos el resultado para que la demanda sea un vector (num productos, 1)
     con la misma forma que los precios
-
+    '''
     nfac = FF.shape[1]
     ndem = alfa.shape[0]
     nsec = alfa.shape[1]
@@ -61,10 +61,13 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
     for consu in range(ndem):
         # ingresos del consumidor 'consu' por la prestación de factores
         for factor in range(nfac):
-            ingreso[consu] += FF[consu,factor] * pf[factor]
+            ingreso[consu] += FF[consu, factor] * pf[factor]
         # consumo optimo de productos
         for sector in range(nsec):
-            Xp[consu,sector] = alfa[consu,sector] * ingreso[consu]  / pq[sector]
+            if inc_dem_tipo == 0:
+                Xp[consu,sector] = (alfa[consu, sector] * ingreso[consu] + inc_dem[consu, sector]) / pq[sector]
+            else:
+                Xp[consu,sector] = alfa[consu, sector] * ingreso[consu]  / pq[sector] + inc_dem[consu, sector]
     '''
     if inc_dem_tipo == 0:
         # se añade 'inc_dem' al importe demandado 
@@ -72,7 +75,7 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
     else:
         # se añade 'inc_dem' a la cantidad demandada 
         Xp = ((alfa.T * (FF.dot(pf) + AgH + PssH - (Sp + Td + CssH))).T) / pq  + inc_dem
-
+    '''
     return Xp
 
 def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem):

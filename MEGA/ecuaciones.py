@@ -95,6 +95,9 @@ def coeficientes_consumos_intermedios_ax(X, Z):
     ax = np.zeros((nsec,nsec),dtype=np.float64)
     for i in range(nsec):
         for j in range(nsec):
+            # X[j,i] son las compras de 'i' a los sectores 'j'
+            # Z[i] producción bruta del sector 'i'
+            # ax[i,j] compras intermedias, por unidad de producción bruta, que hace el sector 'i' a los sectores 'j'
             ax[i,j] = X[j,i] / Z[i]
     ax[ax == np.inf] = 0                    # porque el denominador puede ser 0, antes de np.nan_to_num porque puede cambiar el inf por un número
     np.nan_to_num(ax, copy=False)           # si no hay datos (NAN) se sustituye por 0
@@ -119,15 +122,16 @@ def coeficientes_demanda_gobierno_mu(X):
     '''
     return X / X.sum()
 
-def coeficientes_inversiones_landa(Xv, Sp, Sg, Sf):
+def coeficientes_inversiones_landa(Xv, Sp, Sg, Sc, epsilon, Sf):
     '''
     Coeficiente para repartir por sectores los ahorros
     Xv : ingresos de los sectores aportados por 'INV'
     Sp : ahorro de los hogares
     Sg : ahorro del gobierno
+    Sc : ahorro de la seguridad social
     Sf : ahorro exterior
     '''
-    landa = Xv / (Sp.sum() + Sg + Sf)
+    landa = Xv / (Sp.sum() + Sg + Sc + Sf * epsilon)
     return landa
     
 def coeficientes_armington_deltam_deltad(taum, eta, M, D):

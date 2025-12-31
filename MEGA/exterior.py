@@ -1,7 +1,7 @@
 import numpy as np
 
 def precio_moneda_local_pe_pm(pWe, pWm, epsilon):
-    return (epsilon * pWe, epsilon * pWm)
+    return (pWe * epsilon, pWm * epsilon)
 
 def equilibrio_balance_pagos_moneda_extranjera(pWe, E, pWm, M, Sf):
     '''

@@ -115,11 +115,11 @@ def demanda_gobierno_Xg(mu, pq, Td, Tz, Tm, Sg, AgE, AgH):
     '''
     return mu * (Td.sum() + Tz.sum() + Tm.sum() - Sg - AgE.sum() - AgH.sum()) / pq
 
-def seguridad_social_empresas_CssE(ctzsse, F, INDICE_F_TRA):
-    return ctzsse * F[:,INDICE_F_TRA]
+def seguridad_social_empresas_CssE(ctzsse, pf, F, INDICE_F_TRA):
+    return ctzsse * F[:,INDICE_F_TRA] * pf[INDICE_F_TRA]
 
-def seguridad_social_hogares_CssH(ctzssh, FF, Alp, INDICE_F_TRA):
+def seguridad_social_hogares_CssH(ctzssh, pf, FF, Alp, INDICE_F_TRA):
     # las pensiones no cotizan a la seguridad social
     
-    return ctzssh * (FF + Alp)[:,INDICE_F_TRA]
+    return ctzssh * (FF + Alp)[:,INDICE_F_TRA] * pf[INDICE_F_TRA]
 

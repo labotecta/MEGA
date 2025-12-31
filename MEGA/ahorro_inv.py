@@ -1,25 +1,29 @@
-def demanda_inversion_Xv(landa, pq, Sp, Sg, epsilon, Sf):
+#import numpy as np
+
+def demanda_inversion_Xv(landa, pq, Sp, Sg, Sc, epsilon, Sf):
     '''
     landa : coeficiente de reparto por productos del total de la inversión
     pq : precio del producto de Armington
     epsilon : cotización de la moneda extranjera (local/extranjera)
     Sp : ahorro de los hogares
-    Sg ; ahorro del gobierno
+    Sg : ahorro del gobierno
+    Sc : ahorro de la seguridad social
     Sf : deficit por cuenta corriente (ahorro del exterior)
     '''
     '''
     nsec = len(pq)
     Xv = np.zeros(nsec, dtype=np.float64)
-    ahorros = Sp.sum() + Sg + epsilon * Sf
+    ahorros = Sp.sum() + Sg + Sc + Sf * epsilon
     for i in range(nsec):
         Xv[i] += landa[i] / pq[i]
+    return Xv
     '''
-    return (Sp.sum() + Sg + epsilon * Sf) * (landa / pq)
+    return (Sp.sum() + Sg + Sc + Sf * epsilon) * (landa / pq)
 
 def ahorro_hogares_Sp(ssp, FF, pf, PssH):
     '''
     Ahorro de los hogares Sp
-    Una parte de sus ingresos (su aportación de factores a todos los sectores)
+    Una parte de sus ingresos brutos (ingresos por su aportación de factores a los sectores)
     
     FF   : aportación de factores por cada consumidor
     pf   : precio de los factores
@@ -29,8 +33,6 @@ def ahorro_hogares_Sp(ssp, FF, pf, PssH):
     '''
     ndem = FF.shape[0]
     nfac = FF.shape[1]
-    # ingresos de los hogares pagados por la seguridad social
-    #Sp = deepcopy(PssH)
     Sp = np.zeros(ndem, dtype=np.float64)
     Sp += PssH
     for consu in range(ndem):

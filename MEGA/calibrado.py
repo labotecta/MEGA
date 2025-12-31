@@ -14,7 +14,7 @@ Los valores que se muestran como comentarios son los correspondientes a la MCS '
 '''
 class datos(object):
 
-    def __init__(self, sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css, INDICE_F_TRA, PARO_INICIAL):
+    def __init__(self, sam, h, ind, dem, idt, trf, gov, ayd, inv, ext, css, INDICE_F_TRA, PARO_INICIAL):
         '''
         (sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css) son los nombres de filas y columnas de la 'sam'
 
@@ -34,8 +34,8 @@ class datos(object):
         self.pWm = np.ones(len(ind))        # precio de importación
         self.pD0 = np.ones(len(ind))        # precio de los sectores para la demanda
 
-        self.epsilon = np.float64(1.)      # tipo de cambio (cotización)
-        self.epsilon_ini = self.epsilon
+        self.epsilon  = np.float64(1.)      # tipo de cambio (cotización)
+        self.epsilon0 = self.epsilon
 
         # consumos (imputs) intermedios de los sectores en las columnas y ventas (outputs) intermedias en las filas
         self.X0 = DataFrame(sam, index=ind, columns=ind)
@@ -114,23 +114,23 @@ class datos(object):
         
         # impuestos directos a los hogares
         # ingresos (ventas) del gobierno (fila gov) de los hogares (columnas dem)
-        self.Td0 = DataFrame(sam, index=gov, columns=dem)
+        self.Tid0 = DataFrame(sam, index=gov, columns=dem)
         '''
                  C1       C2
         SP  87393.0  11712.0
         '''
-        self.Td0 = self.Td0.to_numpy(dtype=np.float64).reshape(len(dem))        # (1, len(dem))
+        self.Tid0 = self.Tid0.to_numpy(dtype=np.float64).reshape(len(dem))        # (1, len(dem))
         
         # otros impuestos sobre los productos pagados por los hogares
-        Tidt = DataFrame(sam, index=idt, columns=dem)
+        self.Toi0 = DataFrame(sam, index=idt, columns=dem)
         '''
-              BRD   MLK
-        IDT    35    20
+                  C1      C2
+        INP  67869.0  9108.0
         '''
-        Tidt = Tidt.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(dem))
+        self.Toi0 = self.Toi0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(dem))
         
         # sumamos todos los impuestos pagados por los hogares al gobierno
-        self.Td0 += Tidt
+        self.Td0 = self.Tid0 + self.Toi0
 
         # impuestos indirectos (fila idt) pagados por los sectores (columnas 'ind')
         self.Tz0 = DataFrame(sam, index=idt, columns=ind)
@@ -139,6 +139,14 @@ class datos(object):
         INP  0.0  1257.0  0.0  2453.0  16951.0  4467.0
         '''
         self.Tz0 = self.Tz0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(ind))
+
+        # impuestos (fila idt) pagados por el gobierno (columnas 'gov')
+        self.Tg0 = DataFrame(sam, index=idt, columns=gov)
+        '''
+                SP
+        INP  494.0
+        '''
+        self.Tg0 = self.Tg0.to_numpy(dtype=np.float64).item()
         
         # aranceles (fila 'TRF') pagados por los sectores (columnas 'ind')
         self.Tm0 = DataFrame(sam, index=trf, columns=ind)                       # (1, len(ind))
@@ -246,7 +254,7 @@ class datos(object):
         np.nan_to_num(self.CssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # ayudas (pagos) del gobierno a los sectores (empresas) = pago (aportación) de la columna 'AYD' a la fila 'ind'
-        self.AgE0 = DataFrame(sam, index=ind, columns=retg)
+        self.AgE0 = DataFrame(sam, index=ind, columns=ayd)
         '''
                 AYD
         AP1  1928.0
@@ -263,7 +271,7 @@ class datos(object):
             np.nan_to_num(self.AgE0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # ayudas (pagos) del gobierno a los hogares = pago (aportación) de la columna 'AYD' a la fila 'dem'
-        self.AgH0 = DataFrame(sam, index=dem, columns=retg)
+        self.AgH0 = DataFrame(sam, index=dem, columns=ayd)
         '''
             AYD
         C1  0.0
@@ -324,6 +332,9 @@ class datos(object):
         A-I  26295.0
         '''
         self.Sg0 = self.Sg0.to_numpy(dtype=np.float64).item()                   # () escalar
+
+        # ahorro de la seguridad social
+        self.Sc0 = self.CssE0.sum() + self.CssH0.sum() - self.PssH0.sum().item()    # () escalar
 
         # balanza de pagos = ahorro exterior = pago (aportación) de la columna 'EXT' a la fila 'INV'
         self.Sf0 = DataFrame(sam, index=inv, columns=ext)
@@ -446,7 +457,7 @@ class parametros(object):
         self.mu    = ecua.coeficientes_demanda_gobierno_mu(datos.Xg0)
 
         # coeficientes de participaciones en las inversiones
-        self.landa = ecua.coeficientes_inversiones_landa(datos.Xv0, datos.Sp0, datos.Sg0, datos.Sf0)
+        self.landa = ecua.coeficientes_inversiones_landa(datos.Xv0, datos.Sp0, datos.Sg0, datos.Sc0, datos.epsilon, datos.Sf0)
 
         # ------
         # elasticidad de sustitución, entre local e importación, del producto de Argminton (Utilidad CES)
@@ -471,7 +482,9 @@ class parametros(object):
         # propensión al ahorro de los hogares
         self.ssp   = ecua.propension_ahorro_hogares_ssp(datos.Sp0, datos.FF0, datos.PssH0)
         # tasa de impuestos directos
-        self.taud  = ecua.tasa_impuestos_directos_taud(datos.Td0, datos.FF0, datos.PssH0)
+        self.taud     = ecua.tasa_impuestos_directos_taud(datos.Td0, datos.FF0, datos.PssH0)
+        self.taud_id  = ecua.tasa_impuestos_directos_taud(datos.Tid0, datos.FF0, datos.PssH0)
+        self.taud_oi  = ecua.tasa_impuestos_directos_taud(datos.Toi0, datos.FF0, datos.PssH0)
         
         # propensión al ahorro del gobierno
         self.ssg   = ecua.propension_ahorro_gobierno_ssg(datos.Sg0, datos.Td0, datos.Tz0, datos.Tm0, datos.AgE0, datos.AgH0)
