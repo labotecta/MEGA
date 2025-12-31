@@ -37,6 +37,8 @@ start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.p
 --SAL_GRAFICO_CES_DM  True ^
 --SAL_ISOCUANTA       True ^
 --SAL_VARIACIONES     True  ^
+--SAL_MCS             True  ^
+--SAL_VAR_MCS         True  ^
 --GE_RESTRICCIONES    False ^
 --GE_TIPO_RE          0 ^
 --GE_TOLERANCIA       1.e-11 ^
