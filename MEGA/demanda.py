@@ -33,7 +33,7 @@ def variacion_hicksiana(Xp0, Xp, alfa, b=1.):
     ep1 = uu1 / denominador
     return ep1 - ep0
 
-def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem):
+def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia):
     '''
     devuelve la matriz con las cantidades óptimas de productos demandados Xp
 
@@ -62,11 +62,20 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
         # ingresos del consumidor 'consu' por la prestación de factores
         for factor in range(nfac):
             ingreso[consu] += FF[consu, factor] * pf[factor]
+        if renta_ficticia == False:
+            # se detrae de los ingreso lo que costará el incremento de demanda
+            for sector in range(nsec):
+                if inc_dem_tipo == 0:
+                    ingreso[consu] -= inc_dem[consu, sector]
+                else:
+                    ingreso[consu] -= inc_dem[consu, sector] * pq[sector]
         # consumo optimo de productos
         for sector in range(nsec):
             if inc_dem_tipo == 0:
+                # se añade 'inc_dem' al importe demandado 
                 Xp[consu,sector] = (alfa[consu, sector] * ingreso[consu] + inc_dem[consu, sector]) / pq[sector]
             else:
+                # se añade 'inc_dem' a la cantidad demandada 
                 Xp[consu,sector] = alfa[consu, sector] * ingreso[consu]  / pq[sector] + inc_dem[consu, sector]
     '''
     if inc_dem_tipo == 0:
@@ -78,7 +87,7 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
     '''
     return Xp
 
-def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem):
+def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia):
     '''
     devuelve la matriz con las cantidades óptimas de productos demandados Xp calculada con la función Stone Geary
 
@@ -107,6 +116,13 @@ def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, Cs
         # ingresos del consumidor 'consu' por la prestación de factores
         for factor in range(nfac):
             ingreso_neto[consu] += FF[consu,factor] * pf[factor]
+            if renta_ficticia == False:
+                # se detrae de los ingresos lo que costará el incremento de demanda
+                for sector in range(nsec):
+                    if inc_dem_tipo == 0:
+                        ingreso_neto[consu] -= inc_dem[consu, sector]
+                    else:
+                        ingreso_neto[consu] -= inc_dem[consu, sector] * pq[sector]
     gasto_esencial   = (con_esen * pq).sum(axis=1)        # gasto esencial de cada hogar
     renta_disponible = ingreso_neto - gasto_esencial
     # consumo optimo de productos

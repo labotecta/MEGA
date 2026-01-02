@@ -38,7 +38,7 @@ def valores_opciones():
     parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
     parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
     parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Prueba' , help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Prueba_1' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
     '''
@@ -51,10 +51,11 @@ def valores_opciones():
     
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0    , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
-    parser.add_argument('--DEM_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para los hogares")
+    parser.add_argument('--DEM_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 1000., 0., 0., 0.], nargs='*', help="demanda adicional exógena de productos para los hogares")
+    parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False , help="si True no se proveerán fondos para los incrementos de demanda")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
-    parser.add_argument('--AYD_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 1000., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
+    parser.add_argument('--AYD_ADICIONAL'      , type=float, default=[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], nargs='*', help="ayuda adicional exógena por producto para el hogar 1")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_ESENCIALES'     , type=float, default=[np.round(8118.*0.7,0), np.round(15120.*0.65),np.round(87781.*0.80),np.round(3767.*0.75),np.round(307653.*0.90),np.round(1878.*0.5),np.round(1111.*0.9),np.round(2069.*0.9),np.round(12012.*0.9),np.round(516.*0.9),np.round(42096.*0.9),np.round(257.*0.9)], nargs='*', help="consumos esenciales para los hogares")

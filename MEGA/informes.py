@@ -3,10 +3,15 @@ import itertools
 import numpy as np
 from matplotlib import pyplot as plt
 
-import MEGA       as prin
-import exterior   as exte
-import funciones  as mfun
-import ecuaciones as ecua
+import MEGA          as prin
+import exterior      as exte
+import funciones     as mfun
+import ecuaciones    as ecua
+import produccion    as prod
+import gobierno      as gob
+import ahorro_inv    as ainv
+import demanda       as deho
+import exterior      as exte
 
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
@@ -273,6 +278,183 @@ def salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES):
     mfun.cuerpo2D(['cagh',], parametros.cagh)
     mfun.cierre(dem)
     imprime('')
+
+def veri_solucion(datos, parametros, ind, dem,
+                  vec_veri_sol, etq_veri, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, AHORRO_L_PLAZO, CON_ESENCIALES,
+                  titulo, tolerancia
+                  ):
+    (pf,py,pz,pq,pd,epsilon,Apz,F,Z,E,M,D,FF,Y,X,Xp,Xg,Xv,Q,ebp,Sp,Sg,Td,Tz,Tm,CssE,CssH,AgE,AgH,Alp) = vec_veri_sol
+
+    nvar_end = 0
+    nvar_end += pf.size
+    nvar_end += py.size
+    nvar_end += pz.size
+    nvar_end += pq.size
+    nvar_end += pd.size
+
+    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
+
+    nvar_end += pe.size
+    nvar_end += pm.size
+
+    nvar_end += 1 # Apz
+
+    ax = parametros.ax
+    ay = parametros.ay
+
+    v_medio     = np.zeros(len(etq_veri), dtype=np.ndarray)
+    v_medio[0]  = np.median(abs(Y))
+    v_medio[1]  = np.median(abs(F))
+    v_medio[2]  = np.median(abs(X))
+    v_medio[3]  = np.median(abs(Y))
+    v_medio[4]  = np.median(abs(pz))
+    v_medio[5]  = np.median(abs(Td))
+    v_medio[6]  = np.median(abs(Tz))
+    v_medio[7]  = np.median(abs(Tm))
+    v_medio[8]  = np.median(abs(Xg))
+    v_medio[9]  = np.median(abs(Xv))
+    v_medio[10] = np.median(abs(Sp))
+    v_medio[11] = np.median(abs(Sg))
+    v_medio[12] = np.median(abs(Xp))
+    v_medio[13] = np.median(abs(ebp))
+    v_medio[14] = np.median(abs(Q))
+    v_medio[15] = np.median(abs(M))
+    v_medio[16] = np.median(abs(D))
+    v_medio[17] = np.median(abs(Z))
+    v_medio[18] = np.median(abs(E))
+    v_medio[19] = np.median(abs(D))
+    v_medio[20] = np.median(abs(CssE))
+    v_medio[21] = np.median(abs(CssH))
+    v_medio[22] = np.median(abs(AgE))
+    v_medio[23] = np.median(abs(AgH))
+    v_medio[24] = np.median(abs(Q))
+    v_medio[25] = np.median(abs(F.sum(axis=0)))
+
+    desviacion     = np.zeros(len(etq_veri), dtype=np.ndarray)
+    desviacion[0]  = Y     - prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)           # 6. 1
+    nvar_end += Y.size
+    desviacion[1]  = F     - prod.uso_optimo_factores_F(parametros.beta, pf, py, Y)                         # 6. 2
+    nvar_end += F.size
+    desviacion[2]  = X     - prod.consumo_intermedio_X(Z, ax)                                               # 6. 3
+    nvar_end += X.size
+    desviacion[3]  = Y     - prod.utilizacion_factor_compuesto_Y(Z, ay)                                     # 6. 4
+    # no se incrementa nvar_end porque ya se ha calculado la variable Y
+    desviacion[4]  = pz    - prod.coste_unitario_produccion_pz(ay, py, ax, pq)                              # 6. 5 alternativa
+    # no se incrementa nvar_end porque ya lo hemos sumado al principio
+    desviacion[5]  = Td    - gob.impuestos_directos_Td(parametros.taud, pf, FF, Alp, datos.PssH0)           # 6. 6
+    nvar_end += Td.size
+    desviacion[6]  = Tz    - gob.impuestos_produccion_Tz(datos.tauz, pz, Z)                                 # 6. 7
+    nvar_end += Tz.size
+    desviacion[7]  = Tm    - gob.aranceles_importacion_Tm(datos.taum, pm, M)                                # 6. 8
+    nvar_end += Tm.size
+    desviacion[8]  = Xg    - gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, Sg, AgE, AgH)           # 6. 9
+    nvar_end += Xg.size
+    Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
+    desviacion[9]  = Xv    - ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, datos.Sf0)    # 6.10
+    nvar_end += Xv.size
+    desviacion[10] = Sp    - ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
+    nvar_end += Sp.size
+    desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, AgE, AgH)                  # 6.12
+    nvar_end += 1
+    if DEM_ESENCIALES:
+        desviacion[12] = Xp- deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA) # 6.13
+    else:
+        desviacion[12] = Xp- deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA) # 6.13
+    nvar_end += Xp.size
+    desviacion[13] = ebp                                                                                    # 6.16
+    nvar_end += ebp.size
+    desviacion[14] = Q     - exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, D, parametros.eta) # 6.17
+    nvar_end += Q.size
+    desviacion[15] = M     - exte.importacion_maxima_utilidad_armington_M(parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum) # 6.18
+    nvar_end += M.size
+    desviacion[16] = D     - exte.produccion_maxima_utilidad_armington_D(parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta) # 6.19
+    nvar_end += D.size
+    desviacion[17] = Z     - exte.restriccion_producción_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi) # 6.20
+    nvar_end += Z.size
+    desviacion[18] = E     - exte.produccion_para_exportacion_E(parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz)  # 6.21
+    nvar_end += E.size
+    desviacion[19] = D     - exte.produccion_para_local_D(parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz) # 6.22
+    # no se incrementa nvar_end porque ya se ha calculado la variable D
+    desviacion[20]  = CssE - gob.seguridad_social_empresas_CssE(parametros.ctzsse, pf, F, INDICE_F_TRA)         # CssE
+    nvar_end += CssE.size
+    desviacion[21]  = CssH - gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)    # CssH
+    nvar_end += CssH.size
+    desviacion[22]  = AgE  - gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm)                           # AgE
+    nvar_end += AgE.size
+    desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, AYD_ADI_DEM)               # AgH
+    nvar_end += AgH.size
+
+    desviacion[24]  = Q    - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))                                     # 6.23
+    desviacion[25]  = F.sum(axis=0) - (FF.sum(axis=0) + Alp.sum(axis=0))                                    # 6.24
+
+    '''
+    if FF_ENDOGENA:
+        nvar_end += FF.size
+    '''
+
+    if AHORRO_L_PLAZO:
+        nvar_end += Alp.size
+
+    imprime(titulo)
+    imprime('Número de variables endógenas :{} incluida Apz'.format(nvar_end))
+    imprime('')
+    imprime('--- Verificación de las ecuaciones en error acumulado {:10.3e} --'.format(tolerancia))
+    imprime('ecuación      valor medio error acumula  error máximo  % error máxi')
+    imprime('----------- ------------- ------------- ------------- -------------')
+    desvio = 0.
+    nfallos = 0
+    for i in range (len(etq_veri)):
+        if np.issubdtype(type(desviacion[i]), np.floating):
+            suma_des_error_cua = desviacion[i] * desviacion[i]
+            suma_des_abs = abs(desviacion[i])
+            max_des_error = suma_des_abs
+        else:
+            suma_des_error_cua = (desviacion[i] * desviacion[i]).sum()
+            suma_des_abs = (abs(desviacion[i])).sum()
+            max_des_error  = np.max(abs(desviacion[i]))
+        desvio += suma_des_error_cua
+        if suma_des_abs > tolerancia:
+            if abs(v_medio[i]) < 0.01:
+                # los porcentajes de desviaciones respecto de 0 no son significativos
+                p_error_max = '{:>13}'.format('--')
+            else:
+                p_error_max = '{:13.3f}'.format(100 * max_des_error / v_medio[i])
+            imprime('{:11} {:13.5e} {:13.5e} {:13.5e} {}'.format(etq_veri[i], v_medio[i], suma_des_abs, max_des_error, p_error_max))
+            nfallos += 1
+    if nfallos == 0:
+        imprime('======= Se cumplen todas las ecuaciones en error acumulado ========')
+    imprime('----------- ------------- ------------- ------------- -------------')
+    imprime('')
+    imprime('-- Verificación de las ecuaciones en % de error máximo {:8.3}% --'.format(100.0 * 0.0001))
+    imprime('ecuación      valor medio error acumula  error máximo  % error máxi')
+    imprime('----------- ------------- ------------- ------------- -------------')
+    nfallos = 0
+    for i in range (len(etq_veri)):
+        if np.issubdtype(type(desviacion[i]), np.floating):
+            suma_des_error_cua = desviacion[i] * desviacion[i]
+            suma_des_abs = abs(desviacion[i])
+            max_des_error = suma_des_abs
+        else:
+            suma_des_error_cua = (desviacion[i] * desviacion[i]).sum()
+            suma_des_abs = (abs(desviacion[i])).sum()
+            max_des_error  = np.max(abs(desviacion[i]))
+        if abs(v_medio[i]) < 0.01:
+            # los porcentajes de desviaciones respecto de 0 no son significativos
+            pem = max_des_error
+            p_error_max = '{:>13}'.format('--')
+        else:
+            pem = max_des_error / v_medio[i]
+            p_error_max = '{:13.3f}'.format(100 * pem)
+        if pem > 0.0001:    # 0.01%
+            imprime('{:11} {:13.5e} {:13.5e} {:13.5e} {}'.format(etq_veri[i], v_medio[i], suma_des_abs, max_des_error, p_error_max))
+            nfallos += 1
+    if nfallos == 0:
+        imprime('======  Se cumplen todas las ecuaciones en % de error máximo ======')
+    imprime('----------- ------------- ------------- ------------- -------------')
+    imprime('')
+    imprime('-------------------------------')
+    imprime('Ecm.total desvios {:13.5e}'.format(desvio))
+    imprime('-------------------------------')
     
 def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, dem, h, vec_opt_ini, vec_opt, npre_sol, etq_precios, ebp_ini, res_ecuaciones, rot):
     nfac = len(h)

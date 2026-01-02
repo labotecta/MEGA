@@ -29,6 +29,7 @@ import argumentos
 import calibrado
 import funciones     as mfun
 import informes      as infor
+import escenarios    as esce
 import ecuaciones    as ecua
 import produccion    as prod
 import gobierno      as gob
@@ -79,6 +80,9 @@ except BaseException as e:
     print('Error en la lectura de parámetros')
     sys.exit()
 
+# se guradan las notificaciones hasta que esté lista la función 'imprimir'
+errores_diferidos = []
+avisos_diferidos  = []
 nfac = args.NFAC    # número de factores
 ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
@@ -88,35 +92,27 @@ NCASO               = np.array(args.NCASO, dtype=int)
 DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
 if len(args.DEM_ADICIONAL) != ndem * nsec:
     if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL, ndem * nsec)) + '\n')
-        '''
-        print('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
-    sys.exit()
+        errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
 DEM_ADICIONAL       = np.array(args.DEM_ADICIONAL, dtype=np.float64).reshape(ndem, nsec)
 if len(args.AYD_ADICIONAL) != ndem * nsec:
     if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL, ndem * nsec)) + '\n')
-        '''
-        print('Error. El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
+        errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
     sys.exit()
+RENTA_FICTICIA      = args.RENTA_FICTICIA
+if NCASO == 9 and RENTA_FICTICIA:
+    if __name__ == '__main__':
+        avisos_diferidos.append('Aviso. Se ha seleccionado el caso {} sin renta ficticia'.format(etq_caso[NCASO]))
 AYD_ADICIONAL       = np.array(args.AYD_ADICIONAL  , dtype=np.float64).reshape(ndem, nsec)
 if len(args.CON_ESENCIALES) != ndem * nsec:
     if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_ESENCIALES, ndem * nsec)) + '\n')
-        '''
-        print('Error. El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_ESENCIALES), ndem * nsec))
+        errores_diferidos.append('El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_ESENCIALES), ndem * nsec))
     sys.exit()
 CON_ESENCIALES      = np.array(args.CON_ESENCIALES , dtype=np.float64).reshape(ndem, nsec)
 DEM_ESENCIALES      = args.DEM_ESENCIALES
 if CON_ESENCIALES.sum() == 0:
     if (13 in NCASO) == False:
         # si no se han especificado consumos esenciales no tiene sentido calcular demandas con consumos esenciales
+        avisos_diferidos.append('Aviso. Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
         DEM_ESENCIALES = False
 SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
 ARANCELES           = np.array(args.ARANCELES, dtype=np.float64)
@@ -209,31 +205,17 @@ FACTOR_CSSH         = np.array(args.FACTOR_CSSH, dtype=np.float64)
 FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac) + '\n')
-        '''
-        print('Error. El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
+        errores_diferidos.append('El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
     sys.exit()
 VAR_FACTORES        = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec) + '\n')
-        '''
-        print('Error. El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
+        errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
     sys.exit()
 COE_VAB             = np.array(args.COE_VAB, dtype=np.float64)
 SENDA_DATOS         = args.SENDA_DATOS
 SENDA_SALIDAS       = args.SENDA_SALIDAS
 SENDA_GRAFICOS      = args.SENDA_GRAFICOS
-
-if __name__ == '__main__':
-    '''
-    with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-        log.write('OK\n')
-    '''
 
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
 # valores desagregados por producto, porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
@@ -391,35 +373,16 @@ elif NSAM == 3:
     css  = ('CSS',)                                 # cotizaciones a la seguridad social
     #
 else:
-    print('Número de MCS {} incorrecto'.format(NSAM))
-    sys.exit()
+    errores_diferidos.append('Número de MCS {} incorrecto'.format(NSAM))
 
 TOLERA_MCS = 1.0 / 10.0 ** DECIMALES
 
 if nfac != len(h):
-    if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
-        '''
-        print('Error. El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
-    sys.exit()
+    errores_diferidos.append('El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
 if ndem != len(dem):
-    if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
-        '''
-        print('Error. El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
-    sys.exit()
+    errores_diferidos.append('Error. El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
 if nsec != len(ind):
-    if __name__ == '__main__':
-        '''
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error. El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
-        '''
-        print('Error. El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
-    sys.exit()
+    errores_diferidos.append('Error. El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
 
 if len(PREFIJO) > 1 and PREFIJO[0] == '=':
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los
@@ -434,7 +397,7 @@ else:
     for nc in NCASO:
         CASO += '_' + etq_caso[nc] 
     CASO += '_' + GE_ESTRATEGIA + '_' + 'Mcu' if METRICA_ERROR == 0 else ('Mab' if METRICA_ERROR == 1 else 'Mpt' + str(POT_DESVIOS))
-    CASO += '_Da_{:1}'.format(DEM_ADICIONAL_TIPO) if abs(DEM_ADICIONAL).sum() != 0 else ''
+    CASO += '_Da_{:1}_{}'.format(DEM_ADICIONAL_TIPO,'SR' if RENTA_FICTICIA else 'CR') if abs(DEM_ADICIONAL).sum() != 0 else ''
     CASO += '_Ay_' if abs(AYD_ADICIONAL).sum() != 0 else ''
     CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(GE_FIX)) if len(GE_FIX) > 0 else '')
     CASO += '_{:05}'.format(GE_SEMILLA)
@@ -449,6 +412,15 @@ FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
 mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
+
+if len(avisos_diferidos) > 0:
+    for mensaje in avisos_diferidos:
+        imprime(mensaje)
+
+if len(errores_diferidos) > 0:
+    for mensaje in errores_diferidos:
+        imprime(mensaje)
+    sys.exit()
 
 def punteros():
     # para saber la posición de las distintas variables en el vector solución en el que están
@@ -819,10 +791,10 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
     #--------------------------------------------------------------------------------------------------
     if DEM_ESENCIALES:
         # función de demanda con consumos esenciales (Stone Geary)
-        Xp = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)  # 6.13
+        Xp = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)  # 6.13
     else:
         # función de demanda Cobb Douglas
-        Xp = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)                        # 6.13
+        Xp = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)                        # 6.13
 
     # función CES de sustitución con la que determinar el óptimo entre importar (M) o
     # producir localmente (D), la demanda del producto de Armington (Q)
@@ -892,9 +864,9 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
     Scr = CssEr.sum() + CssHr.sum() - datos.PssH0.sum()
     Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, Scr, epsilon, datos.Sf0)   # 6.10
     if DEM_ESENCIALES:
-        Xpr   = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)    # 6.13
+        Xpr   = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)    # 6.13
     else:
-        Xpr   = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)    # 6.13
+        Xpr   = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)    # 6.13
     Qr    = exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta)                      # 6.17
     Mr    = exte.importacion_maxima_utilidad_armington_M(parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum)       # 6.18
     Dar   = exte.produccion_maxima_utilidad_armington_D(parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta)                    # 6.19
@@ -1195,180 +1167,6 @@ def fun_objetivo(vec_opt):
     res_ecuaciones = sec_ecuaciones(vec_opt, False)
     return calcula_desvios(res_ecuaciones, False)
 
-def veri_solucion(vec_veri_sol, titulo, tolerancia):
-    (pf,py,pz,pq,pd,epsilon,Apz,F,Z,E,M,D,FF,Y,X,Xp,Xg,Xv,Q,ebp,Sp,Sg,Td,Tz,Tm,CssE,CssH,AgE,AgH,Alp) = vec_veri_sol
-
-    nvar_end = 0
-    nvar_end += pf.size
-    nvar_end += py.size
-    nvar_end += pz.size
-    nvar_end += pq.size
-    nvar_end += pd.size
-
-    (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
-
-    nvar_end += pe.size
-    nvar_end += pm.size
-
-    nvar_end += 1 # Apz
-
-    ax = parametros.ax
-    ay = parametros.ay
-
-    v_medio     = np.zeros(len(etq_veri), dtype=np.ndarray)
-    v_medio[0]  = np.median(abs(Y))
-    v_medio[1]  = np.median(abs(F))
-    v_medio[2]  = np.median(abs(X))
-    v_medio[3]  = np.median(abs(Y))
-    v_medio[4]  = np.median(abs(pz))
-    v_medio[5]  = np.median(abs(Td))
-    v_medio[6]  = np.median(abs(Tz))
-    v_medio[7]  = np.median(abs(Tm))
-    v_medio[8]  = np.median(abs(Xg))
-    v_medio[9]  = np.median(abs(Xv))
-    v_medio[10] = np.median(abs(Sp))
-    v_medio[11] = np.median(abs(Sg))
-    v_medio[12] = np.median(abs(Xp))
-    v_medio[13] = np.median(abs(ebp))
-    v_medio[14] = np.median(abs(Q))
-    v_medio[15] = np.median(abs(M))
-    v_medio[16] = np.median(abs(D))
-    v_medio[17] = np.median(abs(Z))
-    v_medio[18] = np.median(abs(E))
-    v_medio[19] = np.median(abs(D))
-    v_medio[20] = np.median(abs(CssE))
-    v_medio[21] = np.median(abs(CssH))
-    v_medio[22] = np.median(abs(AgE))
-    v_medio[23] = np.median(abs(AgH))
-    v_medio[24] = np.median(abs(Q))
-    v_medio[25] = np.median(abs(F.sum(axis=0)))
-
-    desviacion     = np.zeros(len(etq_veri), dtype=np.ndarray)
-    desviacion[0]  = Y     - prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)           # 6. 1
-    nvar_end += Y.size
-    desviacion[1]  = F     - prod.uso_optimo_factores_F(parametros.beta, pf, py, Y)                         # 6. 2
-    nvar_end += F.size
-    desviacion[2]  = X     - prod.consumo_intermedio_X(Z, ax)                                               # 6. 3
-    nvar_end += X.size
-    desviacion[3]  = Y     - prod.utilizacion_factor_compuesto_Y(Z, ay)                                     # 6. 4
-    # no se incrementa nvar_end porque ya se ha calculado la variable Y
-    desviacion[4]  = pz    - prod.coste_unitario_produccion_pz(ay, py, ax, pq)                              # 6. 5 alternativa
-    # no se incrementa nvar_end porque ya lo hemos sumado al principio
-    desviacion[5]  = Td    - gob.impuestos_directos_Td(parametros.taud, pf, FF, Alp, datos.PssH0)           # 6. 6
-    nvar_end += Td.size
-    desviacion[6]  = Tz    - gob.impuestos_produccion_Tz(datos.tauz, pz, Z)                                 # 6. 7
-    nvar_end += Tz.size
-    desviacion[7]  = Tm    - gob.aranceles_importacion_Tm(datos.taum, pm, M)                                # 6. 8
-    nvar_end += Tm.size
-    desviacion[8]  = Xg    - gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, Sg, AgE, AgH)           # 6. 9
-    nvar_end += Xg.size
-    Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
-    desviacion[9]  = Xv    - ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, datos.Sf0)    # 6.10
-    nvar_end += Xv.size
-    desviacion[10] = Sp    - ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
-    nvar_end += Sp.size
-    desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, AgE, AgH)                  # 6.12
-    nvar_end += 1
-    if DEM_ESENCIALES:
-        desviacion[12] = Xp- deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL) # 6.13
-    else:
-        desviacion[12] = Xp- deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL) # 6.13
-    nvar_end += Xp.size
-    desviacion[13] = ebp                                                                                    # 6.16
-    nvar_end += ebp.size
-    desviacion[14] = Q     - exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, D, parametros.eta) # 6.17
-    nvar_end += Q.size
-    desviacion[15] = M     - exte.importacion_maxima_utilidad_armington_M(parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum) # 6.18
-    nvar_end += M.size
-    desviacion[16] = D     - exte.produccion_maxima_utilidad_armington_D(parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta) # 6.19
-    nvar_end += D.size
-    desviacion[17] = Z     - exte.restriccion_producción_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi) # 6.20
-    nvar_end += Z.size
-    desviacion[18] = E     - exte.produccion_para_exportacion_E(parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz)  # 6.21
-    nvar_end += E.size
-    desviacion[19] = D     - exte.produccion_para_local_D(parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz) # 6.22
-    # no se incrementa nvar_end porque ya se ha calculado la variable D
-    desviacion[20]  = CssE - gob.seguridad_social_empresas_CssE(parametros.ctzsse, pf, F, INDICE_F_TRA)         # CssE
-    nvar_end += CssE.size
-    desviacion[21]  = CssH - gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)    # CssH
-    nvar_end += CssH.size
-    desviacion[22]  = AgE  - gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm)                           # AgE
-    nvar_end += AgE.size
-    desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, AYD_ADI_DEM)               # AgH
-    nvar_end += AgH.size
-
-    desviacion[24]  = Q    - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))                                     # 6.23
-    desviacion[25]  = F.sum(axis=0) - (FF.sum(axis=0) + Alp.sum(axis=0))                                    # 6.24
-
-    '''
-    if FF_ENDOGENA:
-        nvar_end += FF.size
-    '''
-
-    if AHORRO_L_PLAZO:
-        nvar_end += Alp.size
-
-    imprime(titulo)
-    imprime('Número de variables endógenas :{} incluida Apz'.format(nvar_end))
-    imprime('')
-    imprime('--- Verificación de las ecuaciones en error acumulado {:10.3e} --'.format(tolerancia))
-    imprime('ecuación      valor medio error acumula  error máximo  % error máxi')
-    imprime('----------- ------------- ------------- ------------- -------------')
-    desvio = 0.
-    nfallos = 0
-    for i in range (len(etq_veri)):
-        if np.issubdtype(type(desviacion[i]), np.floating):
-            suma_des_error_cua = desviacion[i] * desviacion[i]
-            suma_des_abs = abs(desviacion[i])
-            max_des_error = suma_des_abs
-        else:
-            suma_des_error_cua = (desviacion[i] * desviacion[i]).sum()
-            suma_des_abs = (abs(desviacion[i])).sum()
-            max_des_error  = np.max(abs(desviacion[i]))
-        desvio += suma_des_error_cua
-        if suma_des_abs > tolerancia:
-            if abs(v_medio[i]) < 0.01:
-                # los porcentajes de desviaciones respecto de 0 no son significativos
-                p_error_max = '{:>13}'.format('--')
-            else:
-                p_error_max = '{:13.3f}'.format(100 * max_des_error / v_medio[i])
-            imprime('{:11} {:13.5e} {:13.5e} {:13.5e} {}'.format(etq_veri[i], v_medio[i], suma_des_abs, max_des_error, p_error_max))
-            nfallos += 1
-    if nfallos == 0:
-        imprime('======= Se cumplen todas las ecuaciones en error acumulado ========')
-    imprime('----------- ------------- ------------- ------------- -------------')
-    imprime('')
-    imprime('-- Verificación de las ecuaciones en % de error máximo {:8.3}% --'.format(100.0 * 0.0001))
-    imprime('ecuación      valor medio error acumula  error máximo  % error máxi')
-    imprime('----------- ------------- ------------- ------------- -------------')
-    nfallos = 0
-    for i in range (len(etq_veri)):
-        if np.issubdtype(type(desviacion[i]), np.floating):
-            suma_des_error_cua = desviacion[i] * desviacion[i]
-            suma_des_abs = abs(desviacion[i])
-            max_des_error = suma_des_abs
-        else:
-            suma_des_error_cua = (desviacion[i] * desviacion[i]).sum()
-            suma_des_abs = (abs(desviacion[i])).sum()
-            max_des_error  = np.max(abs(desviacion[i]))
-        if abs(v_medio[i]) < 0.01:
-            # los porcentajes de desviaciones respecto de 0 no son significativos
-            pem = max_des_error
-            p_error_max = '{:>13}'.format('--')
-        else:
-            pem = max_des_error / v_medio[i]
-            p_error_max = '{:13.3f}'.format(100 * pem)
-        if pem > 0.0001:    # 0.01%
-            imprime('{:11} {:13.5e} {:13.5e} {:13.5e} {}'.format(etq_veri[i], v_medio[i], suma_des_abs, max_des_error, p_error_max))
-            nfallos += 1
-    if nfallos == 0:
-        imprime('======  Se cumplen todas las ecuaciones en % de error máximo ======')
-    imprime('----------- ------------- ------------- ------------- -------------')
-    imprime('')
-    imprime('-------------------------------')
-    imprime('Ecm.total desvios {:13.5e}'.format(desvio))
-    imprime('-------------------------------')
-
 # rótulos para los resultados de verificar la factibilidad de las ecuaciones
 etq_veri = [
         ' 1.Yp  6. 1',
@@ -1429,8 +1227,10 @@ for k in range(nsec):
     etq_precios.append('pE_' + ind[k])
 for k in range(nsec):
     etq_precios.append('pM_' + ind[k])
+
 global datos
 global parametros
+
 if __name__ == '__main__':
     '''
     necesitamos este control porque el uso de workers en Windows reinicia el programa desde el
@@ -1487,275 +1287,12 @@ ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, d
 # ---------------------------------------------------------------------
 # Solucíonar el MEGA
 # ---------------------------------------------------------------------
-# NCASO selecciona el escenario a calcular, los escenarios se han elegido sin más sentido que el de probar la aplicación 
-if __name__ == '__main__':
-    if abs(DEM_ADICIONAL).sum() != 0:
-        if DEM_ADICIONAL_TIPO == 0:
-            imprime('Demanda adicional (importe)')
-        else:
-            imprime('Demanda adicional (cantidad)')
-        mfun.i_tabla(''  , [] , dem             , DEM_ADICIONAL, False     , DECIMALES)
-        imprime('')
-    if abs(AYD_ADICIONAL).sum() != 0:
-        imprime('Ayudas adicionales')
-        mfun.i_tabla(''  , [] , dem             , AYD_ADICIONAL, False     , DECIMALES)
-        imprime('')
-    if abs(CON_ESENCIALES).sum() != 0 and GE_INCLUYE_XP and (13 in NCASO) == False:
-        # se han especificado consumos esenciales, Xp se incluye en la solución y no es el caso 13 que hace CON_ESENCIALES = Xp0
-        imprime('Consumos esenciales. Cantidades')
-        mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
-        imprime('')
-for nc in NCASO:
-    if nc > 0:
-        if __name__ == '__main__':
-            imprime('---------------------------------------------------------------------------------------------------')
-            imprime('Escenario {}'.format(nc))
-            imprime('---------------------------------------------------------------------------------------------------')
-        if   nc == 1:
-            if __name__ == '__main__':
-                imprime('Elasticidad de la demanda (alfa) calibrado / escenario')
-                mfun.tabla_2D(dem, parametros.alfa)
-                imprime('')
-
-            for i in range(ndem):
-                for j in range(nsec):
-                    parametros.alfa[i,j] = 1.0 / nsec
-
-            if __name__ == '__main__':
-                mfun.tabla_2D(dem, parametros.alfa)
-        elif nc == 2:
-            if __name__ == '__main__':
-                imprime('Elasticidad de la producción (beta) calibrado / escenario')
-                mfun.tabla_2D(ind, parametros.beta)
-                imprime('')
-
-            for i in range(nsec):
-                for j in range(nfac):
-                    parametros.beta[i,j] = 0.5
-
-            if __name__ == '__main__':
-                mfun.tabla_2D(ind, parametros.beta)
-        elif nc == 3:
-            if __name__ == '__main__':
-                imprime('Aranceles de importación (taum) calibrado / escenario')
-                mfun.tabla_2D(['Productos',], datos.taum)
-                imprime('')
-
-            for i in range(nsec):
-                datos.taum[i] = 0.
-
-            if __name__ == '__main__':
-                mfun.tabla_2D(['Productos',], datos.taum)
-        elif nc == 4:
-            if __name__ == '__main__':
-                imprime('Aranceles de importación (taum) calibrado / escenario')
-                mfun.tabla_2D(['Productos',], datos.taum)
-                imprime('')
-
-            for i in range(nsec):
-                if datos.taum[i] > 0:
-                    datos.taum[i] *= 2.
-                else:
-                    # si previamente no hay aranceles se fijan en el 10%
-                    datos.taum[i] = 0.10
-
-            if __name__ == '__main__':
-                mfun.tabla_2D(['Productos',], datos.taum)
-        elif nc == 5:
-            if __name__ == '__main__':
-                imprime('Precios')
-                for i in range(nfac):
-                    imprime('{:9.7f}'.format(datos.pF0[i]))
-                for i in range(nsec):
-                    imprime('{:9.7f}'.format(datos.pY0[i]))
-                    imprime('{:9.7f}'.format(datos.pZ0[i]))
-                    imprime('{:9.7f}'.format(datos.pQ0[i]))
-                    imprime('{:9.7f}'.format(datos.pD0[i]))
-                imprime('{:9.7f}'.format(datos.epsilon))
-                imprime('')
-
-            for i in range(nfac):
-                datos.pF0[i] = PRECIO_INI
-            for i in range(nsec):
-                datos.pY0[i]  = PRECIO_INI
-                datos.pZ0[i]  = PRECIO_INI
-                datos.pQ0[i]  = PRECIO_INI
-                datos.pD0[i]  = PRECIO_INI
-                datos.epsilon = PRECIO_INI
-
-            if __name__ == '__main__':
-                for i in range(nfac):
-                    imprime('{:9.7f}'.format(datos.pF0[i]))
-                for i in range(nsec):
-                    imprime('{:9.7f}'.format(datos.pY0[i]))
-                    imprime('{:9.7f}'.format(datos.pZ0[i]))
-                    imprime('{:9.7f}'.format(datos.pQ0[i]))
-                    imprime('{:9.7f}'.format(datos.pD0[i]))
-                imprime('{:9.7f}'.format(datos.epsilon))
-        elif nc == 6:
-            if __name__ == '__main__':
-                # factores aportados por cada consumidor
-                imprime('Factores')
-                mfun.i_tabla('FF0',h , dem, datos.FF0, False, DECIMALES)
-                imprime('')
-            if np.issubdtype(type(VAR_FACTORES), np.floating):
-                # un multiplicador 
-                datos.FF0 *= VAR_FACTORES
-            else:
-                # valores concretos
-                datos.FF0 += VAR_FACTORES
-
-            if __name__ == '__main__':
-                # factores aportados por cada consumidor
-                imprime('Factores escenario')
-                mfun.i_tabla('FF0',h , dem, datos.FF0, False, DECIMALES)
-        elif nc == 7:
-            if __name__ == '__main__':
-                imprime('Propensión al ahorro')
-                for et in dem:
-                    imprime('{:4} {:9.5f}'.format(et, parametros.ssp[0]))
-                imprime('')
-
-            parametros.ssp[0] = parametros.ssp[0] / 2.
-
-            if __name__ == '__main__':
-                for et in dem:
-                    imprime('{:4} {:9.5f}'.format(et, parametros.ssp[0]))
-        elif nc == 8:
-            if __name__ == '__main__':
-                imprime('Seguridad social')
-                mfun.i_tabla('/' , dem, ['CssH',], parametros.ctzssh, False, 5)
-                mfun.i_tabla('/' , ind, ['CssE',], parametros.ctzsse, False, 5)
-                imprime('')
-
-            parametros.ctzssh *= FACTOR_CSSH
-            parametros.ctzsse *= FACTOR_CSSE
-
-            if __name__ == '__main__':
-                imprime('Seguridad social')
-                mfun.i_tabla('/' , dem, ['CssH',], parametros.ctzssh, False, 5)
-                mfun.i_tabla('/' , ind, ['CssE',], parametros.ctzsse, False, 5)
-        elif nc == 9:
-            # simplemente cambia la preferencia de los consumos, no se añade demanda
-            if __name__ == '__main__':
-                imprime('Elasticidad de la demanda (alfa) calibrado')
-                if DEM_ESENCIALES:
-                    mfun.tabla_2D(dem, parametros.alfa_esen)
-                else:
-                    mfun.tabla_2D(dem, parametros.alfa)
-                imprime('')
-
-            # modificar preferencias (alfa) de consumo con la demanda adicional
-            Xp0 = datos.Xp0 + DEM_ADICIONAL
-            if DEM_ESENCIALES:
-                renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-                if np.any(renta <= 0):
-                    imprime('Renta menor o igual a 0')
-                    for i in range(len(renta)):
-                        imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
-                    sys.exit()
-                parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-            else:
-                parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
-        
-            # para evitar que se sume el efecto en preferencia con el incremento en demanda
-            DEM_ADICIONAL.fill(0.)
-
-            if __name__ == '__main__':
-                imprime('Elasticidad de la demanda (alfa) escenario')
-                if DEM_ESENCIALES:
-                    mfun.tabla_2D(dem, parametros.alfa_esen)
-                else:
-                    mfun.tabla_2D(dem, parametros.alfa)
-                imprime('---------------------------------------------------------------------------------------------------')
-                imprime('Demanda adicional no suma en consumos')
-        elif nc == 10:
-            if __name__ == '__main__':
-                imprime('Elasticidad de la demanda (alfa) calibrado')
-                if DEM_ESENCIALES:
-                    mfun.tabla_2D(dem, parametros.alfa_esen)
-                else:
-                    mfun.tabla_2D(dem, parametros.alfa)
-                imprime('')
-
-            # modificar preferencias (alfa) de consumo porque las ayudas son para adquirir productos en concreto
-            Xp0 = datos.Xp0 + AYD_ADICIONAL
-            if DEM_ESENCIALES:
-                renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-                if np.any(renta <= 0):
-                    imprime('Renta menor o igual a 0')
-                    for i in range(len(renta)):
-                        imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
-                    sys.exit()
-                parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-            else:
-                parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
-
-            if __name__ == '__main__':
-                imprime('Elasticidad de la demanda (alfa) escenario')
-                if DEM_ESENCIALES:
-                    mfun.tabla_2D(dem, parametros.alfa_esen)
-                else:
-                    mfun.tabla_2D(dem, parametros.alfa)
-        elif nc == 11:
-            if __name__ == '__main__':
-                imprime('Elasticidad de sustitución (sigma) calibrado')
-                mfun.tabla_2D(ind, parametros.sigma)
-                imprime('Parámetro de elasticidad (eta) calibrado')
-                mfun.tabla_2D(ind, parametros.eta)
-                imprime('Coeficiente de escala de la función de Armington (gamma) calibrado')
-                mfun.tabla_2D(ind, parametros.gamma)
-                imprime('Participación local en la función del producto de Armington (deltad) calibrado')
-                mfun.tabla_2D(ind, parametros.deltad)
-                imprime('Participación de la importación en la función del producto de Armington (deltam) calibrado')
-                mfun.tabla_2D(ind, parametros.deltam)
-                imprime('')
-
-            # modificar sigma y eta pero no gamma, deltam ni deltad
-            parametros.sigma = SIGMA_ESCENARIO
-            parametros.eta = (parametros.sigma - 1.) / parametros.sigma
-
-            if __name__ == '__main__':
-                imprime('Elasticidad de sustitución (sigma) escenario')
-                mfun.tabla_2D(ind, parametros.sigma)
-                imprime('Parámetro de elasticidad (eta) escenario')
-                mfun.tabla_2D(ind, parametros.eta)
-                imprime('Coeficiente de escala de la función de Armington (gamma) escenario')
-                mfun.tabla_2D(ind, parametros.gamma)
-                imprime('Participación local en la función del producto de Armington (deltad) escenario')
-                mfun.tabla_2D(ind, parametros.deltad)
-                imprime('Participación de la importación en la función del producto de Armington (deltam) escenario')
-                mfun.tabla_2D(ind, parametros.deltam)
-        elif nc == 12:
-            if __name__ == '__main__':
-                imprime('Aranceles de importación (taum) calibrado / escenario')
-                mfun.tabla_2D(['Productos',], datos.taum)
-                imprime('')
-
-            datos.taum = ARANCELES
-
-            if __name__ == '__main__':
-                mfun.tabla_2D(['Productos',], datos.taum)
-        elif nc == 13:
-            if GE_INCLUYE_XP == False:
-                if __name__ == '__main__':
-                    imprime('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
-                sys.exit()
-            else:
-                if __name__ == '__main__':
-                    CON_ESENCIALES = datos.Xp0
-                    imprime('Consumos esenciales = Xp0. Cantidades')
-                    mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
-                    imprime('')
-        else:
-            if __name__ == '__main__':
-                imprime('Número de caso {} incorrecto'.format(NCASO))
-            sys.exit()
-    if __name__ == '__main__':
-        imprime('---------------------------------------------------------------------------------------------------')
-if __name__ == '__main__':
-    imprime('')
-
+esce.esceanrios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
+               NCASO, DEM_ADICIONAL, RENTA_FICTICIA, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES,
+               AYD_ADICIONAL, GE_INCLUYE_XP,
+               PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
+               SIGMA_ESCENARIO, ARANCELES
+               )
 if __name__ == '__main__':
     # sin el precio del último factor ya que su valor se fija de forma exógena
     pf0 = datos.pF0[0:nfac-1].flatten()
@@ -1879,7 +1416,10 @@ if __name__ == '__main__':
                 datos.Alp0,
     )
     # verifica solución
-    veri_solucion(vec_veri_sol, 'Verifica con los valores iniciales', GE_VERIFICAR)
+    infor.veri_solucion(datos, parametros, ind, dem,
+                        vec_veri_sol, etq_veri, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, AHORRO_L_PLAZO, CON_ESENCIALES,
+                        'Verifica con los valores iniciales', GE_VERIFICAR
+                        )
     imprime('')
     if PRIMERA_VALORACION:
         imprime('Una primera valoración del modelo')
@@ -1929,7 +1469,10 @@ if __name__ == '__main__':
                     AgH,
                     Alp,
         )
-        veri_solucion(vec_veri_sol,'Verifica en la primera valoración', GE_VERIFICAR)
+        infor.veri_solucion(datos, parametros, ind, dem,
+                            vec_veri_sol, etq_veri, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, AHORRO_L_PLAZO, CON_ESENCIALES,
+                            'Verifica en la primera valoración', GE_VERIFICAR
+                            )
         imprime('')
         imprime('---------------------------------')
         imprime('')
@@ -2141,7 +1684,10 @@ if __name__ == '__main__':
                 AgH,
                 Alp,
     )
-    veri_solucion(vec_veri_sol,'Verifica con la solución final', GE_VERIFICAR)
+    infor.veri_solucion(datos, parametros, ind, dem,
+                        vec_veri_sol, etq_veri, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, AHORRO_L_PLAZO, CON_ESENCIALES,
+                        'Verifica con la solución final', GE_VERIFICAR
+                        )
     if len(mensaje_fin) > 0 or dist > GE_TOLERANCIA:
         imprime('')
         imprime('***********************************************************************')
