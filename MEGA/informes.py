@@ -1368,9 +1368,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
 
     # rellenamos cada columna 'col' con las filas de menor a mayor con los IMPORTES correspondientes
 
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # sectores
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # consumos intermedios
     col = fil_col_ind
     for i in range(nsec):
@@ -1415,9 +1415,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     for i in range(nsec):
         mcs[fil,col] = imM[i]
         col += 1
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # factores de producción
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # aportacion de factores de produccion
     imFF = FF * pf
     col = fil_col_fac
@@ -1439,9 +1439,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     for i in range(nfac):
         mcs[fil,col] = imAlp.sum(axis=0)[i]
         col += 1
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # hogares
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # consumos de los hogares
     imXp = Xp * pq
     col = fil_col_dem
@@ -1484,18 +1484,18 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     for i in range(ndem):
         mcs[fil,col] = imAlp.sum(axis=1)[i]
         col += 1
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # ahorro + inversion
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     imXv = Xv * pq
     col = fil_col_inv
     fil = fil_col_ind
     for i in range(nsec):
         mcs[fil,col] = imXv[i]
         fil += 1
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # seguridad social
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # pensiones
     col = fil_col_css
     fil = fil_col_dem
@@ -1512,9 +1512,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     col = fil_col_idt
     fil = fil_col_gov
     mcs[fil,col] = Tz.sum() + Td_oi.sum() + Tg
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # sector público (gobierno)
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # consumos
     imXg = Xg * pq
     col = fil_col_gov
@@ -1534,9 +1534,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     col = fil_col_gov
     fil = fil_col_ayd
     mcs[fil,col] = AgE.sum() + AgH.sum()
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # sector exterior
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # exportaciones
     imE = E * pe
     col = fil_col_ext
@@ -1548,9 +1548,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     col = fil_col_ext
     fil = fil_col_inv
     mcs[fil,col] = Sf * epsilon
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # ayudas
-    #------------------------------------------------
+    #------------------------------------------------------------------------------------------------
     # a las empresas
     col = fil_col_ayd
     fil = fil_col_ind
@@ -1563,21 +1563,22 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     for i in range(ndem):
         mcs[fil,col] = AgH[i]
         fil += 1
-    #------------------------------------------------
-    # ajustes a los recursos de los sectores por Alp
-    # no se tiene el detalle de Alp por sectores
-    #------------------------------------------------
-    recursos = mcs.sum(axis=1) # suma de las filas
-    empleos  = mcs.sum(axis=0) # suma de las columnas
-    ajustes = (empleos - recursos)[0:nsec]
-    col = fil_col_alp
-    fil = fil_col_ind
-    for i in range(nsec):
-        mcs[fil,col] = ajustes[i]
-        fil += 1
-    #------------------------------------------------
-    # comprobar cuadre
-    #------------------------------------------------
+    if prin.FF_ENDOGENA and prin.AHORRO_L_PLAZO:
+        #------------------------------------------------------------------------------------------------
+        # ajustes a los recursos de los sectores por el Alp, como no se tiene el
+        # detalle del Alp por sectores, lo obtenemos por el descuadre 'empleos-recursos'
+        #------------------------------------------------------------------------------------------------
+        recursos = mcs.sum(axis=1) # suma de las filas
+        empleos  = mcs.sum(axis=0) # suma de las columnas
+        ajustes = (empleos - recursos)[0:nsec]
+        col = fil_col_alp
+        fil = fil_col_ind
+        for i in range(nsec):
+            mcs[fil,col] = ajustes[i]
+            fil += 1
+    #------------------------------------------------------------------------------------------------
+    # comprobar cuadre de filas y columnas
+    #------------------------------------------------------------------------------------------------
     recursos = mcs.sum(axis=1) # suma de las filas
     empleos  = mcs.sum(axis=0) # suma de las columnas
     # np.all(abs(empleos - recursos) < 0.1) solo será True si todas las comparaciones son ciertas

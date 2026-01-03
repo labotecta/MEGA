@@ -1233,6 +1233,7 @@ for k in range(nsec):
 for k in range(nsec):
     etq_precios.append('pM_' + ind[k])
 
+# los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
 global datos
 global parametros
 
@@ -1628,7 +1629,7 @@ if __name__ == '__main__':
                                           )
         infor.imprime_MCS(rot, mcs, DECIMALES, 'MCS final. Importes', TOLERA_MCS)
         if SAL_VAR_MCS:
-            infor.imprime_MCS(rot, mcs-mcs0, DECIMALES, 'Diferencias entre los valores finales y los iniciales de la MCS. Cantidades', 2.0 * TOLERA_MCS)
+            infor.imprime_MCS(rot, mcs-mcs0, DECIMALES, 'Diferencias entre los valores finales y los iniciales de la MCS', 2.0 * TOLERA_MCS)
 
     if GE_HISTORIAL > 0:
         # guardar el valor del error que, al final, se escribirá en un fichero CSV
