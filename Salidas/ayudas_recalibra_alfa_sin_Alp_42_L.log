@@ -363,7 +363,7 @@ Empleos        50821.2  117146.1  637669.8  273420.8  821857.8  146930.4  379017
 
 Las diferencias entre empleos y recursos se deben exclusivamente a los redondeos de impresión
 
-Diferencias entre los valores finales y los iniciales de la MCS. Cantidades
+Diferencias entre los valores finales y los iniciales de la MCS
 
                    AP1       AP2       AP3       AP4       AP5       AP6         K         L        C1        C2       A-I       CSS       INP        SP        SE       AYD       Alp Recursos
 ------------ --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
@@ -424,7 +424,7 @@ nit:     6000 mejora: 7.32794e-12 no progresa más
 No se alcanzó el mínimo deseado 1.000e-11 [3.557e-11]
 ***********************************************************************
 
-Tiempo de cálculo:         79 s
+Tiempo de cálculo:         81 s
 
 callback function requested stop early
 Número de iteraciones 6000
