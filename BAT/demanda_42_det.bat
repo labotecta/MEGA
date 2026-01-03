@@ -13,6 +13,7 @@ start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.p
 --NSEC                6 ^
 --DEM_ADICIONAL_TIPO  0 ^
 --DEM_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 1000. 0. 0. 0. ^
+--RENTA_FICTICIA      False ^
 --AYD_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
 --ARANCELES           0. 0. 0. 0. 0. 0. ^
 --OR_PRE_REFERENCIA   0 ^
@@ -26,6 +27,7 @@ start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.p
 --FF_ENDOGENA         True ^
 --AHORRO_L_PLAZO      True ^
 --GE_INCLUYE_XP       False ^
+--CON_ESENCIALES      0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
 --DEM_ESENCIALES      False ^
 --OPT_DESVIOS         1 ^
 --PRIMERA_VALORACION  False ^

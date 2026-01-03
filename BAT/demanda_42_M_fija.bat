@@ -26,6 +26,7 @@ start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.p
 --FF_ENDOGENA         True ^
 --AHORRO_L_PLAZO      True ^
 --GE_INCLUYE_XP       False ^
+--CON_ESENCIALES      0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
 --DEM_ESENCIALES      False ^
 --OPT_DESVIOS         1 ^
 --PRIMERA_VALORACION  False ^
