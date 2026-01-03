@@ -61,23 +61,16 @@ etq_caso = [
     'Xp0',                      # 13 consumos esenciales = Xp0
 ]
 
-'''
-if __name__ == '__main__':
-    with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-        log.write('lectura de parámetros\n')
-'''
 # extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto,
 # ajustando las dimensiones de las matrices 'reshape' cuando corresponde
 try:
     args = argumentos.valores_opciones()
 except BaseException as e:
     if __name__ == '__main__':
-        '''
         with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error en la lectura de parámetros\n')
+            log.write('Error en la lectura de parámetros {}\n'.format(e.args))
             log.write(str(e))
-        '''
-    print('Error en la lectura de parámetros')
+    print('Error en la lectura de parámetros {}\n'.format(e.args))
     sys.exit()
 
 # se guradan las notificaciones hasta que esté lista la función 'imprimir'
@@ -99,9 +92,9 @@ if len(args.AYD_ADICIONAL) != ndem * nsec:
         errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
     sys.exit()
 RENTA_FICTICIA      = args.RENTA_FICTICIA
-if NCASO == 9 and RENTA_FICTICIA:
+if (9 in NCASO) and RENTA_FICTICIA:
     if __name__ == '__main__':
-        avisos_diferidos.append('Aviso. Se ha seleccionado el caso {} sin renta ficticia'.format(etq_caso[NCASO]))
+        avisos_diferidos.append('Aviso. Se ha seleccionado el caso {} sin renta ficticia'.format(etq_caso[9]))
 AYD_ADICIONAL       = np.array(args.AYD_ADICIONAL  , dtype=np.float64).reshape(ndem, nsec)
 if len(args.CON_ESENCIALES) != ndem * nsec:
     if __name__ == '__main__':
@@ -109,11 +102,6 @@ if len(args.CON_ESENCIALES) != ndem * nsec:
     sys.exit()
 CON_ESENCIALES      = np.array(args.CON_ESENCIALES , dtype=np.float64).reshape(ndem, nsec)
 DEM_ESENCIALES      = args.DEM_ESENCIALES
-if CON_ESENCIALES.sum() == 0:
-    if (13 in NCASO) == False:
-        # si no se han especificado consumos esenciales no tiene sentido calcular demandas con consumos esenciales
-        avisos_diferidos.append('Aviso. Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
-        DEM_ESENCIALES = False
 SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
 ARANCELES           = np.array(args.ARANCELES, dtype=np.float64)
 PREFIJO             = args.PREFIJO if args.PREFIJO != '"' else ''
@@ -138,6 +126,23 @@ SAL_MCS             = args.SAL_MCS
 SAL_VAR_MCS         = args.SAL_VAR_MCS
 
 GE_INCLUYE_XP       = args.GE_INCLUYE_XP
+if CON_ESENCIALES.sum() == 0:
+    if (13 in NCASO) == False:
+        # el caso 13 fija los consumos esenciales
+        if DEM_ESENCIALES == True:
+            if __name__ == '__main__':
+                avisos_diferidos.append('Aviso. Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
+                DEM_ESENCIALES = False
+        if GE_INCLUYE_XP == True:
+            if __name__ == '__main__':
+                avisos_diferidos.append('Aviso. Se ha especificado GE_INCLUYE_XP = True, sin consumos esenciales')
+else:
+    if GE_INCLUYE_XP == False and DEM_ESENCIALES == False:
+        if __name__ == '__main__':
+            avisos_diferidos.append('Aviso. Se han especificado consumos esenciales pero GE_INCLUYE_XP y DEM_ESENCIALES son False')
+    if GE_INCLUYE_XP == False and DEM_ESENCIALES == True:
+        if __name__ == '__main__':
+            avisos_diferidos.append('Aviso. Se han especificado consumos esenciales y GE_INCLUYE_XP es False pero DEM_ESENCIALES es True. Stone-Geary puede fallar')
 GE_RESTRICCIONES    = args.GE_RESTRICCIONES
 GE_TIPO_RE          = args.GE_TIPO_RE
 GE_TOLERANCIA       = np.float64(args.GE_TOLERANCIA)
@@ -1319,7 +1324,7 @@ if __name__ == '__main__':
                                               INDICE_F_TRA,datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
                                               datos.X0,datos.F0,datos.CssE0,datos.Tz0,datos.M0,datos.AgE0,
                                               datos.FF0,datos.Alp0,datos.Xp0,datos.Sp0,datos.CssH0,datos.AgH0,datos.Td0,datos.Xv0,datos.PssH0,
-                                              datos.Xg0,datos.Sg0,datos.Tg0,
+                                              datos.Xg0,datos.Sg0,datos.Tg0,datos.Tm0,
                                               datos.E0,datos.Sf0,
                                               TOLERA_MCS
                                              )
@@ -1483,7 +1488,7 @@ if __name__ == '__main__':
                                                 INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                                 X,F,CssE,Tz,M,AgE,
                                                 FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                                Xg,Sg,datos.Tg0,
+                                                Xg,Sg,datos.Tg0,Tm,
                                                 E,datos.Sf0,
                                                 TOLERA_MCS
                                               )
@@ -1617,7 +1622,7 @@ if __name__ == '__main__':
                                             INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                                 X,F,CssE,Tz,M,AgE,
                                                 FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                                Xg,Sg,datos.Tg0,
+                                                Xg,Sg,datos.Tg0,Tm,
                                                 E,datos.Sf0,
                                                 TOLERA_MCS
                                           )

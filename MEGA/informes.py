@@ -1336,7 +1336,7 @@ def isocuanta_sector(i, SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h,
         return vQ, np.array([])
 
 def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
-                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,X,F,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,E,Sf,tolerancia=0.1):
+                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,X,F,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Tm,E,Sf,tolerancia=0.1):
     fil_col_ind = 0
     nfac = len(h)
     nsec = len(ind)
@@ -1401,6 +1401,12 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     fil = fil_col_idt
     for i in range(nsec):
         mcs[fil,col] = Tz[i]
+        col += 1
+    # aranceles
+    col = fil_col_ind
+    fil = fil_col_gov
+    for i in range(nsec):
+        mcs[fil,col] =  Tm[i]
         col += 1
     # importaciones de las empresas
     col = fil_col_ind

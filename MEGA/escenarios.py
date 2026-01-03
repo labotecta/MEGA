@@ -36,14 +36,15 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             imprime('Consumos calibrado')
             mfun.tabla_2D(dem, datos.Xp0)
             imprime('')
-            imprime('Elasticidad de la demanda (alfa) calibrado')
             if DEM_ESENCIALES:
+                imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
                 mfun.tabla_2D(dem, parametros.alfa_esen)
             else:
+                imprime('Elasticidad de la demanda (alfa) calibrado')
                 mfun.tabla_2D(dem, parametros.alfa)
             imprime('')
         
-        Xp0 = datos.Xp0 + DEM_ADICIONAL * 12012. / 58061.
+        Xp0 = datos.Xp0
         for i in range(ndem):
             for j in range(nsec):
                 if DEM_ADICIONAL[i,j] > 0:
@@ -65,10 +66,11 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             imprime('Consumos para el recálculo de alfa')
             mfun.tabla_2D(dem, Xp0)
             imprime('')
-            imprime('Elasticidad de la demanda (alfa) escenario')
             if DEM_ESENCIALES:
+                imprime('Elasticidad (Stone-Geary) de la demanda (alfa) escenario')
                 mfun.tabla_2D(dem, parametros.alfa_esen)
             else:
+                imprime('Elasticidad de la demanda (alfa) escenario')
                 mfun.tabla_2D(dem, parametros.alfa)
     if imprimir:
         if abs(AYD_ADICIONAL).sum() != 0:
@@ -213,10 +215,11 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             elif nc == 9:
                 # simplemente cambia la preferencia de los consumos, no se añade demanda
                 if imprimir:
-                    imprime('Elasticidad de la demanda (alfa) calibrado')
                     if DEM_ESENCIALES:
+                        imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
                         mfun.tabla_2D(dem, parametros.alfa_esen)
                     else:
+                        imprime('Elasticidad de la demanda (alfa) calibrado')
                         mfun.tabla_2D(dem, parametros.alfa)
                     imprime('')
 
@@ -237,40 +240,43 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 DEM_ADICIONAL.fill(0.)
 
                 if imprimir:
-                    imprime('Elasticidad de la demanda (alfa) escenario')
                     if DEM_ESENCIALES:
+                        imprime('Elasticidad (Stone-Geary) de la demanda (alfa) escenario')
                         mfun.tabla_2D(dem, parametros.alfa_esen)
                     else:
+                        imprime('Elasticidad de la demanda (alfa) escenario')
                         mfun.tabla_2D(dem, parametros.alfa)
                     imprime('---------------------------------------------------------------------------------------------------')
                     imprime('Demanda adicional no suma en consumos')
             elif nc == 10:
                 if imprimir:
-                    imprime('Elasticidad de la demanda (alfa) calibrado')
                     if DEM_ESENCIALES:
+                        imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
                         mfun.tabla_2D(dem, parametros.alfa_esen)
                     else:
+                        imprime('Elasticidad de la demanda (alfa) calibrado')
                         mfun.tabla_2D(dem, parametros.alfa)
                     imprime('')
 
                 # modificar preferencias (alfa) de consumo porque las ayudas son para adquirir productos en concreto
                 Xp0 = datos.Xp0 + AYD_ADICIONAL
                 if DEM_ESENCIALES:
-                    renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+                    renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0 + AYD_ADICIONAL.sum(axis=1), datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
                     if np.any(renta <= 0):
                         imprime('Renta menor o igual a 0')
                         for i in range(len(renta)):
                             imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
                         sys.exit()
-                    parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+                    parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0 + AYD_ADICIONAL.sum(axis=1), datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
                 else:
                     parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
 
                 if imprimir:
-                    imprime('Elasticidad de la demanda (alfa) escenario')
                     if DEM_ESENCIALES:
+                        imprime('Elasticidad (Stone-Geary) de la demanda (alfa) escenario')
                         mfun.tabla_2D(dem, parametros.alfa_esen)
                     else:
+                        imprime('Elasticidad de la demanda (alfa) escenario')
                         mfun.tabla_2D(dem, parametros.alfa)
             elif nc == 11:
                 if imprimir:

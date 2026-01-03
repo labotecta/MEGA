@@ -24,12 +24,12 @@ def demanda_StoneGeary_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
     '''
     nfac = FF.shape[1]
     ndem = Xp.shape[0]
-    ingreso_neto = AgH + PssH - (Sp + Td + CssH)                 # ingreso total de cada hogar
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)            # ingreso total de cada hogar
     for consu in range(ndem):
         for factor in range(nfac):
             ingreso_neto[consu] += FF[consu,factor] * pf[factor]
-    gasto_esencial   = (con_esen * pq).sum(axis=1)       # gasto esencial de cada hogar
-    renta_disponible = ingreso_neto - gasto_esencial          # renta una vez pagados los consumos esenciales
+    gasto_esencial   = (con_esen * pq).sum(axis=1)          # gasto esencial de cada hogar
+    renta_disponible = ingreso_neto - gasto_esencial        # renta una vez pagados los consumos esenciales
     return renta_disponible
 
 def demanda_StoneGeary_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
@@ -45,13 +45,13 @@ def demanda_StoneGeary_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
     nfac = FF.shape[1]
     ndem = Xp.shape[0]
     nsec = Xp.shape[1]
-    ingreso_neto = AgH + PssH - (Sp + Td + CssH)                 # ingreso total de cada hogar
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)            # ingreso total de cada hogar
     for consu in range(ndem):
         for factor in range(nfac):
             ingreso_neto[consu] += FF[consu,factor] * pf[factor]
     gasto_esencial      = (con_esen * pq).sum(axis=1)       # gasto esencial de cada hogar
-    renta_disponible    = ingreso_neto - gasto_esencial          # renta una vez pagados los consumos esenciales
-    consumo_no_esencial = Xp - con_esen                      # cantidad de consumo de cada producto por encima del esencial
+    renta_disponible    = ingreso_neto - gasto_esencial     # renta una vez pagados los consumos esenciales
+    consumo_no_esencial = Xp - con_esen                     # cantidad de consumo de cada producto por encima del esencial
     alfa = np.zeros((ndem,nsec), dtype=np.float64)
     for k in range(ndem):
         for i in range(nsec):
