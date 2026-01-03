@@ -1,4 +1,5 @@
 import sys
+import copy
 import numpy as np
 import ecuaciones as ecua
 import funciones  as mfun
@@ -34,7 +35,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             # recalcular los alfa para que no se reduzca el consumo de los productos con demanda adicional, tal como
             # ocurrirá con los otros por la obligación de asignar renta para las compras adicionales
             imprime('Consumos calibrado')
-            mfun.tabla_2D(dem, datos.Xp0)
+            mfun.tabla_2D(dem, datos.Xp0, DECIMALES)
             imprime('')
             if DEM_ESENCIALES:
                 imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
@@ -44,7 +45,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 mfun.tabla_2D(dem, parametros.alfa)
             imprime('')
         
-        Xp0 = datos.Xp0
+        Xp0 = copy.deepcopy(datos.Xp0)
         for i in range(ndem):
             for j in range(nsec):
                 if DEM_ADICIONAL[i,j] > 0:
@@ -64,7 +65,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
         if imprimir:
             imprime('Consumos para el recálculo de alfa')
-            mfun.tabla_2D(dem, Xp0)
+            mfun.tabla_2D(dem, Xp0, DECIMALES)
             imprime('')
             if DEM_ESENCIALES:
                 imprime('Elasticidad (Stone-Geary) de la demanda (alfa) escenario')
