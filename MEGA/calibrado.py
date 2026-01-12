@@ -14,7 +14,7 @@ Los valores que se muestran como comentarios son los correspondientes a la MCS '
 '''
 class datos(object):
 
-    def __init__(self, sam, h, ind, dem, idt, trf, gov, ayd, inv, ext, css, INDICE_F_TRA, PARO_INICIAL):
+    def __init__(self, sam, h, ind, dem, idt, trf, gov, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL):
         '''
         (sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css) son los nombres de filas y columnas de la 'sam'
 
@@ -82,13 +82,16 @@ class datos(object):
 
         # ingresos de los hogares recibidos de la seguridad social (pagos -columna- de la seguridad social a los hogares -fila-). Variable exógena
         self.PssH0 = DataFrame(sam, index=dem, columns=css)                     # (len(dem), 1)
-        '''
-                CSS
-        C1      0.0
-        C2  96804.0
-        '''
-        self.PssH0 = self.PssH0.to_numpy(dtype=np.float64).reshape(len(dem))    # ahorro de cada consumidor (len(dem), 1)
-        np.nan_to_num(self.PssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
+        if self.PssH0.empty:
+            self.PssH0 = np.zeros(len(dem), dtype=np.float64)
+        else:
+            '''
+                    CSS
+            C1      0.0
+            C2  96804.0
+            '''
+            self.PssH0 = self.PssH0.to_numpy(dtype=np.float64).reshape(len(dem))    # pensiones consumidor (len(dem), 1)
+            np.nan_to_num(self.PssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # factor compuesto para cada sector, igual a la suma de los factores utilizados por el sector en la MCS
         self.Y0 = self.F0.sum(axis=1)                                           # (len(ind), )
@@ -123,11 +126,14 @@ class datos(object):
         
         # otros impuestos sobre los productos pagados por los hogares
         self.Toi0 = DataFrame(sam, index=idt, columns=dem)
-        '''
-                  C1      C2
-        INP  67869.0  9108.0
-        '''
-        self.Toi0 = self.Toi0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(dem))
+        if self.Toi0.empty:
+            self.Toi0 = np.zeros(len(dem), dtype=np.float64)
+        else:
+            '''
+                      C1      C2
+            INP  67869.0  9108.0
+            '''
+            self.Toi0 = self.Toi0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(dem))
         
         # sumamos todos los impuestos pagados por los hogares al gobierno
         self.Td0 = self.Tid0 + self.Toi0
@@ -237,54 +243,60 @@ class datos(object):
         
         # de las empresas
         self.CssE0 = DataFrame(sam, index=css, columns=ind)                     # (1, len(ind))
-        '''
-               AP1     AP2      AP3      AP4      AP5      AP6
-        CSS  654.0  1364.0  17216.0  12662.0  43263.0  21254.0
-        '''
-        self.CssE0 = self.CssE0.to_numpy(dtype=np.float64).reshape(len(ind))    # aportación de cada sector (len(ind), )
-        np.nan_to_num(self.CssE0, copy=False) # si no hay datos (NAN) se sustituye por 0
+        if self.CssE0.empty:
+            self.CssE0 = np.zeros(len(ind), dtype=np.float64)
+        else:
+            '''
+                   AP1     AP2      AP3      AP4      AP5      AP6
+            CSS  654.0  1364.0  17216.0  12662.0  43263.0  21254.0
+            '''
+            self.CssE0 = self.CssE0.to_numpy(dtype=np.float64).reshape(len(ind))    # aportación de cada sector (len(ind), )
+            np.nan_to_num(self.CssE0, copy=False) # si no hay datos (NAN) se sustituye por 0
         
         # de los hogares
         self.CssH0 = DataFrame(sam, index=css, columns=dem)
-        '''
-                  C1      C2
-        CSS  18548.0  2486.0
-        '''
-        self.CssH0 = self.CssH0.to_numpy(dtype=np.float64).reshape(len(dem))    # aportación de cada consumidor (len(dem), )
-        np.nan_to_num(self.CssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
+        if self.CssH0.empty:
+            self.CssH0 = np.zeros(len(dem), dtype=np.float64)
+        else:
+            '''
+                      C1      C2
+            CSS  18548.0  2486.0
+            '''
+            self.CssH0 = self.CssH0.to_numpy(dtype=np.float64).reshape(len(dem))    # aportación de cada consumidor (len(dem), )
+            np.nan_to_num(self.CssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # ayudas (pagos) del gobierno a los sectores (empresas) = pago (aportación) de la columna 'AYD' a la fila 'ind'
         self.AgE0 = DataFrame(sam, index=ind, columns=ayd)
-        '''
-                AYD
-        AP1  1928.0
-        AP2     0.0
-        AP3  1694.0
-        AP4     0.0
-        AP5     0.0
-        AP6     0.0
-        '''
-        if self.AgE0.size == 0:
-            self.AgE0 = np.zeros(len(ind))                                      # (len(ind), )
+        if self.AgE0.empty:
+            self.AgE0 = np.zeros(len(ind), dtype=np.float64)
         else:
+            '''
+                    AYD
+            AP1  1928.0
+            AP2     0.0
+            AP3  1694.0
+            AP4     0.0
+            AP5     0.0
+            AP6     0.0
+            '''
             self.AgE0 = self.AgE0.to_numpy(dtype=np.float64).reshape(len(ind))  # (len(ind), )
             np.nan_to_num(self.AgE0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # ayudas (pagos) del gobierno a los hogares = pago (aportación) de la columna 'AYD' a la fila 'dem'
         self.AgH0 = DataFrame(sam, index=dem, columns=ayd)
-        '''
-            AYD
-        C1  0.0
-        C2  0.0
-        '''
-        if self.AgH0.size == 0:
-            self.AgH0 = np.zeros(len(dem))                                      # (len(dem), )                   
+        if self.AgH0.empty:
+            self.AgH0 = np.zeros(len(dem), dtype=np.float64)
         else:
+            '''
+                AYD
+            C1  0.0
+            C2  0.0
+            '''
             self.AgH0 = self.AgH0.to_numpy(dtype=np.float64).reshape(len(dem))  # (len(dem), )
             np.nan_to_num(self.AgH0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # tasa de impuesto a la producción = impuestos pagados / producción
-        self.tauz = (self.Tz0) / self.Z0                                        # (len(ind), ) / (len(ind), ) se dividen uno a uno
+        self.tauz = (self.Tz0) / self.Z0        # (len(ind), ) / (len(ind), ) se dividen uno a uno
         np.nan_to_num(self.tauz, copy=False)    # si no hay datos (NAN) se sustituye por 0
         self.tauz[self.tauz == np.inf] = 0      # porque algún elemento de F0 puede ser 0
         '''
@@ -298,17 +310,10 @@ class datos(object):
                 self.taum[i] = 0.
             else:
                 self.taum[i] = self.Tm0[i] / self.M0[i]
-        #self.taum = self.Tm0 / self.M0          # (len(ind), )
-        #np.nan_to_num(self.taum, copy=False)    # si no hay datos (NAN) se sustituye por 0
-        #self.taum[self.taum == np.inf] = 0      # porque algún elemento de F0 puede ser 0
-        '''
-        [0.0, 0.0, 0.0, 0.0, 0.0, nan]
-        '''
 
         # demanda local de cada producto. A la producción (Z0) se le
         # añaden los impuestos a la producción y se restan las exportaciones
         #self.D0 = (1 + self.tauz) * self.Z0 - self.E0 + self.CssE0
-
         self.D0 = (1 + self.tauz) * self.Z0 - self.E0 + self.CssE0 - self.AgE0  # (len(ind), )
         '''
         [32647.0, 71205.0, 311495.0, 273578.0, 725704.0, 147687.0]
@@ -323,7 +328,13 @@ class datos(object):
         self.Sp0 = self.Sp0.to_numpy(dtype=np.float64).reshape(len(dem))        # ahorro de cada consumidor (len(dem), )
         
         # ahorro a largo plazo de los hogares
-        self.Alp0 = np.zeros((len(dem),len(h)), dtype=np.float64)
+        self.Alp0 = DataFrame(sam, index=dem, columns=alp)
+        # misteriosamente, a pesar de que no existe una columna 'alp' devuelve una slice
+        if self.Alp0.empty or np.all(np.isnan(self.Alp0)):
+            self.Alp0 = np.zeros((len(dem),len(h)), dtype=np.float64)
+        else:
+            self.Alp0 = self.Alp0.to_numpy(dtype=np.float64).reshape(len(dem),len(h))  # (len(dem), )
+            np.nan_to_num(self.Alp0, copy=False) # si no hay datos (NAN) se sustituye por 0
 
         # ahorro del gobierno = pago (aportación) de la columna 'GOV' a la fila 'INV'
         self.Sg0 = DataFrame(sam, index=inv, columns=gov)
@@ -383,7 +394,8 @@ class parametros(object):
         '''
         self.sigma = np.zeros(nsec, dtype=np.float64)
         self.sigma.fill(2.)
-        self.eta = (self.sigma - 1.) / self.sigma   # 0.5
+        self.eta = (self.sigma - 1.) / self.sigma   # normalmente se anota como ρ (ro)
+        # sigma = 1. / (1. - eta)
 
         # elasticidad de transformación entre local y exportación (CET)
         # variable exógena puesta a 2.
@@ -433,6 +445,8 @@ class parametros(object):
         '''
         # coeficientes de participación (alfa) de los productos en la utilidad de la demanda
         self.alfa = ecua.demanda_CobbDouglas_alfa(datos.Xp0)
+        #self.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, datos.pF0, datos.pQ0, 0, np.zeros((ncon,nsec), dtype=np.float64))
+
         if DEM_ESENCIALES:
             renta = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
             if np.any(renta <= 0):

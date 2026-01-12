@@ -33,6 +33,13 @@ def variacion_hicksiana(Xp0, Xp, alfa, b=1.):
     ep1 = uu1 / denominador
     return ep1 - ep0
 
+def demanda_maxima_utilidad_Xp(tipo, param):
+    if tipo == 0:
+        (alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia) = param
+        return demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia)
+    else:
+        return demanda_maxima_utilidad_CES_Xp(param)
+
 def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia):
     '''
     devuelve la matriz con las cantidades óptimas de productos demandados Xp
@@ -53,30 +60,30 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
     nfac = FF.shape[1]
     ndem = alfa.shape[0]
     nsec = alfa.shape[1]
-    Xp = np.zeros((ndem, nsec), dtype=np.float64)
+    Xp   = np.zeros((ndem, nsec), dtype=np.float64)
 
-    # ingresos de cada consumidor, incluidas las ayudas del gobierno y los ingresos recibidos de
-    # la seguridad social, y netos de ahorros e impuestos
-    ingreso = AgH + PssH - (Sp + Td + CssH)
+    # ingresos de cada consumidor, incluidas las ayudas del gobierno y las pensiones, netos de ahorros, impuestos y cotizaciones
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)
     for consu in range(ndem):
         # ingresos del consumidor 'consu' por la prestación de factores
         for factor in range(nfac):
-            ingreso[consu] += FF[consu, factor] * pf[factor]
+            ingreso_neto[consu] += FF[consu, factor] * pf[factor]
         if renta_ficticia == False:
-            # se detrae de los ingreso lo que costará el incremento de demanda
+            # se detrae de los ingresos lo que costará el incremento de demanda
             for sector in range(nsec):
                 if inc_dem_tipo == 0:
-                    ingreso[consu] -= inc_dem[consu, sector]
+                    ingreso_neto[consu] -= inc_dem[consu, sector]
                 else:
-                    ingreso[consu] -= inc_dem[consu, sector] * pq[sector]
-        # consumo optimo de productos
+                    ingreso_neto[consu] -= inc_dem[consu, sector] * pq[sector]
         for sector in range(nsec):
+            # consumo óptimo de productos
+            Xp[consu,sector]  = alfa[consu, sector] * ingreso_neto[consu] / pq[sector]
             if inc_dem_tipo == 0:
                 # se añade 'inc_dem' al importe demandado 
-                Xp[consu,sector] = (alfa[consu, sector] * ingreso[consu] + inc_dem[consu, sector]) / pq[sector]
+                Xp[consu,sector] += inc_dem[consu, sector] / pq[sector]
             else:
                 # se añade 'inc_dem' a la cantidad demandada 
-                Xp[consu,sector] = alfa[consu, sector] * ingreso[consu]  / pq[sector] + inc_dem[consu, sector]
+                Xp[consu,sector] += inc_dem[consu, sector]
     '''
     if inc_dem_tipo == 0:
         # se añade 'inc_dem' al importe demandado 
@@ -133,6 +140,43 @@ def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, Cs
                 Xp[consu,sector] = con_esen[consu,sector] + (alfa[consu,sector] * renta_disponible[consu] + inc_dem[consu,sector]) / pq[sector]
             else:
                 Xp[consu,sector] = con_esen[consu,sector] + (alfa[consu,sector] * renta_disponible[consu]) / pq[sector] + inc_dem[consu,sector]
+    return Xp
+
+def demanda_maxima_utilidad_CES_Xp(param):
+    (gamma, eta, alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia) = param
+    sigma = 1. / (1. - eta)
+    nfac  = FF.shape[1]
+    ndem  = gamma.shape[0]
+    nsec  = gamma.shape[1]
+    Xp    = np.zeros((ndem, nsec), dtype=np.float64)
+
+    # ingresos de cada consumidor, incluidas las ayudas del gobierno y las pensiones, netos de ahorros, impuestos y cotizaciones
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)
+    for consu in range(ndem):
+        # ingresos del consumidor 'consu' por la prestación de factores
+        for factor in range(nfac):
+            ingreso_neto[consu] += FF[consu, factor] * pf[factor]
+        if renta_ficticia == False:
+            # se detrae de los ingresos lo que costará el incremento de demanda
+            for sector in range(nsec):
+                if inc_dem_tipo == 0:
+                    ingreso_neto[consu] -= inc_dem[consu, sector]
+                else:
+                    ingreso_neto[consu] -= inc_dem[consu, sector] * pq[sector]
+
+    uno_sigma = 1. - sigma
+    S = np.zeros(ndem, dtype=np.float64)
+    for consu in range(ndem):
+        for sector in range(nsec):
+            S[consu] +=  (alfa[consu,sector] ** sigma) * (pq[sector] ** uno_sigma)
+        for sector in range(nsec):
+            Xp[consu,sector] = ingreso_neto[consu] * ((alfa[consu,sector] / pq[sector]) ** sigma) / S[consu]
+            if inc_dem_tipo == 0:
+                # se añade 'inc_dem' al importe demandado 
+                Xp[consu,sector] += inc_dem[consu, sector] / pq[sector]
+            else:
+                # se añade 'inc_dem' a la cantidad demandada 
+                Xp[consu,sector] += inc_dem[consu, sector]
     return Xp
 
 def aportacion_factores_FF(FF0, F):

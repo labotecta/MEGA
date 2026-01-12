@@ -56,7 +56,13 @@ def importacion_maxima_utilidad_armington_M(gamma, deltam, pq, pm, Q, eta, taum)
         M[i] = Q[i] * ((gamma[i] ** eta[i]) * deltam[i] * pq[i] / ((1. + taum[i]) * pm[i])) ** invro[i]
     return M
     '''
-    return Q * ((gamma ** eta) * deltam * pq / ((1. + taum) * pm)) ** (1. / (1. - eta))
+    #return Q * ((gamma ** eta) * deltam * pq / ((1. + taum) * pm)) ** (1. / (1. - eta))
+
+    ImM = (gamma ** eta) * deltam * pq
+    tasa = taum
+    # se incrementa el precio con el arancel
+    precio = pm * (1. + tasa)
+    return Q * (ImM / precio) ** (1. / (1. - eta))
 
 def produccion_maxima_utilidad_armington_D(gamma, deltad, pq, pd, Q, eta):
     '''
@@ -67,7 +73,11 @@ def produccion_maxima_utilidad_armington_D(gamma, deltad, pq, pd, Q, eta):
         D[i] = Q[i] * ((gamma[i] ** eta[i]) * deltad[i] * pq[i] / pd[i]) ** invro[i]
     return D
     '''
-    return Q * ((gamma ** eta) * deltad * pq / pd) ** (1. / (1. - eta))
+    #return Q * ((gamma ** eta) * deltad * pq / pd) ** (1. / (1. - eta))
+
+    ImD = (gamma ** eta) * deltad * pq
+    precio = pd
+    return Q * (ImD / precio) ** (1. / (1. - eta))
 
 # función CET de transformacion de la producción bruta (Z) de un producto, en exportación (E) y sumnistro local (D)
 
@@ -91,14 +101,19 @@ def produccion_para_exportacion_E(teta, xie, pz, pe, Z, phi, tauz, CssE, AgE, Ap
     nsec = len(pz)
     E = np.zeros(nsec, dtype=np.float64)
     for i in range(nsec):
-        E[i] = Z[i] * ((teta[i] ** phi[i]) * (1. + tauz[i]) * pz[i] * xie[i] / pe[i]) ** invfi[i]
+        E[i] = Z[i] * (1. + tauz[i]) * pz[i] * ((teta[i] ** phi[i]) * xie[i] / pe[i]) ** invfi[i]
     return E
+    uno_mas_tasa = 1. + tauz + CssE / Z - AgE / Z + Apz
+    CtE = (teta ** phi) * uno_mas_tasa * xie * pz / pe
+    return Z * (CtE ** (1. / (1. - phi)))
     '''
     # transformamos la cotización a la seguridad social en un precio a la producción
     # hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en el cálculo de
     # 'E' y 'D', es decir, un mayor precio (pz) al igual que (tauz)
     # transformamos los ayudas del gobierno en un menor impuesto
+
     return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xie / pe) ** (1. / (1. - phi))
+
 
 def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz):
     '''
@@ -122,11 +137,15 @@ def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz):
     for i in range(nsec):
         D[i] = Z[i] * ((teta[i] ** phi[i]) * (1. + tauz[i]) * pz[i] * xid[i] / pd[i]) ** invfi[i]
     return D
+    uno_mas_tasa = 1. + tauz + CssE / Z - AgE / Z + Apz
+    CtD = (teta ** phi) * uno_mas_tasa * xid * pz / pd
+    return Z * (CtD ** (1. / (1. - phi)))
     '''
     # transformamos la cotización a la seguridad social en un precio a la producción
     # hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en el cálculo de
     # 'E' y 'D', es decir, un mayor precio (pz) al igual que 'tauz'
     # transformamos los ayudas del gobierno en un menor impuesto
+
     return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xid / pd) ** (1. / (1. - phi))
 
 def restriccion_producción_bruta_Z(teta, xie, xid, E, D, phi):
@@ -139,4 +158,5 @@ def restriccion_producción_bruta_Z(teta, xie, xid, E, D, phi):
     return Z
     '''
     base = xie * np.sign(E) * (np.abs(E) ** phi) + xid * np.sign(D) * (np.abs(D) ** phi)
-    return teta * np.sign(base) * (np.abs(base) ** (1. / phi))
+    Z = teta * np.sign(base) * (np.abs(base) ** (1. / phi))
+    return Z

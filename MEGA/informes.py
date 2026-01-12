@@ -44,9 +44,9 @@ def valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, V
     mfun.i_pie  ('/' , h)
     imprime('Factor compuesto. Y0 (Valor Añadido Bruto)')
     mfun.i_tabla(' ' , ind , ['Y0',]        , datos.Y0              , True , DECIMALES)
-    imprime('Consumo intermedio (filas), ventas (columnas). X0')
-    mfun.i_tabla(''  , [] , ind             , datos.X0.T            , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['ventas X0',]    , datos.X0.T.sum(axis=0), False, DECIMALES)
+    imprime('Consumo intermedio filas: ventas, columnas: compras. X0')
+    mfun.i_tabla(''  , [] , ind             , datos.X0              , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['compras X0',]  , datos.X0.sum(axis=0)  , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp0')
     mfun.i_tabla(''  , [] , dem             , datos.Xp0 , False     , DECIMALES)
@@ -359,7 +359,7 @@ def veri_solucion(datos, parametros, ind, dem,
     if DEM_ESENCIALES:
         desviacion[12] = Xp- deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA) # 6.13
     else:
-        desviacion[12] = Xp- deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA) # 6.13
+        desviacion[12] = Xp- deho.demanda_maxima_utilidad_Xp(prin.UTILIDAD_DEMANDA, (parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)) # 6.13
     nvar_end += Xp.size
     desviacion[13] = ebp                                                                                    # 6.16
     nvar_end += ebp.size
@@ -505,10 +505,10 @@ def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, 
     imprime('Factor compuesto. Y (Valor Añadido Bruto)')
     dY0 = Yp - datos.Y0
     mfun.i_tabla(' ' , ind , ['Y',]        , dY0                   , True , DECIMALES)
-    imprime('Consumo intermedio (filas), ventas (columnas). X')
+    imprime('Consumo intermedio filas: ventas, columnas: compras. X')
     dX0 = X - datos.X0
-    mfun.i_tabla(''  , [] , ind            , dX0.T                 , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['ventas X',]    , dX0.T.sum(axis=0)     , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ind            , dX0                   , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['compras X',]  , dX0.sum(axis=0)       , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp')
     dXp0 = Xp - datos.Xp0
@@ -629,10 +629,10 @@ def diferencias_importes_finales_iniciales(datos, parametros, DECIMALES, ind, de
     imprime('Factor compuesto. Y (Valor Añadido Bruto)')
     dY0 = Yp * py - datos.Y0 * datos.pY0
     mfun.i_tabla(' ' , ind , ['Y',]        , dY0                   , True , DECIMALES)
-    imprime('Consumo intermedio (filas), ventas (columnas). X')
-    dX0 = X * pz - datos.X0 * datos.pZ0
-    mfun.i_tabla(''  , [] , ind            , dX0.T                 , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['ventas X',]    , dX0.T.sum(axis=0)     , False, DECIMALES)
+    imprime('Consumo intermedio filas: ventas, columnas: compras. X')
+    dX0 = X * pq - datos.X0 * datos.pQ0
+    mfun.i_tabla(''  , [] , ind            , dX0                   , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['compras X',]  , dX0.sum(axis=0)       , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp')
     dXp0 = Xp * pq - datos.Xp0 * datos.pQ0
@@ -1335,8 +1335,8 @@ def isocuanta_sector(i, SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h,
     else:
         return vQ, np.array([])
 
-def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
-                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,X,F,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Tm,E,Sf,tolerancia=0.1):
+def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd, alp,
+                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,X,F,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Tm,E,Sf,tolerancia,titulo):
     fil_col_ind = 0
     nfac = len(h)
     nsec = len(ind)
@@ -1350,7 +1350,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     fil_col_ext = fil_col_gov  + len(gov)
     fil_col_ayd = fil_col_ext  + len(ext)
     fil_col_alp = fil_col_ayd  + len(ayd)
-    n_fil_cols  = fil_col_alp  + 1
+    n_fil_cols  = fil_col_alp  + len(alp)
 
     mcs  = np.zeros((n_fil_cols, n_fil_cols), dtype=np.float64)
 
@@ -1364,7 +1364,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     rot.extend(list(gov))
     rot.extend(list(ext))
     rot.extend(list(ayd))
-    rot.append('Alp')
+    rot.extend(list(alp))
 
     # rellenamos cada columna 'col' con las filas de menor a mayor con los IMPORTES correspondientes
 
@@ -1377,8 +1377,9 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
         # sector 'i'
         fil = fil_col_ind
         for j in range(nsec):
-            # compras al sector 'j' por el sector 'i' al precio de 'j'. X está traspuesta, sus filas son las ventas y las columnas las compras
-            mcs[fil,col] = X[j,i] * pz[j]
+            # X[j,i] compras al sector 'j' por el sector 'i' al precio de 'j'.
+            # las filas 'i' de X son las ventas del sector 'i' al 'j' y las columnas 'j' las compras del sector 'i' al sector 'j'
+            mcs[fil,col] = X[j,i] * pq[j]
             fil += 1
         col += 1
     # uso de los factores de producción (incluye Alp)
@@ -1585,7 +1586,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
     if np.all(abs(empleos - recursos) < tolerancia) == False:
         # el criterio no se cumple para algún elemento
         imprime('')
-        imprime('ERROR. La MCS no cuadra')
+        imprime('ERROR. ' + titulo + '. No cuadra.')
         imprime('                 empleos     recursos   diferencia')
         imprime('------------ ------------ ------------ ------------')
         for i in range(len(empleos)):
@@ -1594,7 +1595,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
         imprime('')
     return (rot, mcs)
 
-def imprime_MCS(rot, mcs, DECIMALES, titulo='MCS', tolerancia=0.1):
+def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo):
     if DECIMALES == 0:
         ESPA = 8
         subraya = '--------'
@@ -1639,5 +1640,5 @@ def imprime_MCS(rot, mcs, DECIMALES, titulo='MCS', tolerancia=0.1):
             # el criterio se cumple para todos los elementos
             imprime('Las diferencias entre empleos y recursos se deben exclusivamente a los redondeos de impresión')
         else:
-            imprime('ERROR. La MCS no cuadra. Imprimir')
+            imprime('ERROR. ' + titulo + '. No cuadra. Impresión')
         imprime('')

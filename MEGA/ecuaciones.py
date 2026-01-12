@@ -1,6 +1,7 @@
 import numpy as np
 
-def demanda_CobbDouglas_alfa(X):
+
+def demanda_CobbDouglas_alfa(Xp):
     '''
     calcula los valores del parámetro alfa de la funcion de utilidad.
     igual a la fracción de producto demandado por cada consumidor, dividido por su total demandado
@@ -9,13 +10,42 @@ def demanda_CobbDouglas_alfa(X):
     argumentos:
         X: demanda de los hogares a cada sector len(dem) x len(ind)
     '''
-    ndem = X.shape[0]
-    nsec = X.shape[1]
-    suma = X.sum(axis=1)    # demanda total de cada hogar
+    ndem = Xp.shape[0]
+    nsec = Xp.shape[1]
+    suma = Xp.sum(axis=1)    # demanda total de cada hogar
     alfa = np.zeros((ndem,nsec), dtype=np.float64)
-    for k in range(ndem):
-        for i in range(nsec):
-            alfa[k,i] = X[k,i] / suma[k]
+    for consu in range(ndem):
+        for sector in range(nsec):
+            alfa[consu,sector] = Xp[consu,sector] / suma[consu]
+    '''
+    #def demanda_CobbDouglas_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, pf, pq, inc_dem_tipo, inc_dem):
+    nfac = FF.shape[1]
+    alfa_2 = np.zeros((ndem,nsec), dtype=np.float64)
+    ingreso_neto = AgH + PssH - (Sp + Td + CssH)            # ingreso total de cada hogar
+    for consu in range(ndem):
+        for factor in range(nfac):
+            ingreso_neto[consu] += FF[consu,factor] * pf[factor]
+
+    # se detrae de los ingresos lo que costará el incremento de demanda
+    for sector in range(nsec):
+        if inc_dem_tipo == 0:
+            ingreso_neto[consu] -= inc_dem[consu, sector]
+        else:
+            ingreso_neto[consu] -= inc_dem[consu, sector] * pq[sector]
+    for consu in range(ndem):
+        for sector in range(nsec):
+            alfa_2[consu,sector] = Xp[consu,sector] / ingreso_neto[consu]
+    
+    assert np.all(alfa - alfa_2 < 0.0001), 'calculo a:\n{}\ncalculo b:\n{}'.format(alfa, alfa_2)
+    '''
+    return alfa
+
+def demanda_CES_alfa(eta, Xp):
+    '''
+    1. - eta = 1. / sigma
+    '''
+    a = Xp ** (1 - eta)
+    alfa = a / a.sum(axis=1)
     return alfa
 
 def demanda_StoneGeary_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):

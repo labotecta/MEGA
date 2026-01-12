@@ -11,7 +11,7 @@ incluidos los incluidos en el libro
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
-def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
+def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
               NCASO, DEM_ADICIONAL, RENTA_FICTICIA, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES,
               AYD_ADICIONAL, GE_INCLUYE_XP,
               PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
@@ -33,9 +33,9 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
     if abs(DEM_ADICIONAL).sum() != 0 and RENTA_FICTICIA == False:
         if imprimir:
             # recalcular los alfa para que no se reduzca el consumo de los productos con demanda adicional, tal como
-            # ocurrirá con los otros por la obligación de asignar renta para las compras adicionales
+            # ocurrirá con los otros por la obligación de reservar renta para las compras adicionales
             imprime('Consumos calibrado')
-            mfun.tabla_2D(dem, datos.Xp0, DECIMALES)
+            mfun.i_tabla('', [], dem , datos.Xp0, False, DECIMALES)
             imprime('')
             if DEM_ESENCIALES:
                 imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
@@ -44,18 +44,25 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 imprime('Elasticidad de la demanda (alfa) calibrado')
                 mfun.tabla_2D(dem, parametros.alfa)
             imprime('')
-        
+        suma_resto = np.zeros((ndem), dtype=np.float64)
+        for i in range(ndem):
+            for j in range(nsec):
+                if DEM_ADICIONAL[i,j] == 0:
+                    suma_resto[i] += datos.Xp0[i,j] 
+        # ajustar los consumos de los productos sin incremento de demanda para que la suma total de consumos sea
+        # igual a la del caso base. Lo que vamos a sumar a unos se lo restamos a los otros
+        norma = (suma_resto - DEM_ADICIONAL.sum(axis=1))/ suma_resto
         Xp0 = copy.deepcopy(datos.Xp0)
         for i in range(ndem):
             for j in range(nsec):
-                if DEM_ADICIONAL[i,j] > 0:
-                    if  Xp0.sum(axis=1)[i] > 0:
-                        Xp0[i,j] += DEM_ADICIONAL[i,j] * Xp0[i,j] / Xp0.sum(axis=1)[i]
-                    else:
-                        Xp0[i,j] += DEM_ADICIONAL[i,j]
+                # queremos que las compras optimas de productos con incremento de demanda sean los de la MCS
+                # la función del calculo de los Xp ya les sumara el incremento
+                # por tanto sólo cambiamos el consumo de los productos sin incremento de demanda
+                if DEM_ADICIONAL[i,j] == 0:
+                    Xp0[i,j] *= norma[i] 
         if DEM_ESENCIALES:
             renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-            if np.any(renta <= 0):
+            if np.any(renta < 0):
                 imprime('Renta menor o igual a 0')
                 for i in range(len(renta)):
                     imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
@@ -63,9 +70,10 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
         else:
             parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
+            #parametros.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, datos.pF0, datos.pQ0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)
         if imprimir:
-            imprime('Consumos para el recálculo de alfa')
-            mfun.tabla_2D(dem, Xp0, DECIMALES)
+            imprime('Consumos para el recálculo de alfa (sin las demandas adicionales)')
+            mfun.i_tabla('', [], dem, Xp0, False, DECIMALES)
             imprime('')
             if DEM_ESENCIALES:
                 imprime('Elasticidad (Stone-Geary) de la demanda (alfa) escenario')
@@ -78,8 +86,8 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             imprime('Ayudas adicionales')
             mfun.i_tabla(''  , [] , dem             , AYD_ADICIONAL, False     , DECIMALES)
             imprime('')
-        if abs(CON_ESENCIALES).sum() != 0 and GE_INCLUYE_XP and (13 in NCASO) == False:
-            # se han especificado consumos esenciales, Xp se incluye en la solución y no es el caso 13 que hace CON_ESENCIALES = Xp0
+        if abs(CON_ESENCIALES).sum() != 0 and GE_INCLUYE_XP and (13 in NCASO) == False and (14 in NCASO) == False:
+            # se han especificado consumos esenciales, Xp se incluye en la solución y no es el caso 13 o 14 que hace CON_ESENCIALES = Xp0
             imprime('Consumos esenciales. Cantidades')
             mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
             imprime('')
@@ -228,7 +236,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 Xp0 = datos.Xp0 + DEM_ADICIONAL
                 if DEM_ESENCIALES:
                     renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-                    if np.any(renta <= 0):
+                    if np.any(renta < 0):
                         imprime('Renta menor o igual a 0')
                         for i in range(len(renta)):
                             imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
@@ -236,6 +244,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                     parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
                 else:
                     parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
+                    #parametros.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, datos.pF0, datos.pQ0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)
         
                 # para evitar que se sume el efecto en preferencia con el incremento en demanda
                 DEM_ADICIONAL.fill(0.)
@@ -263,7 +272,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 Xp0 = datos.Xp0 + AYD_ADICIONAL
                 if DEM_ESENCIALES:
                     renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0 + AYD_ADICIONAL.sum(axis=1), datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-                    if np.any(renta <= 0):
+                    if np.any(renta < 0):
                         imprime('Renta menor o igual a 0')
                         for i in range(len(renta)):
                             imprime('{:3} {:12.5e}'.format(i + 1, renta[i]))
@@ -271,6 +280,7 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                     parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0 + AYD_ADICIONAL.sum(axis=1), datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
                 else:
                     parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
+                    #parametros.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, datos.pF0, datos.pQ0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)
 
                 if imprimir:
                     if DEM_ESENCIALES:
@@ -324,8 +334,19 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                         imprime('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
                     sys.exit()
                 else:
+                    CON_ESENCIALES = datos.Xp0
                     if imprimir:
-                        CON_ESENCIALES = datos.Xp0
+                        imprime('Consumos esenciales = Xp0. Cantidades')
+                        mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
+                        imprime('')
+            elif nc == 14:
+                if GE_INCLUYE_XP == False:
+                    if imprimir:
+                        imprime('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    sys.exit()
+                else:
+                    CON_ESENCIALES = datos.Xp0 - 1
+                    if imprimir:
                         imprime('Consumos esenciales = Xp0. Cantidades')
                         mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
                         imprime('')
@@ -337,4 +358,5 @@ def esceanrios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             imprime('---------------------------------------------------------------------------------------------------')
     if imprimir:
         imprime('')
+    return (CON_ESENCIALES)
 

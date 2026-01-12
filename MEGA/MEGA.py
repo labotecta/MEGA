@@ -25,6 +25,10 @@ from scipy.optimize  import differential_evolution
 from matplotlib      import pyplot as plt
 from timeit          import default_timer as timer
 
+# Para serializar (convertir a un formato que se puede guardar en disco y recuperar) 
+import pickle
+import bz2  # para comprimir
+
 import argumentos
 import calibrado
 import funciones     as mfun
@@ -38,7 +42,11 @@ import demanda       as deho
 import exterior      as exte
 import restricciones as restri
 
-VERSION = '1.0.9'
+# los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
+global datos
+global parametros
+
+VERSION = '1.1.0'
 # 4 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 #               0            1             2              3
 etq_sam  = ['1_hogar','2_hogares','3_hogares_AMP','MCA-ESP-05']
@@ -59,6 +67,7 @@ etq_caso = [
     'sigma',                    # 11
     'aranceles',                # 12
     'Xp0',                      # 13 consumos esenciales = Xp0
+    'Xp0m1',                    # 14 consumos esenciales = Xp0 - 1
 ]
 
 # extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto,
@@ -76,11 +85,12 @@ except BaseException as e:
 # se guradan las notificaciones hasta que esté lista la función 'imprimir'
 errores_diferidos = []
 avisos_diferidos  = []
-nfac = args.NFAC    # número de factores
+nfac = args.NFAC    # número de factores 
 ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
+
 NCASO               = np.array(args.NCASO, dtype=int)
 DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
 if len(args.DEM_ADICIONAL) != ndem * nsec:
@@ -90,7 +100,6 @@ DEM_ADICIONAL       = np.array(args.DEM_ADICIONAL, dtype=np.float64).reshape(nde
 if len(args.AYD_ADICIONAL) != ndem * nsec:
     if __name__ == '__main__':
         errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
-    sys.exit()
 RENTA_FICTICIA      = args.RENTA_FICTICIA
 if (9 in NCASO) and RENTA_FICTICIA:
     if __name__ == '__main__':
@@ -99,9 +108,11 @@ AYD_ADICIONAL       = np.array(args.AYD_ADICIONAL  , dtype=np.float64).reshape(n
 if len(args.CON_ESENCIALES) != ndem * nsec:
     if __name__ == '__main__':
         errores_diferidos.append('El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_ESENCIALES), ndem * nsec))
-    sys.exit()
 CON_ESENCIALES      = np.array(args.CON_ESENCIALES , dtype=np.float64).reshape(ndem, nsec)
 DEM_ESENCIALES      = args.DEM_ESENCIALES
+if abs(CON_ESENCIALES).sum() == 0 and DEM_ESENCIALES == True:
+    if __name__ == '__main__':
+        avisos_diferidos.append('Aviso. No se han especificado consumos esenciales pero DEM_ESENCIALES es True')
 SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
 ARANCELES           = np.array(args.ARANCELES, dtype=np.float64)
 PREFIJO             = args.PREFIJO if args.PREFIJO != '"' else ''
@@ -112,9 +123,11 @@ PARO_INICIAL        = np.float64(args.PARO_INICIAL)
 ALFA_PHILLIPS       = np.float64(args.ALFA_PHILLIPS)
 FF_ENDOGENA         = args.FF_ENDOGENA
 AHORRO_L_PLAZO      = args.AHORRO_L_PLAZO
+ALP_FACTOR          = args.ALP_FACTOR
 OPT_DESVIOS         = args.OPT_DESVIOS
 PRIMERA_VALORACION  = args.PRIMERA_VALORACION
-
+UTILIDAD_DEMANDA    = args.UTILIDAD_DEMANDA
+SIGMA_CES_DEMANDA   = args.SIGMA_CES_DEMANDA
 SAL_CALIBRADO       = args.SAL_CALIBRADO
 SALIDA_VEC_OPT      = args.SALIDA_VEC_OPT
 SALIDA_DESVIOS      = args.SALIDA_DESVIOS
@@ -124,11 +137,10 @@ SAL_ISOCUANTA       = args.SAL_ISOCUANTA
 SAL_VARIACIONES     = args.SAL_VARIACIONES
 SAL_MCS             = args.SAL_MCS
 SAL_VAR_MCS         = args.SAL_VAR_MCS
-
 GE_INCLUYE_XP       = args.GE_INCLUYE_XP
 if CON_ESENCIALES.sum() == 0:
-    if (13 in NCASO) == False:
-        # el caso 13 fija los consumos esenciales
+    if (13 in NCASO) == False and (14 in NCASO) == False:
+        # los casos 13 y 14 fijan los consumos esenciales
         if DEM_ESENCIALES == True:
             if __name__ == '__main__':
                 avisos_diferidos.append('Aviso. Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
@@ -175,7 +187,6 @@ else:
                 log.write('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n) + '\n')
             '''
             print('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
-        sys.exit()
     if len(args.GE_FIX_LIMITES) != sum(args.GE_FIX_LON) * 2:
         if __name__ == '__main__':
             '''
@@ -183,7 +194,6 @@ else:
                 log.write('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES) + '\n')
             '''
             print('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES))
-        sys.exit()
     GE_FIX_LIMITES = np.zeros(k, dtype=list)
     ni = 0
     for i in range(k):
@@ -211,17 +221,17 @@ FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
         errores_diferidos.append('El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
-    sys.exit()
 VAR_FACTORES        = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == '__main__':
         errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
-    sys.exit()
 COE_VAB             = np.array(args.COE_VAB, dtype=np.float64)
 SENDA_DATOS         = args.SENDA_DATOS
 SENDA_SALIDAS       = args.SENDA_SALIDAS
 SENDA_GRAFICOS      = args.SENDA_GRAFICOS
-
+if (13 in NCASO) and DEM_ESENCIALES:
+    if __name__ == '__main__':
+        errores_diferidos.append('Consumos esenciales iguales a Xp0 es incompatible con Stone-Geary (rentas 0)')
 # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
 # valores desagregados por producto, porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
 AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
@@ -234,6 +244,7 @@ if GE_WORKERS != 1:
     n_cores = psutil.cpu_count(logical = False)
     if n_cores <= GE_WORKERS:
         aviso_workers = True
+
 os.makedirs(SENDA_SALIDAS , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_GRAFICOS, exist_ok=True)  # crear el directorio si no existe
 
@@ -244,21 +255,22 @@ INDICE_F_TRA = 1        # índice del factor trabajo, es mejor cambiar el orden 
 
 if   NSAM == 0:
     # Con un solo hogar (consumidor)
+    '''
     DEM_ADICIONAL = np.array([
         [0., 0.],
     ])
     AYD_ADICIONAL = np.array([
-        [0., 0.],
+        [0., 10.],
     ])
     AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
-    '''
-    DECIMALES = 5
+    DECIMALES = 3
     GE_TOLERANCIA     = 1.e-09  # límite para considerar el objetivo alcanzado.
     # Si el valor de una variable al aplicar la correspondiente ecuación del modelo varía, respecto del valor antes de aplicar la
     # ecuación, en menos de GE_VERIFICAR se considera que la ecuación se cumple (factibilidad de la ecuación)
     GE_VERIFICAR      = 1.e-08
     GE_HISTORIAL      = 50      # número de iteraciones para salvar el historial
     GE_SOLUCIONES     = 50      # número de iteraciones para salvar solución
+    GE_PROGRESO       = 50
     '''
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "SAM_estandar")
     ind  = ('BRD' ,'MLK')       # sectores (industria)
@@ -267,10 +279,11 @@ if   NSAM == 0:
     idt  = ('IDT',)             # impuestos indirectos a la producción
     trf  = ('TRF',)             # aranceles pagados por la producción (son los únicos que importan en este modelo)
     gov  = ('GOV',)             # gobierno
-    ayd = ()                   # ayudas del gobierno
+    ayd  = ('AYD',)             # ayudas del gobierno, no existe en la MCS original pero la añadimos porque el escenario puede incluir ayudas 
     inv  = ('INV',)             # ahorro e inversión
     ext  = ('EXT',)             # sector exterior
-    css  = ('CSS',)             # cotizaciones a la seguridad social
+    css  = ()                   # cotizaciones a la seguridad social
+    alp  = ('ALP',)             # ahorro a largo plazo
     #
 elif NSAM == 1:
     # Con dos hogares (consumidores)
@@ -300,10 +313,11 @@ elif NSAM == 1:
     idt  = ('IDT',)             # impuestos indirectos a la producción
     trf  = ('TRF',)             # aranceles pagados por la producción (son los únicos que importan en este modelo)
     gov  = ('GOV',)             # gobierno
-    ayd = ()                   # ayudas del gobierno
+    ayd = ()                    # ayudas del gobierno
     inv  = ('INV',)             # ahorro e inversión
     ext  = ('EXT',)             # sector exterior
     css  = ('CSS',)             # cotizaciones a la seguridad social
+    alp  = ('ALP',)             # ahorro a largo plazo
     #
 elif NSAM == 2:
     # Con tres hogares (consumidores), seguridad social independiente y ayudas del gobierno
@@ -333,10 +347,11 @@ elif NSAM == 2:
     idt  = ('IDT',)                 # impuestos indirectos a la producción
     trf  = ('TRF',)                 # aranceles pagados por la producción (son los únicos que importan en este modelo)
     gov  = ('GOV',)                 # gobierno
-    ayd = ('AYD',)                 # ayudas del gobierno
+    ayd = ('AYD',)                  # ayudas del gobierno
     inv  = ('INV',)                 # ahorro e inversión
     ext  = ('EXT',)                 # sector exterior
     css  = ('CSS',)                 # cotizaciones a la seguridad social
+    alp  = ('ALP',)                 # ahorro a largo plazo
     #
 elif NSAM == 3:
     # MCA-ESP-05 corregida
@@ -372,10 +387,11 @@ elif NSAM == 3:
     idt  = ('INP',)                                 # impuestos a la producción, otros impuestos a la producción
     trf  = ('TRF',)                                 # aranceles pagados por la producción (no los hay en esta MCS)
     gov  = ('SP',)                                  # gobierno
-    ayd = ('AYD',)                                 # ayudas del gobierno
+    ayd = ('AYD',)                                  # ayudas del gobierno
     inv  = ('A-I',)                                 # ahorro e inversión
     ext  = ('SE',)                                  # sector exterior
     css  = ('CSS',)                                 # cotizaciones a la seguridad social
+    alp  = ('ALP',)                                 # ahorro a largo plazo
     #
 else:
     errores_diferidos.append('Número de MCS {} incorrecto'.format(NSAM))
@@ -419,12 +435,19 @@ def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
 if len(avisos_diferidos) > 0:
+    imprime('')
+    imprime('....................................................................................................................................')
     for mensaje in avisos_diferidos:
         imprime(mensaje)
+    imprime('....................................................................................................................................')
+    imprime('')
 
 if len(errores_diferidos) > 0:
+    imprime('')
+    imprime('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     for mensaje in errores_diferidos:
         imprime(mensaje)
+    imprime('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     sys.exit()
 
 def punteros():
@@ -741,8 +764,9 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
             # se ahorra a largo plazo (Alp) el exceso de ingresos (FF) respecto a los iniciales (FF0)
             # lo que significa que no se usará en comprar productos o invertir en los sectores
             # si AHORRO_L_PLAZO = False, el modelo se retroalimenta además de por los consumos internos, por la demanda final.
-            Alp = FF - datos.FF0
-            FF = datos.FF0
+            exceso = FF - datos.FF0
+            Alp = exceso * ALP_FACTOR
+            FF -= Alp
         else:
             Alp = datos.Alp0
     else:
@@ -799,7 +823,7 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
         Xp = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)  # 6.13
     else:
         # función de demanda Cobb Douglas
-        Xp = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)                        # 6.13
+        Xp = deho.demanda_maxima_utilidad_Xp(UTILIDAD_DEMANDA, (parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA))                        # 6.13
 
     # función CES de sustitución con la que determinar el óptimo entre importar (M) o
     # producir localmente (D), la demanda del producto de Armington (Q)
@@ -847,8 +871,9 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
     if  FF_ENDOGENA:
         FFr = deho.aportacion_factores_FF(datos.FF0, F)
         if AHORRO_L_PLAZO:
-            Alpr = FFr - datos.FF0
-            FFr  = datos.FF0
+            exceso = FFr - datos.FF0
+            Alpr = exceso * ALP_FACTOR
+            FFr -= Alp
         else:
             Alpr = datos.Alp0
     else:
@@ -871,7 +896,7 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
     if DEM_ESENCIALES:
         Xpr   = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)    # 6.13
     else:
-        Xpr   = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)    # 6.13
+        Xpr   = deho.demanda_maxima_utilidad_Xp(UTILIDAD_DEMANDA, (parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA))    # 6.13
     Qr    = exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta)                      # 6.17
     Mr    = exte.importacion_maxima_utilidad_armington_M(parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum)       # 6.18
     Dar   = exte.produccion_maxima_utilidad_armington_D(parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta)                    # 6.19
@@ -907,9 +932,9 @@ def sec_ecuaciones(vec_opt, muestra_progreso):
         imprime('Factor compuesto. Y (Valor Añadido Bruto)')
         mfun.i_tabla('/' , ind                  , ['Y óptimo F',] , Yp                   , False, DECIMALES)
         mfun.i_tabla(''  , []                   , ['Y nec.para Z',] , Yd                 , False, DECIMALES)
-        imprime('Consumo intermedio (filas), ventas (columnas). X')
-        mfun.i_tabla(''  , []                   , ind             , X.T                  , False, DECIMALES)
-        mfun.i_tabla(''  , []                   , ['ventas X',]     , X.T.sum(axis=0)    , False, DECIMALES)
+        imprime('Consumo intermedio filas: ventas, columnas: compras. X')
+        mfun.i_tabla(''  , []                   , ind             , X                    , False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['compras X',]   , X.sum(axis=0)        , False, DECIMALES)
         mfun.i_pie('/'   , ind)
         imprime('Consumo de los hogares. Xp')
         mfun.i_tabla(''  , []                   , dem             , Xp                   , False, DECIMALES)
@@ -1172,6 +1197,62 @@ def fun_objetivo(vec_opt):
     res_ecuaciones = sec_ecuaciones(vec_opt, False)
     return calcula_desvios(res_ecuaciones, False)
 
+def imprime_opciones(nvec_opt):
+    imprime('-------------------------------------------------------------------')
+    imprime('-------------------------------------------------------------------')
+    if GE_RESTRICCIONES:
+        imprime('MEGA mediante algoritmo genético. Resolución con restricciones ' + ('lineales' if GE_TIPO_RE==0 else 'no lineales'))
+    else:
+        imprime('MEGA mediante algoritmo genético. Resolución sin restricciones')
+    imprime('Rango  de validez de los precios en % -{:9.1f} +{:9.1f}'.format(100. * (GE_PRE_MIN - 1.), 100. * (GE_PRE_MAX - 1.)))
+    imprime('Rango  de validez de las variables  % -{:9.1f} +{:9.1f}'.format(100. * (GE_VAR_MIN - 1.), 100. * (GE_VAR_MAX - 1.)))
+    imprime('Rango  de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
+    if len(GE_FIX) > 0:
+        imprime('------------------------------------------------------------------------------------------')
+        imprime('Rangos de validez explícitos')
+        imprime('------------------------------------------------------------------------------------------')
+        for i in range(len(GE_FIX)):
+            imprime('{:8}'.format(GE_FIX[i]), False)
+            for j in range(len(GE_FIX_LIMITES[i])):
+                imprime(' [{:10} {:10}]'.format(GE_FIX_LIMITES[i][j][0], GE_FIX_LIMITES[i][j][1]), False)
+            imprime('')
+        imprime('------------------------------------------------------------------------------------------')
+    imprime('El precio del factor {} es variable exógena con valor igual a {}'.format(h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA))
+    if VALOR_F_TRA == 0:
+        imprime('El precio del factor {} se calcula con la curva Phillips [paro: {}% alfa: {}]'.format(h[INDICE_F_TRA], PARO_INICIAL * 100., ALFA_PHILLIPS))
+    elif VALOR_F_TRA != -1:
+        imprime('El precio del factor {} es fijo con valor igual a {}'.format(h[INDICE_F_TRA], VALOR_F_TRA))
+    imprime('')    
+    imprime('Demanda con consumos esenciales        {}'.format('Si' if DEM_ESENCIALES else 'No'))
+    imprime('Aportación de factores por los hogares {}'.format('ENDOGENA' if FF_ENDOGENA else 'exógena'))
+    imprime('Ahorro a largo plazo de los hogares    {}'.format('Si' if AHORRO_L_PLAZO else 'No'))
+    if AHORRO_L_PLAZO:
+        imprime('Factor ahorro a largo plazo            {:10.2f} %'.format(100.0 * ALP_FACTOR))
+    imprime('Estrategia                             {}'.format(GE_ESTRATEGIA))
+    imprime('Periodicidad actualización             {}'.format(GE_ACTUALIZACION))
+    imprime('Recombinación                          {:10.3f}'.format(GE_RECONBINACION))
+    imprime('Tamaño de la población                 {:10}'.format(GE_DIM_POBLACION))
+    imprime('Número de workers                      {:10}'.format(GE_WORKERS))
+    imprime('Tolerancia en el objetivo              {:10.3e}'.format(GE_TOLERANCIA))
+    imprime('Tolerancia en las verificaciones       {:10.3e}'.format(GE_VERIFICAR))
+    imprime('Número máximo de iteraciones           {:10,}'.format(GE_MAX_ITER))
+    imprime('Iteraciones para valorar progreso      {:10,}'.format(GE_PROGRESO))
+    imprime('Iteraciones para historial             {:10,}'.format(GE_HISTORIAL))
+    imprime('Iteraciones para soluciones            {:10,}'.format(GE_SOLUCIONES))
+    imprime('Semilla números aleatorios             {:10}'.format(GE_SEMILLA))
+    imprime('Consumos de los hogares en la solución {}'.format('Si' if GE_INCLUYE_XP else 'No'))
+    imprime('Dimensión del vector de prueba         {:10}'.format(nvec_opt))
+    imprime('Cálculo desvios                        {}'.format('Redundante' if OPT_DESVIOS==0 else 'Simple'))
+    if   METRICA_ERROR == 0:
+        imprime('Métrica del error: Error cuadrático medio')
+    elif METRICA_ERROR == 1:
+        imprime('Métrica del error: Valor absoluto')
+    else:
+        imprime('Métrica del error: Desvios elevados a {}'.format(POT_DESVIOS))
+    imprime('-------------------------------------------------------------------')
+    imprime('-------------------------------------------------------------------')
+    imprime('')
+
 # rótulos para los resultados de verificar la factibilidad de las ecuaciones
 etq_veri = [
         ' 1.Yp  6. 1',
@@ -1233,10 +1314,6 @@ for k in range(nsec):
 for k in range(nsec):
     etq_precios.append('pM_' + ind[k])
 
-# los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
-global datos
-global parametros
-
 if __name__ == '__main__':
     '''
     necesitamos este control porque el uso de workers en Windows reinicia el programa desde el
@@ -1262,6 +1339,9 @@ if __name__ == '__main__':
     imprime('-------------------------------------------------------------------------------------------------')
     imprime('')
     imprime('Fichero Matriz Contabilidad Social (MCS) {}'.format(FICHERO_SAM))
+
+# leemos la Matriz de Contabilidad Social (MCS o SAM) de esta economía
+sam        = pandas.read_excel(FICHERO_SAM, index_col=0, header=0)
 '''
 el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan el procedimiento
 'def __init__' cuando se crea una variable de la clase:
@@ -1272,10 +1352,10 @@ el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan 
                 ecuaciones que se deducen de las funciones de utilidad-producción,
                 es decir, calibra el modelo.
 '''
-# leemos la Matriz de contabilidad social (SAM) de esta economía
-sam        = pandas.read_excel(FICHERO_SAM, index_col=0, header=0)
-datos      = calibrado.datos(sam, h, ind, dem, idt, trf, gov, ayd, inv, ext, css, INDICE_F_TRA, PARO_INICIAL)
+datos      = calibrado.datos(sam, h, ind, dem, idt, trf, gov, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL)
 parametros = calibrado.parametros(datos, ndem, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES)
+# punteros para extraer variables del vector solución
+(etq_vec_opt,ind_pvec_desde,ind_pvec_hasta) = punteros()
 if __name__ == '__main__':
     imprime('')
     if SAL_CALIBRADO:
@@ -1284,8 +1364,6 @@ if __name__ == '__main__':
         infor.grafico_CES_local_importacion(SENDA_GRAFICOS, datos, parametros, ind, dem, h)
     if SAL_ISOCUANTA:
         infor.isocuanta(SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h, datos.D0, datos.M0, 0, 50000, 0, 100, -0.20, 0.5)
-# punteros para extraer variables del vector solución
-(etq_vec_opt,ind_pvec_desde,ind_pvec_hasta) = punteros()
 
 # equilibrio del balace de pagos inicial
 ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, datos.pWm, datos.M0, datos.Sf0)     # 6.16
@@ -1293,7 +1371,7 @@ ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, d
 # ---------------------------------------------------------------------
 # Solucíonar el MEGA
 # ---------------------------------------------------------------------
-esce.esceanrios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
+(CON_ESENCIALES) = esce.escenarios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
                NCASO, DEM_ADICIONAL, RENTA_FICTICIA, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES,
                AYD_ADICIONAL, GE_INCLUYE_XP,
                PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
@@ -1320,73 +1398,20 @@ if __name__ == '__main__':
     nvec_opt = len(vec_opt)
     vec_opt_ini = copy.deepcopy(vec_opt)
     pzi = copy.deepcopy(datos.pZ0)
+    imprime_opciones(nvec_opt)
     if SAL_MCS:
-        (rot, mcs0) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
+        (rot, mcs0) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd, alp,
                                               INDICE_F_TRA,datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
                                               datos.X0,datos.F0,datos.CssE0,datos.Tz0,datos.M0,datos.AgE0,
                                               datos.FF0,datos.Alp0,datos.Xp0,datos.Sp0,datos.CssH0,datos.AgH0,datos.Td0,datos.Xv0,datos.PssH0,
                                               datos.Xg0,datos.Sg0,datos.Tg0,datos.Tm0,
                                               datos.E0,datos.Sf0,
-                                              TOLERA_MCS
+                                              TOLERA_MCS,'MCS base. Importes'
                                              )
 
-        infor.imprime_MCS(rot, mcs0, DECIMALES, 'MCS base. Importes', TOLERA_MCS)
+        infor.imprime_MCS(rot, mcs0, DECIMALES, TOLERA_MCS, 'MCS base. Importes')
     #valores_iniciales(vec_opt)
     infor.valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, vec_opt, npre_sol, etq_precios, ebp_ini)
-
-    imprime('-------------------------------------------------------------------')
-    imprime('-------------------------------------------------------------------')
-    if GE_RESTRICCIONES:
-        imprime('MEGA mediante algoritmo genético. Resolución con restricciones ' + ('lineales' if GE_TIPO_RE==0 else 'no lineales'))
-    else:
-        imprime('MEGA mediante algoritmo genético. Resolución sin restricciones')
-    imprime('Rango  de validez de los precios en % -{:9.1f} +{:9.1f}'.format(100. * (GE_PRE_MIN - 1.), 100. * (GE_PRE_MAX - 1.)))
-    imprime('Rango  de validez de las variables  % -{:9.1f} +{:9.1f}'.format(100. * (GE_VAR_MIN - 1.), 100. * (GE_VAR_MAX - 1.)))
-    imprime('Rango  de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
-    if len(GE_FIX) > 0:
-        imprime('------------------------------------------------------------------------------------------')
-        imprime('Rangos de validez explícitos')
-        imprime('------------------------------------------------------------------------------------------')
-        for i in range(len(GE_FIX)):
-            imprime('{:8}'.format(GE_FIX[i]), False)
-            for j in range(len(GE_FIX_LIMITES[i])):
-                imprime(' [{:10} {:10}]'.format(GE_FIX_LIMITES[i][j][0], GE_FIX_LIMITES[i][j][1]), False)
-            imprime('')
-        imprime('------------------------------------------------------------------------------------------')
-    imprime('El precio del factor {} es variable exógena con valor igual a {}'.format(h[OR_PRE_REFERENCIA], PRECIO_F_REFERENCIA))
-    if VALOR_F_TRA == 0:
-        imprime('El precio del factor {} se calcula con la curva Phillips [paro: {}% alfa: {}]'.format(h[INDICE_F_TRA], PARO_INICIAL * 100., ALFA_PHILLIPS))
-    elif VALOR_F_TRA != -1:
-        imprime('El precio del factor {} es fijo con valor igual a {}'.format(h[INDICE_F_TRA], VALOR_F_TRA))
-    imprime('')    
-    imprime('Demanda con consumos esenciales        {}'.format('Si' if DEM_ESENCIALES else 'No'))
-    imprime('Aportación de factores por los hogares {}'.format('ENDOGENA' if FF_ENDOGENA else 'exógena'))
-    imprime('Ahorro a largo plazo de los hogares    {}'.format('Si' if AHORRO_L_PLAZO else 'No'))
-    imprime('Estrategia                             {}'.format(GE_ESTRATEGIA))
-    imprime('Periodicidad actualización             {}'.format(GE_ACTUALIZACION))
-    imprime('Recombinación                          {:10.3f}'.format(GE_RECONBINACION))
-    imprime('Tamaño de la población                 {:10}'.format(GE_DIM_POBLACION))
-    imprime('Número de workers                      {:10}'.format(GE_WORKERS))
-    imprime('Tolerancia en el objetivo              {:10.3e}'.format(GE_TOLERANCIA))
-    imprime('Tolerancia en las verificaciones       {:10.3e}'.format(GE_VERIFICAR))
-    imprime('Número máximo de iteraciones           {:10,}'.format(GE_MAX_ITER))
-    imprime('Iteraciones para valorar progreso      {:10,}'.format(GE_PROGRESO))
-    imprime('Iteraciones para historial             {:10,}'.format(GE_HISTORIAL))
-    imprime('Iteraciones para soluciones            {:10,}'.format(GE_SOLUCIONES))
-    imprime('Semilla números aleatorios             {:10}'.format(GE_SEMILLA))
-    imprime('Consumos de los hogares en la solución {}'.format('Si' if GE_INCLUYE_XP else 'No'))
-    imprime('Dimensión del vector de prueba         {:10}'.format(nvec_opt))
-    imprime('Cálculo desvios                        {}'.format('Redundante' if OPT_DESVIOS==0 else 'Simple'))
-    if   METRICA_ERROR == 0:
-        imprime('Métrica del error: Error cuadrático medio')
-    elif METRICA_ERROR == 1:
-        imprime('Métrica del error: Valor absoluto')
-    else:
-        imprime('Métrica del error: Desvios elevados a {}'.format(POT_DESVIOS))
-    imprime('-------------------------------------------------------------------')
-    imprime('-------------------------------------------------------------------')
-    imprime('')
-
     # se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
     ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, datos.pWm, datos.M0, datos.Sf0)
     vec_veri_sol = (
@@ -1485,15 +1510,15 @@ if __name__ == '__main__':
         if SAL_MCS:
             pe = datos.pWe * epsilon
             pm = datos.pWm * epsilon
-            (rot, mcs) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
+            (rot, mcs) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd, alp,
                                                 INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                                 X,F,CssE,Tz,M,AgE,
                                                 FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
                                                 Xg,Sg,datos.Tg0,Tm,
                                                 E,datos.Sf0,
-                                                TOLERA_MCS
+                                                TOLERA_MCS,'MCS primera valoración. Importes'
                                               )
-            infor.imprime_MCS(rot, mcs, DECIMALES, 'MCS primera valoración. Importes', TOLERA_MCS)
+            infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS primera valoración. Importes')
     
     historial   = []
     soluciones  = []
@@ -1530,7 +1555,7 @@ if __name__ == '__main__':
     # definir el rango de variación de los precios y variables
     bnds = cotas(ndem,nsec, vec_opt, nvec_opt, npre_sol, OR_PRE_REFERENCIA, INDICE_F_TRA, VALOR_F_TRA,
                  GE_TOLERANCIA, GE_PRE_MIN, GE_PRE_MAX, GE_VAR_CERO, GE_VAR_MIN, GE_VAR_MAX,
-                 ind_pvec_desde, GE_FIX, GE_FIX_LIMITES, GE_INCLUYE_XP,CON_ESENCIALES)
+                 ind_pvec_desde, GE_FIX, GE_FIX_LIMITES, GE_INCLUYE_XP, CON_ESENCIALES)
     # hacer compatible el vector de prueba inicial con los límites de variación de las variables
     for i in range(len(vec_opt)):
         if vec_opt[i]  < bnds[i][0]:
@@ -1619,17 +1644,17 @@ if __name__ == '__main__':
         pd = extrae_var(sol,'pD', 0, nsec)
         epsilon = extrae_var(sol,'epsilon', 0, 0)
         (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)
-        (rot, mcs) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd,
+        (rot, mcs) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, ext, ayd, alp,
                                             INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                                 X,F,CssE,Tz,M,AgE,
                                                 FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
                                                 Xg,Sg,datos.Tg0,Tm,
                                                 E,datos.Sf0,
-                                                TOLERA_MCS
+                                                TOLERA_MCS,'MCS final. Importes'
                                           )
-        infor.imprime_MCS(rot, mcs, DECIMALES, 'MCS final. Importes', TOLERA_MCS)
+        infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS final. Importes')
         if SAL_VAR_MCS:
-            infor.imprime_MCS(rot, mcs-mcs0, DECIMALES, 'Diferencias entre los valores finales y los iniciales de la MCS', 2.0 * TOLERA_MCS)
+            infor.imprime_MCS(rot, mcs-mcs0, DECIMALES, 2.0 * TOLERA_MCS, 'Diferencias entre los valores finales y los iniciales de la MCS')
 
     if GE_HISTORIAL > 0:
         # guardar el valor del error que, al final, se escribirá en un fichero CSV

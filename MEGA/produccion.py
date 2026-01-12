@@ -76,28 +76,29 @@ def produccion_sector_Z(X, ax, Y, ay):
     '''
     ecuación 6.5 original. Leontief
     Se puede producir (cantidad) lo que permita el menor de los recursos disponibles
-    X   : compras necesarias de un sector a otros sectores (y a el mismo)
+    X   : compras de un sector a otros sectores (y a el mismo)
     ax  : compras necesarias de un sector a otros sectores (y a el mismo) para producir una unidad
     Y   : para cada sector, compras necesarias de su factor compuesto (composite factor)
     ay  : para cada sector, compras necesarias de su factor compuesto (composite factor) para producir una unidad
 
     '''
     nsec = ax.shape[0]
+    # cada fila son lo que podría producir el sector 'i' de acuerdo a lo que le compra a cada 'j'; -compra X[j,i] porque X está transpuesta-
     producción_posible = np.zeros((nsec,nsec+1), dtype=np.float64)
     for i in range (nsec):
         for j in range (nsec):
-            # cantidad producible =
-            # compras necesarias del recurso j / compras necesarias para producir una unidad de j
             if ax[i,j] == 0:
                 producción_posible[i,j] = 1.e+09
             else:
+                # la cantidad que el sector 'i' puede producir con las compras que hace al sector 'j' es =
+                # compras al sector j (X[j,i]) / cantidad de j necesaria para que i pueda producir una unidad (ax[i,j])
                 producción_posible[i,j] = X[j,i] / ax[i,j]  # las compras están en las columnas de X, por eso los índices están traspuestos [j,i]
         # cantidad producible por el factor compuesto
         if ay[i] == 0:
             producción_posible[i, nsec] = 1.e+09
         else:
             producción_posible[i, nsec] = Y[i] / ay[i]
-    # 'i' produce lo que permita el menor de los recursos disponibles 
+    # 'i' produce lo que le permite el menor de los recursos disponibles 
     Z = np.min(producción_posible, axis=1)
     return Z
 
