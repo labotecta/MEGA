@@ -1,0 +1,76 @@
+@echo off
+TITLE "+1000 AP3"
+mode CON cols=118 lines=30
+cd C:\MEGA\MEGA
+start C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--NSAM                3 ^
+--DECIMALES           1 ^
+--PREFIJO             =salarios_1_5_Sin_Alp_42_det_0_0_3 ^
+--GE_SEMILLA          42 ^
+--NCASO               0 ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                6 ^
+--DEM_ADICIONAL_TIPO  0 ^
+--DEM_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
+--AYD_ADICIONAL       0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
+--ARANCELES           0. 0. 0. 0. 0. 0. ^
+--OR_PRE_REFERENCIA   0 ^
+--PRECIO_F_REFERENCIA 1. ^
+--VALOR_F_TRA         1.05 ^
+--GE_FIX              epsilon ^
+--GE_FIX_LON          1 ^
+--GE_FIX_LIMITES      1.0 1.0 ^
+--PARO_INICIAL        0.10 ^
+--ALFA_PHILLIPS       -0.5 ^
+--UTILIDAD_DEMANDA    0 ^
+--SIGMA_CES_DEMANDA   2. 2. 2. 2. 2. 2. ^
+--FF_ENDOGENA         True ^
+--AHORRO_L_PLAZO      True ^
+--ALP_FACTOR          0.03 ^
+--GE_INCLUYE_XP       False ^
+--CON_ESENCIALES      0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. ^
+--DEM_ESENCIALES      False ^
+--OPT_DESVIOS         1 ^
+--PRIMERA_VALORACION  False ^
+--SAL_CALIBRADO       False ^
+--SALIDA_VEC_OPT      False ^
+--SALIDA_DESVIOS      False ^
+--SAL_AUXILIARES      False ^
+--SAL_GRAFICOS_EVOL   False ^
+--SAL_GRAFICO_CES_DM  False ^
+--SAL_ISOCUANTA       False ^
+--SAL_VARIACIONES     True  ^
+--SAL_MCS             True  ^
+--SAL_VAR_MCS         True  ^
+--GE_RESTRICCIONES    False ^
+--GE_TIPO_RE          0 ^
+--GE_TOLERANCIA       1.e-11 ^
+--GE_VERIFICAR        1.e-08 ^
+--GE_PROGRESO         1000 ^
+--GE_HISTORIAL        1000 ^
+--GE_SOLUCIONES       1000 ^
+--GE_PRE_MIN          3.0 ^
+--GE_PRE_MAX          3.0 ^
+--GE_VAR_MIN          9.0 ^
+--GE_VAR_MAX          9.0 ^
+--GE_VAR_CERO         10000.0 ^
+--GE_MAX_ITER         1000000 ^
+--GE_ACTUALIZACION    deferred ^
+--GE_RECONBINACION    0.90 ^
+--GE_DIM_POBLACION    5 ^
+--GE_WORKERS          32 ^
+--GE_IMG_FIL          5 ^
+--GE_IMG_COL          6 ^
+--GE_ESTRATEGIA       best1bin ^
+--METRICA_ERROR       0 ^
+--POT_DESVIOS         2 ^
+--PRECIO_INI          0.5 ^
+--FACTOR_CSSH         0.95 1.0 ^
+--FACTOR_CSSE         1.0 1.0 1.0 1.0 1.0 1.0 ^
+--VAR_FACTORES        0. 0. 0. 0. ^
+--COE_VAB             0.590982516 0.256023902 0.231881481 0.299890544 0.567089808 0.669947953 ^
+--SIGMA_ESCENARIO     4. 2. 2. 2. 2. 2. ^
+--SENDA_DATOS         C:/MEGA/Datos ^
+--SENDA_SALIDAS       C:/MEGA/Salidas/ConAlp ^
+--SENDA_GRAFICOS      C:/MEGA/Graficos/ConAlp
