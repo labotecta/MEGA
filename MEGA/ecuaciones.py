@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def demanda_CobbDouglas_alfa(Xp):
     '''
     calcula los valores del parámetro alfa de la funcion de utilidad.
@@ -40,12 +39,18 @@ def demanda_CobbDouglas_alfa(Xp):
     '''
     return alfa
 
-def demanda_CES_alfa(eta, Xp):
+def demanda_CES_alfa(sigma, Xp):
     '''
     1. - eta = 1. / sigma
     '''
-    a = Xp ** (1 - eta)
-    alfa = a / a.sum(axis=1)
+    ndem = Xp.shape[0]
+    nsec = Xp.shape[1]
+    a = Xp ** (1. / sigma)
+    suma = a.sum(axis=1)
+    alfa = np.zeros((ndem,nsec), dtype=np.float64)
+    for consu in range(ndem):
+        for sector in range(nsec):
+            alfa[consu,sector] = a[consu,sector] / suma[consu]
     return alfa
 
 def demanda_StoneGeary_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):

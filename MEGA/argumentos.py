@@ -38,7 +38,7 @@ def valores_opciones():
     parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
     parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
     parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Pr' , help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=ProCES_001' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
     '''
@@ -112,10 +112,10 @@ def valores_opciones():
     parser.add_argument('--GE_FIX_LON'         , type=int  , default=[1], nargs='*', help="número de parejas para cada variable en GE_FIX")
     parser.add_argument('--GE_FIX_LIMITES'     , type=str  , default=[1.0, 1.0] , nargs='*', help="una pareja para cada índice de la variable; '*' = criterio general, cualquier 'str' el valor inicial")
 
-    parser.add_argument('--UTILIDAD_DEMANDA'   , type=int  , default=0     , help="0: Cobb Douglas; 1: CES")
-    parser.add_argument('--SIGMA_CES_DEMANDA'  , type=float, default=2.0   , help="parámetros sigma de la CES de demanda")
+    parser.add_argument('--UTILIDAD_DEMANDA'   , type=int  , default=1     , help="0: Cobb Douglas; 1: CES")
+    parser.add_argument('--SIGMA_CES_DEMANDA'  , type=float, default=[0.1, 0.1, 0.1, 0.1, 0.1, 0.1], nargs='*', help="sigma de la función de demanda CES")
 
-    parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False , help="imprimir los valores de los parámetros calibrados")
+    parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=True , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False , help="salida de los valores iniciales de las variables y sus límites")
     parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False , help="calcular una primera valoración de modelo")
     parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False , help="salida con el detalla de las desviaciones")

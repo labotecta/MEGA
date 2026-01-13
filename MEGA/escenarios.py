@@ -12,7 +12,7 @@ def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
 def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
-              NCASO, DEM_ADICIONAL, RENTA_FICTICIA, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES,
+              NCASO, DEM_ADICIONAL, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES, UTILIDAD_DEMANDA, RENTA_FICTICIA,
               AYD_ADICIONAL, GE_INCLUYE_XP,
               PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
               SIGMA_ESCENARIO, ARANCELES
@@ -31,6 +31,7 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             mfun.i_tabla(''  , [] , dem             , DEM_ADICIONAL, False     , DECIMALES)
             imprime('')
     if abs(DEM_ADICIONAL).sum() != 0 and RENTA_FICTICIA == False:
+        # recalcular los alfa
         if imprimir:
             # recalcular los alfa para que no se reduzca el consumo de los productos con demanda adicional, tal como
             # ocurrirá con los otros por la obligación de reservar renta para las compras adicionales
@@ -41,8 +42,12 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
                 mfun.tabla_2D(dem, parametros.alfa_esen)
             else:
-                imprime('Elasticidad de la demanda (alfa) calibrado')
-                mfun.tabla_2D(dem, parametros.alfa)
+                if UTILIDAD_DEMANDA == 0:
+                    imprime('Elasticidad (Cobb-Douglas) de la demanda (alfa) escenario')
+                    mfun.tabla_2D(dem, parametros.alfa)
+                else:
+                    imprime('Elasticidad (CES) de la demanda (alfa) escenario')
+                    mfun.tabla_2D(dem, parametros.alfa_ces)
             imprime('')
         suma_resto = np.zeros((ndem), dtype=np.float64)
         for i in range(ndem):
@@ -69,8 +74,11 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 sys.exit()
             parametros.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
         else:
-            parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
-            #parametros.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, datos.pF0, datos.pQ0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)
+            if UTILIDAD_DEMANDA == 0:
+                parametros.alfa = ecua.demanda_CobbDouglas_alfa(Xp0)
+                #parametros.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, Xp0, datos.pF0, datos.pQ0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL)
+            else:
+                parametros.alfa_ces = ecua.demanda_CES_alfa(parametros.sigma_ces, Xp0)
         if imprimir:
             imprime('Consumos para el recálculo de alfa (sin las demandas adicionales)')
             mfun.i_tabla('', [], dem, Xp0, False, DECIMALES)
@@ -79,8 +87,12 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 imprime('Elasticidad (Stone-Geary) de la demanda (alfa) escenario')
                 mfun.tabla_2D(dem, parametros.alfa_esen)
             else:
-                imprime('Elasticidad de la demanda (alfa) escenario')
-                mfun.tabla_2D(dem, parametros.alfa)
+                if UTILIDAD_DEMANDA == 0:
+                    imprime('Elasticidad (Cobb-Douglas) de la demanda (alfa) escenario')
+                    mfun.tabla_2D(dem, parametros.alfa)
+                else:
+                    imprime('Elasticidad (CES) de la demanda (alfa) escenario')
+                    mfun.tabla_2D(dem, parametros.alfa_ces)
     if imprimir:
         if abs(AYD_ADICIONAL).sum() != 0:
             imprime('Ayudas adicionales')

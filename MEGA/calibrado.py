@@ -361,7 +361,7 @@ class datos(object):
         self.PobAct = ecua.poblacion_activa_PobAct(INDICE_F_TRA, self.FF0, PARO_INICIAL)
 
 class parametros(object):
-    def __init__(self, datos, ncon, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES):
+    def __init__(self, datos, ncon, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA):
         # elasticidad de sustitución, entre local e importación, del producto de Argminton (CES)
         # la elasticidad de sustitución es la misma en cualquier punto a lo largo de una isocuanta, sin importar cual sea la relación en que son utilizados los insumos. 
         # variable exógena puesta a 2.
@@ -439,7 +439,6 @@ class parametros(object):
         self.psi = np.zeros(nsec, dtype=np.float64)
         self.psi.fill(2.)
         self.phi = (self.psi + 1.) / self.psi
-
         '''
         calibrar
         '''
@@ -447,14 +446,17 @@ class parametros(object):
         self.alfa = ecua.demanda_CobbDouglas_alfa(datos.Xp0)
         #self.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, datos.pF0, datos.pQ0, 0, np.zeros((ncon,nsec), dtype=np.float64))
 
-        if DEM_ESENCIALES:
-            renta = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-            if np.any(renta <= 0):
-                print('Renta menor o igual a 0')
-                for i in range(len(renta)):
-                    print('{:3} {:12.5e}'.format(i + 1, renta[i]))
-                sys.exit()
-            self.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+        renta = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+        if np.any(renta <= 0):
+            print('Renta menor o igual a 0')
+            for i in range(len(renta)):
+                print('{:3} {:12.5e}'.format(i + 1, renta[i]))
+            sys.exit()
+        self.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+
+        self.sigma_ces = SIGMA_CES_DEMANDA
+        self.eta_ces = (self.sigma_ces - 1.) / self.sigma_ces
+        self.alfa_ces = ecua.demanda_CES_alfa(self.sigma_ces, datos.Xp0)
 
         # coeficientes de participación (beta) de los factores en la función del factor compuesto de cada sector
         self.beta  = ecua.demanda_CobbDouglas_beta(datos.F0)

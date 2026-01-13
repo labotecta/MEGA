@@ -33,13 +33,6 @@ def variacion_hicksiana(Xp0, Xp, alfa, b=1.):
     ep1 = uu1 / denominador
     return ep1 - ep0
 
-def demanda_maxima_utilidad_Xp(tipo, param):
-    if tipo == 0:
-        (alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia) = param
-        return demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia)
-    else:
-        return demanda_maxima_utilidad_CES_Xp(param)
-
 def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia):
     '''
     devuelve la matriz con las cantidades óptimas de productos demandados Xp
@@ -142,12 +135,11 @@ def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, Cs
                 Xp[consu,sector] = con_esen[consu,sector] + (alfa[consu,sector] * renta_disponible[consu]) / pq[sector] + inc_dem[consu,sector]
     return Xp
 
-def demanda_maxima_utilidad_CES_Xp(param):
-    (gamma, eta, alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia) = param
+def demanda_maxima_utilidad_CES_Xp(eta, alfa, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia):
     sigma = 1. / (1. - eta)
     nfac  = FF.shape[1]
-    ndem  = gamma.shape[0]
-    nsec  = gamma.shape[1]
+    ndem  = alfa.shape[0]
+    nsec  = alfa.shape[1]
     Xp    = np.zeros((ndem, nsec), dtype=np.float64)
 
     # ingresos de cada consumidor, incluidas las ayudas del gobierno y las pensiones, netos de ahorros, impuestos y cotizaciones
@@ -168,9 +160,9 @@ def demanda_maxima_utilidad_CES_Xp(param):
     S = np.zeros(ndem, dtype=np.float64)
     for consu in range(ndem):
         for sector in range(nsec):
-            S[consu] +=  (alfa[consu,sector] ** sigma) * (pq[sector] ** uno_sigma)
+            S[consu] +=  (alfa[consu,sector] ** sigma[sector]) * (pq[sector] ** uno_sigma[sector])
         for sector in range(nsec):
-            Xp[consu,sector] = ingreso_neto[consu] * ((alfa[consu,sector] / pq[sector]) ** sigma) / S[consu]
+            Xp[consu,sector] = ingreso_neto[consu] * ((alfa[consu,sector] / pq[sector]) ** sigma[sector]) / S[consu]
             if inc_dem_tipo == 0:
                 # se añade 'inc_dem' al importe demandado 
                 Xp[consu,sector] += inc_dem[consu, sector] / pq[sector]
