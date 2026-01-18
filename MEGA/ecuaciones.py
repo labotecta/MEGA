@@ -45,12 +45,12 @@ def demanda_CES_alfa(sigma, Xp):
     '''
     ndem = Xp.shape[0]
     nsec = Xp.shape[1]
-    a = Xp ** (1. / sigma)
-    suma = a.sum(axis=1)
     alfa = np.zeros((ndem,nsec), dtype=np.float64)
     for consu in range(ndem):
+        a = Xp[consu] ** (1. / sigma[consu])
+        suma = a.sum()
         for sector in range(nsec):
-            alfa[consu,sector] = a[consu,sector] / suma[consu]
+            alfa[consu,sector] = a[sector] / suma
     return alfa
 
 def demanda_StoneGeary_renta(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
@@ -166,8 +166,7 @@ def coeficientes_inversiones_landa(Xv, Sp, Sg, Sc, epsilon, Sf):
     Sc : ahorro de la seguridad social
     Sf : ahorro exterior
     '''
-    landa = Xv / (Sp.sum() + Sg + Sc + Sf * epsilon)
-    return landa
+    return Xv / (Sp.sum() + Sg + Sc + Sf * epsilon)
     
 def coeficientes_armington_deltam_deltad(taum, eta, M, D):
     '''
@@ -256,8 +255,6 @@ def tasa_impuestos_directos_taud(Td, FF, PssH):
     ingresos = FF.sum(axis=1) + PssH
     ingresos[Td == 0] = 1.              # para evitar divisiones por 0
     taud = Td / ingresos
-    #taud[taud == np.inf] = 0            # antes de np.nan_to_num porque puede cambiar el inf por un número
-    #np.nan_to_num(taud, copy=False)     # si no hay datos (NAN) se sustituye por 0
     return taud
 
 def propension_ahorro_gobierno_ssg(Sg, Td, Tz, Tm, AgE, AgH):

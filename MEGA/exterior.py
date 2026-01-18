@@ -81,12 +81,23 @@ def produccion_maxima_utilidad_armington_D(gamma, deltad, pq, pd, Q, eta):
 
 # función CET de transformacion de la producción bruta (Z) de un producto, en exportación (E) y sumnistro local (D)
 
-def produccion_para_exportacion_E(teta, xie, pz, pe, Z, phi, tauz, CssE, AgE, Apz):
+def produccion_para_exportacion_E(teta, xie, pz, pe, Z, phi, tauz, CssE, AgE, Apz, ctzssez, ctzagez, modo_pseudoimptos):
     '''
     Cuanto de la producción bruta 'Z' se exporta es función de la diferenca entre el precio
     total de producir 'Z', es decir 'pz + impuestos y otras posibles cargas (como la seguridad social)' y el
     precio de exportación 'pe'. Si 'pz incrementado' es mucho MAYOR que 'pe', no se produciría nada 
     para exportación.
+
+    Transformamos la cotización a la seguridad social en un precio a la producción
+    hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en el cálculo de
+    'E' y 'D', es decir, un mayor precio (pz) al igual que (tauz)
+    transformamos los ayudas del gobierno en un menor impuesto
+
+    Para corregir estos pseudoimpuestos introducimos la variable de holgura Apz
+    Apz es único para todos los sectores lo que implica 'transferencias' entre sectores
+    que se ponen de manifiesto en la MCS reconstruida.
+    No podemos usar un Apz por sector porque es aumentar el número de variables endógenas y
+    el modelo se hace infactible
 
     teta : coeficiente de escala de la función de utilidad
     xie  : coefcientes de participacion del producto exportado en la función de utlidad para cada sector
@@ -107,20 +118,29 @@ def produccion_para_exportacion_E(teta, xie, pz, pe, Z, phi, tauz, CssE, AgE, Ap
     CtE = (teta ** phi) * uno_mas_tasa * xie * pz / pe
     return Z * (CtE ** (1. / (1. - phi)))
     '''
-    # transformamos la cotización a la seguridad social en un precio a la producción
-    # hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en el cálculo de
-    # 'E' y 'D', es decir, un mayor precio (pz) al igual que (tauz)
-    # transformamos los ayudas del gobierno en un menor impuesto
-
-    return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xie / pe) ** (1. / (1. - phi))
+    if modo_pseudoimptos == 0:
+        return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xie / pe) ** (1. / (1. - phi))
+    else:
+        return Z * ((teta ** phi) * (1. + tauz + ctzssez - ctzagez + Apz) * pz * xie / pe) ** (1. / (1. - phi))
 
 
-def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz):
+def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz, ctzssez, ctzagez, modo_pseudoimptos):
     '''
     Cuanto de la producción bruta 'Z' es fruto de la importación es función de la diferenca entre el precio
     total de producir 'Z', es decir 'pz + impuestos y otras posibles cargas (como la seguridad social)' y el
     precio de importación (pm). Si 'pz incrementado' es mucho MENOR que 'pm', no se importaría nada ya que
     es preferible producirlo localmente.
+
+    Transformamos la cotización a la seguridad social en un precio a la producción
+    hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en el cálculo de
+    'E' y 'D', es decir, un mayor precio (pz) al igual que (tauz)
+    transformamos los ayudas del gobierno en un menor impuesto
+
+    Para corregir estos pseudoimpuestos introducimos la variable de holgura Apz
+    Apz es único para todos los sectores lo que implica 'transferencias' entre sectores
+    que se ponen de manifiesto en la MCS reconstruida.
+    No podemos usar un Apz por sector porque es aumentar el número de variables endógenas y
+    el modelo se hace infactible
 
     teta : coeficiente de escala de la función de utilidad
     xid  : coefcientes de participacion del producto local en la función de utlidad para cada sector
@@ -141,12 +161,11 @@ def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz):
     CtD = (teta ** phi) * uno_mas_tasa * xid * pz / pd
     return Z * (CtD ** (1. / (1. - phi)))
     '''
-    # transformamos la cotización a la seguridad social en un precio a la producción
-    # hay que considerar la cotización a la seguridad social (CssE) como un mayor coste de la producción bruta (Z) en el cálculo de
-    # 'E' y 'D', es decir, un mayor precio (pz) al igual que 'tauz'
-    # transformamos los ayudas del gobierno en un menor impuesto
 
-    return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xid / pd) ** (1. / (1. - phi))
+    if modo_pseudoimptos == 0:
+        return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xid / pd) ** (1. / (1. - phi))
+    else:
+        return Z * ((teta ** phi) * (1. + tauz + ctzssez - ctzagez + Apz) * pz * xid / pd) ** (1. / (1. - phi))
 
 def restriccion_producción_bruta_Z(teta, xie, xid, E, D, phi):
     '''

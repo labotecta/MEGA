@@ -14,9 +14,9 @@ Los valores que se muestran como comentarios son los correspondientes a la MCS '
 '''
 class datos(object):
 
-    def __init__(self, sam, h, ind, dem, idt, trf, gov, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL):
+    def __init__(self, sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL):
         '''
-        (sam, h, ind, dem, idt, trf, gov, retg, inv, ext, css) son los nombres de filas y columnas de la 'sam'
+        (sam, h, ind, dem, idt, gov, trf, retg, inv, ext, css) son los nombres de filas y columnas de la 'sam'
 
         los valores de la MCS son importes y necesitamos cantidades, pero podemos elegir un sistema
         de unidades para las cantidades de forma que todos los productos y factores tengan
@@ -345,7 +345,11 @@ class datos(object):
         self.Sg0 = self.Sg0.to_numpy(dtype=np.float64).item()                   # () escalar
 
         # ahorro de la seguridad social
-        self.Sc0 = self.CssE0.sum() + self.CssH0.sum() - self.PssH0.sum().item()    # () escalar
+        if self.PssH0.sum().item() == 0:
+            # las pensiones las paga el gobierno, por lo que la seguridad social le transfiere todos sus ingresos
+            self.Sc0 = 0.
+        else:
+            self.Sc0 = self.CssE0.sum() + self.CssH0.sum() - self.PssH0.sum().item()    # () escalar
 
         # balanza de pagos = ahorro exterior = pago (aportación) de la columna 'EXT' a la fila 'INV'
         self.Sf0 = DataFrame(sam, index=inv, columns=ext)
@@ -519,6 +523,9 @@ class parametros(object):
         self.ctzsse = datos.CssE0 / divisor
         np.nan_to_num(self.ctzsse, copy=False)      # si no hay datos (NAN) se sustituye por 0
         self.ctzsse[self.ctzsse == np.inf] = 0      # porque algún elemento de F0 puede ser 0
+
+        self.ctzssez = datos.CssE0 / datos.Z0
+        self.ctzagez = datos.AgE0 / datos.Z0
 
         # porcentaje de la seguridad social sobre la prestación de factor laboral por los hogares (FF0)
         # las pensiones no cotizan a la seguridad social

@@ -41,13 +41,13 @@ def impuestos_produccion_Tz(tauz, pz, Z):
     '''
     return tauz * Z * pz
 
-def aranceles_importacion_Tm(ta, pi, M):
+def aranceles_importacion_Tm(taum, pm, M):
     '''
     Tm aranceles de importación por cada producto
 
-    ta : vector aranceles a cada producto
-    pi : vector precio de importación de cada producto
-    M : vector cantidades importadas de cada producto
+    taum : vector aranceles a cada producto
+    pm   : vector precio de importación de cada producto
+    M    : vector cantidades importadas de cada producto
     '''
     '''
     nsec = len(pi)
@@ -56,7 +56,7 @@ def aranceles_importacion_Tm(ta, pi, M):
         Tm[i] = ta[i] * M[i] * pi[i]
     return Tm
     '''
-    return ta * M * pi
+    return taum * M * pm
 
 def ayudas_empresas_AgE(cage, Td, Tz, Tm):
     '''
@@ -92,30 +92,41 @@ def ayudas_hogares_AgH(cagh, Td, Tz, Tm, inc_ayd):
     '''
     return cagh * (Td.sum() + Tz.sum() + Tm.sum()) + inc_ayd
 
-def demanda_gobierno_Xg(mu, pq, Td, Tz, Tm, Sg, AgE, AgH):
+def demanda_gobierno_Xg(mu, pq, Td, Tz, Tm, Sg, AgE, AgH, PssH, CssH, CssE):
     '''
     demanda (consumos) de productos por el gobierno
 
     mu   : coeficiente de reparto de la demanda del gobierno por productos
     pq   : precio de producto de Armington (producto compuesto: local + importación)
+    ingresos:
     Td   : impuestos directos a los hogares
     Tz   : impuestos indirectos a las empresas
     Tm   : aranceles de importación
+    Css  : si es el gobierno quien paga las pensiones, ingresos recibidos de la seguridad social
     restan:
     Sg   : ahorro del gobierno
     AgE  : ayudas (pagos) del gobierno a los sectores
     AgH  : ayudas (pagos) del gobierno a los hogares
+    Pss  : pago de las pensiones, si es el gobierno quien las paga
     '''
     '''
-    ingresos = Td.sum() + Tz.sum() + Tm.sum() - Sg - AgE.sum() - AgH.sum()
+    ingresos = Td.sum() + Tz.sum() + Tm.sum() + Css - (Sg + AgE.sum() + AgH.sum() + Pss)
     nsec = len(pq)
     Xg = np.zeros(nsec, dtype=np.float64)
     for i in range(nsec):
         Xg[i] = mu[i] * ingresos / pq[i]
     '''
-    return mu * (Td.sum() + Tz.sum() + Tm.sum() - Sg - AgE.sum() - AgH.sum()) / pq
+    if PssH.sum() == 0:
+        # el gobierno paga las pensiones
+        Css = CssH.sum() + CssE.sum()
+        Pss = PssH.sum()
+    else:
+        Css = 0.
+        Pss = 0.
+    return mu * (Td.sum() + Tz.sum() + Tm.sum() + Css - (Sg + AgE.sum() + AgH.sum() + Pss)) / pq
 
 def seguridad_social_empresas_CssE(ctzsse, pf, F, INDICE_F_TRA):
+    # F incluye las Alp
     return ctzsse * F[:,INDICE_F_TRA] * pf[INDICE_F_TRA]
 
 def seguridad_social_hogares_CssH(ctzssh, pf, FF, Alp, INDICE_F_TRA):
