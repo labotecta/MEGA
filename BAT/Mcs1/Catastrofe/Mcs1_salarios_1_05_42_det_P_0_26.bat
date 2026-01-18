@@ -1,0 +1,77 @@
+@echo off
+TITLE Mcs1_salarios_1_05_42_det_P_0_26
+mode CON cols=118 lines=30
+cd C:\MEGA\MEGA
+CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--PREFIJO             =Mcs1_salarios_1_05_42_det_P_0_26 ^
+--ALP_FACTOR          0.26 ^
+--NSAM                1 ^
+--DECIMALES           4 ^
+--GE_SEMILLA          42 ^
+--NCASO               0 ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                2 ^
+--DEM_ADICIONAL_TIPO  0 ^
+--DEM_ADICIONAL       0. 0. 0. 0. ^
+--RENTA_FICTICIA      False ^
+--AYD_ADICIONAL       0. 0. 0. 0. ^
+--ARANCELES           0. 0. ^
+--OR_PRE_REFERENCIA   0 ^
+--PRECIO_F_REFERENCIA 1.0 ^
+--VALOR_F_TRA         1.05 ^
+--GE_FIX              epsilon ^
+--GE_FIX_LON          1 ^
+--GE_FIX_LIMITES      1.0 1.0 ^
+--PARO_INICIAL        0.10 ^
+--ALFA_PHILLIPS       -0.5 ^
+--UTILIDAD_DEMANDA    0 ^
+--SIGMA_CES_DEMANDA   2. 2. ^
+--FF_ENDOGENA         True ^
+--MODO_PSEUDOIMPTOS   0 ^
+--GE_INCLUYE_XP       False ^
+--CON_ESENCIALES      0. 0. 0. 0. ^
+--DEM_ESENCIALES      False ^
+--OPT_DESVIOS         1 ^
+--PRIMERA_VALORACION  False ^
+--SAL_CALIBRADO       False ^
+--SALIDA_VEC_OPT      False ^
+--SALIDA_DESVIOS      False ^
+--SAL_AUXILIARES      False ^
+--SAL_GRAFICOS_EVOL   False ^
+--SAL_GRAFICO_CES_DM  False ^
+--SAL_ISOCUANTA       False ^
+--SAL_VARIACIONES     True  ^
+--SAL_MCS             True  ^
+--SAL_VAR_MCS         True  ^
+--GE_RESTRICCIONES    False ^
+--GE_TIPO_RE          0 ^
+--GE_TOLERANCIA       1.e-11 ^
+--GE_VERIFICAR        1.e-08 ^
+--GE_PROGRESO         100 ^
+--GE_HISTORIAL        100 ^
+--GE_SOLUCIONES       100 ^
+--GE_PRE_MIN          3.0 ^
+--GE_PRE_MAX          3.0 ^
+--GE_VAR_MIN          9.0 ^
+--GE_VAR_MAX          9.0 ^
+--GE_VAR_CERO         10000.0 ^
+--GE_MAX_ITER         1000000 ^
+--GE_ACTUALIZACION    deferred ^
+--GE_RECONBINACION    0.90 ^
+--GE_DIM_POBLACION    5 ^
+--GE_WORKERS          32 ^
+--GE_IMG_FIL          5 ^
+--GE_IMG_COL          6 ^
+--GE_ESTRATEGIA       best1bin ^
+--METRICA_ERROR       0 ^
+--POT_DESVIOS         2 ^
+--PRECIO_INI          0.5 ^
+--FACTOR_CSSH         1.0 1.0 ^
+--FACTOR_CSSE         1.0 1.0 ^
+--VAR_FACTORES        0. 0. 0. 0. ^
+--SIGMA_ESCENARIO     4. 2. ^
+--SENDA_DATOS         C:/MEGA/Datos ^
+--SENDA_SALIDAS       C:/MEGA/Salidas/Mcs1/Catastrofe ^
+--SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs1/Catastrofe
+TIMEOUT 60
