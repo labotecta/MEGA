@@ -1828,7 +1828,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     #------------------------------------------------------------------------------------------------
     # Ajuste de los Alp
     # Conceptualmente los Alp hacen que no se cierre el círculo económico y que la MCS se descuadre
-    # los sectores las pagan y los hogares las cobran y no hacen nada con ellas por lo que las filas
+    # los sectores las pagan y los hogares las cobran, pero no hacen nada con ellas por lo que las filas
     # de los sectores se descuadran, no tienen un ingreso que las respalde, que debería provenir de la
     # circularidad de las relaciones económicas. Nosotros las vamos a tratar como el ahorro a corto plazo
     # que en un modelo estático no tiene otro papel (no se hace nada con ellas) que el de cuadrar la MCS:

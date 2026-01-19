@@ -711,7 +711,12 @@ def sec_ecuaciones(vec_opt):
     M  = extrae_var(vec_opt, 'M', 0, nsec)
     D  = extrae_var(vec_opt, 'D', 0, nsec)
 
-    # guardamos los valores de la solución de prueba para luego compararlos con los calculados
+    # guardamos los valores de la solución de prueba para luego compararlos con los calculados.
+
+    # hay que tener mucho cuidado al igualar variables porque lo que se hace es igualar el puntero
+    # de ambas (la posición de la memoria a la que apuntan) de forma que al modificar una, estaremos
+    # modificando la otra, aunque no sea lo que queramos. Usamos ‘copy.deepcopy’ que no iguala punteros
+    # hace una copia independiente en otra parte de la memoria.
     Fi = copy.deepcopy(F)
     Ei = copy.deepcopy(E)
     Mi = copy.deepcopy(M)
@@ -730,7 +735,9 @@ def sec_ecuaciones(vec_opt):
         # valor de los mismos, por ejemplo, para usar una función de utilidad con consumos esenciales
         Xpi = copy.deepcopy(extrae_var(vec_opt, 'Xp', ndem, nsec))
 
-    # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes
+    # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes.
+    # no hay problema en igualar las variables porque ni 'ax' ni 'ay' se van a modificar y por tanto
+    # ni 'parametros.ax' ni 'parametros.ay' se verán afectados
     ax = parametros.ax
     ay = parametros.ay
     
@@ -791,6 +798,7 @@ def sec_ecuaciones(vec_opt):
         else:
             Alp = datos.Alp0
     else:
+        # la igualación es correcta porque ni 'FF' ni 'Alp' los vamos a cambiar
         FF = datos.FF0
         Alp = datos.Alp0
 
@@ -905,7 +913,7 @@ def sec_ecuaciones(vec_opt):
         else:
             Alpr = datos.Alp0
     else:
-        FFr  = copy.deepcopy(FF)
+        FFr  = datos.FF0
         Alpr = datos.Alp0
 
     Tdr   = gob.impuestos_directos_Td(parametros.taud, pf, FFr, Alpr, datos.PssH0)          # 6. 6
