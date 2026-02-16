@@ -1,0 +1,154 @@
+#pragma once
+#define MEGA_DLL_API __declspec(dllexport)
+#include <Windows.h>
+
+using namespace std;
+
+template <typename T> double sgn(T val) {
+	return (T(0) < val) - (val < T(0));
+};
+const int NFAC = 2;
+const int NDEM = 2;
+const int NSEC = 6;
+const int NSF = NSEC * NFAC;
+
+typedef struct
+{
+public:
+	int OR_PRE_EXCLUIDO;
+	double PRECIO_F_EXCLUIDO;
+	double VALOR_F_TRA;
+	double ALFA_PHILLIPS;
+	bool GE_INCLUYE_XP;
+	bool FF_ENDOGENA;
+	double ALP_FACTOR;
+	int INDICE_F_TRA;
+	int UTILIDAD_DEMANDA;
+	bool DEM_ESENCIALES;
+	int DEM_ADICIONAL_TIPO;
+	double DEM_ADICIONAL[NDEM][NSEC];
+	double CON_ESENCIALES[NDEM][NSEC];
+	double AYD_ADICIONAL[NDEM][NSEC];
+	bool RENTA_FICTICIA;
+	int MODO_PSEUDOIMPTOS;
+} OPCIONES;
+
+typedef struct
+{
+public:
+	double pF0[NFAC];
+	double pY0[NSEC];
+	double pQ0[NSEC];
+	double pD0[NSEC];
+	double pWm[NSEC];
+	double pWe[NSEC];
+	double epsilon0;
+	double F0[NSEC][NFAC];
+	double E0[NSEC];
+	double M0[NSEC];
+	double D0[NSEC];
+	double FF0[NDEM][NFAC];
+	double Alp0[NDEM][NFAC];
+	double PssH0[NDEM];
+	double tauz[NSEC];
+	double taum[NSEC];
+	double Sf0;
+	double PobAct;
+} DATOS;
+
+typedef struct
+{
+public:
+	double ax[NSEC][NSEC];
+	double ay[NSEC];
+	double beta[NSEC][NFAC];
+	double b[NSEC];
+	double teta[NSEC];
+	double xie[NSEC];
+	double xid[NSEC];
+	double phi[NSEC];
+	double taud[NDEM];
+	double cage[NSEC];
+	double cagh[NDEM];
+	double ssp[NDEM];
+	double ctzsse[NSEC];
+	double ctzssh[NDEM];
+	double ctzssez[NSEC];
+	double ctzagez[NSEC];
+	double ssg;
+	double mu[NSEC];
+	double landa[NSEC];
+	double alfa[NDEM][NSEC];
+	double alfa_esen[NDEM][NSEC];
+	double eta_ces[NDEM];
+	double alfa_ces[NDEM][NSEC];
+	double gamma[NSEC];
+	double deltam[NSEC];
+	double deltad[NSEC];
+	double eta[NSEC];
+} PARAMETROS;
+
+extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
+extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
+extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
+extern "C" MEGA_DLL_API double merito(double* vec_opt);
+extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
+extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
+extern "C" MEGA_DLL_API double* vector_prueba();
+extern "C" MEGA_DLL_API double* solucion();
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida);
+
+void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
+void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);
+void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
+void utilizacion_factor_compuesto_Y(double* Y, double* Z, double* ay);
+void uso_optimo_factores_F(double F[NSEC][NFAC], double beta[NSEC][NFAC], double* pf, double* py, double* Ypd);
+void coste_unitario_produccion_pz(double* pz, double* ay, double* py, double ax[NSEC][NSEC], double* pq);
+void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], double F[NSEC][NFAC]);
+void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0);
+void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
+void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M);
+void ayudas_empresas_AgE(double* AgE, double* cage, double* Td, double* Tz, double* Tm);
+void ayudas_hogares_AgH(double* AgH, double* cagh, double* Td, double* Tz, double* Tm, double* AYD_ADI_DEM);
+void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0);
+void seguridad_social_empresas_CssE(double* CssE, double* ctzsse, double* pf, double F[NSEC][NFAC], int INDICE_F_TRA);
+void seguridad_social_hogares_CssH(double* CssH, double* ctzssh, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], int INDICE_F_TRA);
+double ahorro_gobierno_Sg(double ssg, double* Td, double* Tz, double* Tm, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);
+void demanda_gobierno_Xg(double* Xg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Sg, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);
+void demanda_inversion_Xv(double* Xv, double* landa, double* pq, double* Sp, double Sg, double Sc, double epsilon, double Sf0);
+void demanda_maxima_utilidad_StoneGeary_Xp(double Xp[NDEM][NSEC], double alfa_esen[NDEM][NSEC], double CON_ESENCIALES[NDEM][NSEC], double* pq, double* pf, double FF[NDEM][NFAC], double* Sp, double* Td, double* CssH, double* AgH, double* PssH0, int DEM_ADICIONAL_TIPO, double DEM_ADICIONAL[NDEM][NSEC], bool RENTA_FICTICIA);
+void demanda_maxima_utilidad_CobbDouglas_Xp(double Xp[NDEM][NSEC], double alfa[NDEM][NSEC], double* pq, double* pf, double FF[NDEM][NFAC], double* Sp, double* Td, double* CssH, double* AgH, double* PssH0, int DEM_ADICIONAL_TIPO, double DEM_ADICIONAL[NDEM][NSEC], bool RENTA_FICTICIA);
+void demanda_maxima_utilidad_CES_Xp(double Xp[NDEM][NSEC], double* eta_ces, double alfa_ces[NDEM][NSEC], double* pq, double* pf, double FF[NDEM][NFAC], double* Sp, double* Td, double* CssH, double* AgH, double* PssH0, int DEM_ADICIONAL_TIPO, double DEM_ADICIONAL[NDEM][NSEC], bool RENTA_FICTICIA);
+void produccion_armington_Q(double* Q, double* gamma, double* deltam, double* deltad, double* M, double* D, double* eta);
+void importacion_maxima_utilidad_armington_M(double* M, double* gamma, double* deltam, double* pq, double* pm, double* Q, double* eta, double* taum);
+void produccion_maxima_utilidad_armington_D(double* Da, double* gamma, double* deltad, double* pq, double* pd, double* Q, double* eta);
+void produccion_para_exportacion_E(double* E, double* teta, double* xie, double* pz, double* pe, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
+void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
+double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double* pWm, double* M, double Sf0);
+double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, double pF0L, double F0[NSEC][NFAC], double F[NSEC][NFAC]);
+
+#pragma region Genetico
+int parametros_alge(double* par);
+bool inicia_cotas();
+bool fija_cotas(double* cotasInf, double* cotasSup);
+bool inicia_poblacion(double ajuste);
+static bool genera_poblacion();
+bool libera_cotas();
+bool libera_poblacion();
+int avanza();
+void mutacion_cruze(int desde, int hasta, int hilo);
+void mutacion_cruzeH(int desde, int hasta, int hilo);
+void mutacion_cruze_ax(int desde, int hasta, int hilo);
+void mutacion_cruze_axH(int desde, int hasta, int hilo);
+void seleccion();
+void seleccionH(int desde, int hasta);
+int comprobar_final();
+double distancia_clonacion();
+
+int PreparaMP(int hasta);
+bool Arranque();
+int ProcesoMP(int hasta, int gh);
+void ProcesarTramo(int hilo, int desde, int hasta);
+unsigned int WINAPI HiloTramos(LPVOID param);
+#pragma endregion
+
