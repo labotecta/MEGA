@@ -77,14 +77,6 @@ def demanda_maxima_utilidad_CobbDouglas_Xp(alfa, pq, pf, FF, Sp, Td, CssH, AgH, 
             else:
                 # se añade 'inc_dem' a la cantidad demandada 
                 Xp[consu,sector] += inc_dem[consu, sector]
-    '''
-    if inc_dem_tipo == 0:
-        # se añade 'inc_dem' al importe demandado 
-        Xp = ((alfa.T * (FF.dot(pf) + AgH + PssH - (Sp + Td + CssH))).T + inc_dem) / pq 
-    else:
-        # se añade 'inc_dem' a la cantidad demandada 
-        Xp = ((alfa.T * (FF.dot(pf) + AgH + PssH - (Sp + Td + CssH))).T) / pq  + inc_dem
-    '''
     return Xp
 
 def demanda_maxima_utilidad_StoneGeary_Xp(alfa, con_esen, pq, pf, FF, Sp, Td, CssH, AgH, PssH, inc_dem_tipo, inc_dem, renta_ficticia):
@@ -180,21 +172,6 @@ def aportacion_factores_FF(FF0, F):
 
     FF0  : Factores aportados por los hogares inicialmente
     F    : Factores utilizados por la producción
-    '''
-    
-    '''
-    ndem = FF0.shape[0]
-    nsec = F.shape[0]
-    nfac = F.shape[1]
-    FF = np.zeros((ndem,nfac), dtype=np.float64)
-    # tanto por uno de participación en la aportación de factores de cada hogar
-    paH = FF0 / FF0.sum(axis=0)
-    # agregar para cada hogar los factores necesarios por los sectores, proporcionamente al consumo de estos
-    for dem in range(ndem):
-        for fac in range(nfac):
-            # agregar la utilización de los factores por los sectores
-            for sec in range(nsec):
-                FF[dem,fac] += F[sec,fac] * paH[dem,fac]
     '''
     FF = F.sum(axis=0) * FF0 / FF0.sum(axis=0)
     #assert all(abs(FF.sum(axis=0) - F.sum(axis=0)) < 0.0001), 'aportación:\n{}\nuso:\n{}'.format(FF.sum(axis=0), F.sum(axis=0))

@@ -5,6 +5,8 @@ def ini(fichero):
     FICHERO_LOG = fichero
 
 def imprime(texto, rc=True):
+    if type(texto) is not str:
+        texto = str(texto)
     if rc:
         print(texto)
         with open(FICHERO_LOG, "a", encoding="utf-8") as log: log.write(texto + '\n')

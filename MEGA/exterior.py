@@ -14,15 +14,6 @@ def equilibrio_balance_pagos_moneda_extranjera(pWe, E, pWm, M, Sf):
     Sf   : déficit por cuenta corriente en moneda extranjera (igual al ahorro exterior), una variable exógena = importaciones - exportaciones
     Lo calculamos con los precios iniciales (pWe, pWm) para que los cambios en la cotización no distorsionen el equilibrio en divisas
     '''
-    '''
-    nsec = len(pWe)
-    impor = 0.
-    expor = 0.
-    for j in range(nsec):
-        impor += pWm[j] * M[j]
-        expor += pWe[j] * E[j]
-    return Sf - (impor - expor)
-    '''
     return Sf - (M.dot(pWm) - E.dot(pWe))
 
 # función CES de sustitución con la que determinar el óptimo entre importar (M) o
@@ -38,24 +29,9 @@ def produccion_armington_Q(gamma, deltam, deltad, M, D, eta):
     D     : produccion para la demanda local
     eta   : parametro de elasticidad ro = (sigma - 1) / sigma
     '''
-    '''
-    nsec = gamma.shape[0]
-    Q = np.empty((nsec), dtype=np.float64)
-    for i in range(nsec):
-        Q[i] = gamma[i] * (deltam[i] * M[i] ** eta[i] + deltad[i] * D[i] ** eta[i]) ** (1. / eta[i])
-    return Q
-    '''
     return gamma * (deltam * np.sign(M) * (np.abs(M) ** eta) + deltad * np.sign(D) * (np.abs(D) ** eta)) ** (1./eta)
 
 def importacion_maxima_utilidad_armington_M(gamma, deltam, pq, pm, Q, eta, taum):
-    '''
-    invro = 1. / (1. - eta)
-    nsec = gamma.shape[0]
-    M = np.zeros(nsec, dtype=np.float64)
-    for i in range(nsec):
-        M[i] = Q[i] * ((gamma[i] ** eta[i]) * deltam[i] * pq[i] / ((1. + taum[i]) * pm[i])) ** invro[i]
-    return M
-    '''
     #return Q * ((gamma ** eta) * deltam * pq / ((1. + taum) * pm)) ** (1. / (1. - eta))
 
     ImM = (gamma ** eta) * deltam * pq
@@ -65,14 +41,6 @@ def importacion_maxima_utilidad_armington_M(gamma, deltam, pq, pm, Q, eta, taum)
     return Q * (ImM / precio) ** (1. / (1. - eta))
 
 def produccion_maxima_utilidad_armington_D(gamma, deltad, pq, pd, Q, eta):
-    '''
-    invro = 1. / (1. - eta)
-    nsec = gamma.shape[0]
-    D = np.zeros(nsec, dtype=np.float64)
-    for i in range(nsec):
-        D[i] = Q[i] * ((gamma[i] ** eta[i]) * deltad[i] * pq[i] / pd[i]) ** invro[i]
-    return D
-    '''
     #return Q * ((gamma ** eta) * deltad * pq / pd) ** (1. / (1. - eta))
 
     ImD = (gamma ** eta) * deltad * pq
@@ -107,22 +75,10 @@ def produccion_para_exportacion_E(teta, xie, pz, pe, Z, phi, tauz, CssE, AgE, Ap
     phi  : parametro de elasticidad
     tauz : impuesto a la producción local
     '''
-    '''
-    invfi = 1. / (1. - phi)
-    nsec = len(pz)
-    E = np.zeros(nsec, dtype=np.float64)
-    for i in range(nsec):
-        E[i] = Z[i] * (1. + tauz[i]) * pz[i] * ((teta[i] ** phi[i]) * xie[i] / pe[i]) ** invfi[i]
-    return E
-    uno_mas_tasa = 1. + tauz + CssE / Z - AgE / Z + Apz
-    CtE = (teta ** phi) * uno_mas_tasa * xie * pz / pe
-    return Z * (CtE ** (1. / (1. - phi)))
-    '''
     if modo_pseudoimptos == 0:
         return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xie / pe) ** (1. / (1. - phi))
     else:
         return Z * ((teta ** phi) * (1. + tauz + ctzssez - ctzagez + Apz) * pz * xie / pe) ** (1. / (1. - phi))
-
 
 def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz, ctzssez, ctzagez, modo_pseudoimptos):
     '''
@@ -150,32 +106,12 @@ def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz, ctz
     phi  : parametro de elasticidad
     tauz : impuesto a la producción local
     '''
-    '''
-    invfi = 1. / (1. - phi)
-    nsec = len(pz)
-    D = np.zeros(nsec, dtype=np.float64)
-    for i in range(nsec):
-        D[i] = Z[i] * ((teta[i] ** phi[i]) * (1. + tauz[i]) * pz[i] * xid[i] / pd[i]) ** invfi[i]
-    return D
-    uno_mas_tasa = 1. + tauz + CssE / Z - AgE / Z + Apz
-    CtD = (teta ** phi) * uno_mas_tasa * xid * pz / pd
-    return Z * (CtD ** (1. / (1. - phi)))
-    '''
-
     if modo_pseudoimptos == 0:
         return Z * ((teta ** phi) * (1. + tauz + CssE / Z - AgE / Z + Apz) * pz * xid / pd) ** (1. / (1. - phi))
     else:
         return Z * ((teta ** phi) * (1. + tauz + ctzssez - ctzagez + Apz) * pz * xid / pd) ** (1. / (1. - phi))
 
-def restriccion_producción_bruta_Z(teta, xie, xid, E, D, phi):
-    '''
-    invfi = 1. / phi
-    nsec = len(teta)
-    Z = np.zeros(nsec, dtype=np.float64)
-    for i in range(nsec):
-        Z[i] = teta[i] * (xie[i] * (E[i] ** phi[i]) + xid[i] * (D[i] ** phi[i])) ** invfi[i]
-    return Z
-    '''
+def restriccion_produccion_bruta_Z(teta, xie, xid, E, D, phi):
     base = xie * np.sign(E) * (np.abs(E) ** phi) + xid * np.sign(D) * (np.abs(D) ** phi)
     Z = teta * np.sign(base) * (np.abs(base) ** (1. / phi))
     return Z

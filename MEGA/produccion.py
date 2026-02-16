@@ -47,13 +47,6 @@ def utilizacion_factor_compuesto_Y(Z, ay):
     Z   : producción bruta del sector
     ay  : para cada sector, compras necesarias de su factor compuesto (composite factor) para producir una unidad
     '''
-    '''
-    nsec = ay.shape[0]
-    Y = np.zeros(nsec, dtype=np.float64)
-    for i in range(nsec):
-        Y[i] = ay[i] * Z[i]
-    return Y
-    '''
     return ay * Z
 
 def uso_optimo_factores_F(beta, pf, py, Y):

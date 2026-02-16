@@ -397,7 +397,7 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += M.size
     desviacion[16] = D     - exte.produccion_maxima_utilidad_armington_D(parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta) # 6.19
     nvar_end += D.size
-    desviacion[17] = Z     - exte.restriccion_producción_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi) # 6.20
+    desviacion[17] = Z     - exte.restriccion_produccion_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi) # 6.20
     nvar_end += Z.size
     desviacion[18] = E     - exte.produccion_para_exportacion_E(parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, prin.MODO_PSEUDOIMPTOS)  # 6.21
     nvar_end += E.size
