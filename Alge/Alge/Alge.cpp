@@ -21,6 +21,8 @@ int hilos_terminados;
 bool CANCELADO;
 int n_hilos;
 
+HINSTANCE hinstLib;
+
 const int MAX_HILOS = 128;
 HANDLE hilos[MAX_HILOS]{};
 HANDLE semaforo_hilo[MAX_HILOS]{};
@@ -32,13 +34,6 @@ mt19937 hgen[MAX_HILOS]{};
 uniform_int_distribution<int> hdis_entero[MAX_HILOS]{};
 uniform_int_distribution<int> hdis_entero_ivec[MAX_HILOS]{};
 uniform_real_distribution<double> hdis_double[MAX_HILOS]{};
-
-long long* mutaciones = NULL;
-long long* mufactibles = NULL;
-long long mut_ant;
-long long fac_ant;
-
-HINSTANCE hinstLibHilos;
 
 typedef OPCIONES(*P_recibe_opciones)(OPCIONES);
 typedef DATOS(*P_recibe_datos)(DATOS);
@@ -62,10 +57,11 @@ double** cdm_hilo = NULL;
 double* cdm = NULL;
 double* pon_cdm = NULL;
 int ul_generacion_cdm;
-/*
-double* desalternativo = NULL;
-double* calculado = NULL;
-*/
+
+long long* mutaciones = NULL;
+long long* mufactibles = NULL;
+long long mut_ant;
+long long fac_ant;
 
 int ind_mejor_merito;
 double mejor_merito;
@@ -107,8 +103,8 @@ bool el_mejor_primero;
 bool usar_cdm;
 
 mt19937 gen;
-uniform_real_distribution<double> dis_double(0.0, 1.0);
 uniform_int_distribution<int> dis_entero{};
+uniform_real_distribution<double> dis_double(0.0, 1.0);
 
 int caso;
 unsigned t0;
@@ -215,40 +211,40 @@ int lee_parametros(const char* fichero) {
 	return 0;
 }
 int punteros_libreria(const wchar_t* fichero) {
-	hinstLibHilos = LoadLibrary(fichero);
-	if (hinstLibHilos != NULL)
+	hinstLib = LoadLibrary(fichero);
+	if (hinstLib != NULL)
 	{
-		recibe_opciones = (P_recibe_opciones)GetProcAddress(hinstLibHilos, "recibe_opciones");
+		recibe_opciones = (P_recibe_opciones)GetProcAddress(hinstLib, "recibe_opciones");
 		if (NULL == recibe_opciones)
 		{
 			printf("No se produjo el enlace con la función recibe_opciones\n");
 			return -1;
 		}
-		recibe_datos = (P_recibe_datos)GetProcAddress(hinstLibHilos, "recibe_datos");
+		recibe_datos = (P_recibe_datos)GetProcAddress(hinstLib, "recibe_datos");
 		if (NULL == recibe_datos)
 		{
 			printf("No se produjo el enlace con la función recibe_datos\n");
 			return -1;
 		}
-		recibe_parametros = (P_recibe_parametros)GetProcAddress(hinstLibHilos, "recibe_parametros");
+		recibe_parametros = (P_recibe_parametros)GetProcAddress(hinstLib, "recibe_parametros");
 		if (NULL == recibe_parametros)
 		{
 			printf("No se produjo el enlace con la función recibe_parametros\n");
 			return -1;
 		}
-		merito_s = (P_merito)GetProcAddress(hinstLibHilos, "merito_s");
+		merito_s = (P_merito)GetProcAddress(hinstLib, "merito_s");
 		if (NULL == merito_s)
 		{
 			printf("No se produjo el enlace con la función merito_s\n");
 			return -1;
 		}
-		merito = (P_merito)GetProcAddress(hinstLibHilos, "merito");
+		merito = (P_merito)GetProcAddress(hinstLib, "merito");
 		if (NULL == merito)
 		{
 			printf("No se produjo el enlace con la función merito\n");
 			return -1;
 		}
-		merito_sol = (P_merito_sol)GetProcAddress(hinstLibHilos, "merito_sol");
+		merito_sol = (P_merito_sol)GetProcAddress(hinstLib, "merito_sol");
 		if (NULL == merito_sol)
 		{
 			printf("No se produjo el enlace con la función solucion\n");
@@ -627,7 +623,7 @@ bool inicia() {
 	fprintf(fp, "------------------------------------------------------\n\n");
 
 	fclose(fp);
-	libera_DLL(hinstLibHilos);
+	libera_DLL(hinstLib);
 	libera_cotas();
 	libera_poblacion();
 	printf("\n");
@@ -693,10 +689,7 @@ bool inicia_poblacion(double factor_inicio) {
 	if (merito_individuo == NULL) return false;
 	factible = (double*)malloc(mem_npob);
 	if (factible == NULL) return false;
-	/*
-	desalternativo = (double*)malloc(memoria_fila);
-	calculado = (double*)malloc(mem_npob);
-	*/
+
 	size_t const mem_hilos = sizeof(long long) * max(1, n_hilos);
 	mutaciones = (long long*)malloc(mem_hilos);
 	if (mutaciones == NULL) return false;
@@ -1414,10 +1407,26 @@ bool libera_cotas() {
 	if (cotas != NULL) {
 		for (int i = 0; i < 2; i++) {
 			free(cotas[i]);
+			res = sizeof(cotas[i]) == sizeof(double);
+			if (!res) {
+				// No se pudo liberar el individuo
+				break;
+			}
 		}
-		free(cotas);
-		bool res = sizeof(cotas) == sizeof(double);
-		if (!res) printf("No se pudo liberar las cotas\n");
+		if (res) {
+			free(cotas);
+			res = sizeof(cotas) == sizeof(double);
+			if (!res) {
+				// No se pudo liberar las cotas
+			}
+		}
+	}
+	if (res && fijo != NULL) {
+		free(fijo);
+		res = sizeof(fijo) == sizeof(double);
+		if (!res) {
+			// No se pudo liberar vector de fijos
+		}
 	}
 	return res;
 }
@@ -1426,19 +1435,68 @@ bool libera_poblacion() {
 	if (poblacion != NULL) {
 		for (int i = 0; i < NVEC; i++) {
 			free(poblacion[i]);
+			res = sizeof(poblacion[i]) == sizeof(double);
+			if (!res) {
+				// No se pudo liberar el individuo
+				break;
+			}
 		}
-		free(poblacion);
-		res = sizeof(poblacion) == sizeof(double);
-		if (!res) printf("No se pudo liberar la poblacion\n");
+		if (res) {
+			free(poblacion);
+			res = sizeof(poblacion) == sizeof(double);
+			if (!res) {
+				// No se pudo liberar la poblacion
+			}
+		}
 	}
-	if (res == true && descendiente != NULL) {
+	if (res && descendiente != NULL) {
 		res = false;
 		for (int i = 0; i < NVEC; i++) {
 			free(descendiente[i]);
 		}
 		free(descendiente);
 		res = sizeof(descendiente) == sizeof(double);
-		if (!res) printf("No se pudo liberar mutantes\n");
+		if (!res) {
+			// No se pudo liberar descendientes
+		}
+	}
+	if (res && merito_individuo != NULL) {
+		free(merito_individuo);
+		res = sizeof(merito_individuo) == sizeof(double);
+		if (!res) {
+			// No se pudo liberar vector de meritos
+		}
+	}
+	if (res && factible != NULL) {
+		free(factible);
+		res = sizeof(factible) == sizeof(double);
+		if (!res) {
+			// No se pudo liberar vector de factibilidad
+		}
+	}
+	if (res && mutaciones != NULL) {
+		free(mutaciones);
+		res = sizeof(mutaciones) == sizeof(double);
+	}
+	if (res && mufactibles != NULL) {
+		free(mufactibles);
+		res = sizeof(mufactibles) == sizeof(double);
+	}
+	if (res && cdm != NULL) {
+		free(cdm);
+		res = sizeof(cdm) == sizeof(double);
+	}
+	if (res && pon_cdm != NULL) {
+		free(pon_cdm);
+		res = sizeof(pon_cdm) == sizeof(double);
+	}
+	if (res && cdm_hilo != NULL) {
+		for (int i = 0; i < n_hilos; i++) {
+			free(cdm_hilo[i]);
+			res = sizeof(cdm_hilo[i]) == sizeof(double);
+		}
+		free(cdm_hilo);
+		res = sizeof(cdm_hilo) == sizeof(double);
 	}
 	return res;
 }
