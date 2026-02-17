@@ -53,7 +53,6 @@ int resto;
 int hbloque;
 double vant;
 int res_Simulacion;
-const char* calificador;
 
 int NPOB;
 int max_intentos;
@@ -80,6 +79,7 @@ uniform_real_distribution<double> dis_double(0.0, 1.0);
 uniform_int_distribution<int> dis_entero{};
 
 double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida) {
+	// Error en los parametros recibidos
 	int res = parametros_alge(par);
 	if (res != 0) {
 		if (extendida == 1) {
@@ -96,7 +96,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	if (inicia_cotas() == false) {
-		//printf("Error al generar la poblacion\n");
+		// Error al generar la poblacion
 		merito_sol(poblacion[ind_mejor_merito]);
 		if (extendida == 1) {
 			me_sol[0] = -1.;
@@ -112,7 +112,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	if (fija_cotas(cotasInf, cotasSup) == false) {
-		//printf("Error al fijar las cotas\n");
+		// Error al fijar las cotas
 		if (extendida == 1) {
 			me_sol[0] = -2.;
 			me_sol[2] = intentos;
@@ -127,7 +127,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	if (inicia_poblacion(factor_inicio) == false) {
-		//printf("Error al reservar memoria para la poblacion\n");
+		// Error al reservar memoria para la poblacion
 		if (extendida == 1) {
 			me_sol[0] = -3.;
 			me_sol[2] = intentos;
@@ -144,7 +144,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	gen.seed(semilla);
 	dis_entero = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
 	if (genera_poblacion() == false) {
-		//printf("Error al generar la poblacion\n");
+		// Error al generar la poblacion
 		if (extendida == 1) {
 			me_sol[0] = -4.;
 			me_sol[2] = intentos;
@@ -185,7 +185,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		res_Simulacion = avanza();
 	}
 	if (res_Simulacion == -2) {
-		//printf("++++++++++ encontrada solucion, %6d generaciones", generacion);
+		// Encontrada solucion
 		merito_sol(poblacion[ind_mejor_merito]);
 		if (extendida == 1) {
 			me_sol[0] = 0.;
@@ -202,7 +202,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 	else if (res_Simulacion == -3) {
 		if (mejor_merito > tol_aceptable) {
-			//printf("---------- no progresa, solucion no aceptable, %6d generaciones", generacion);
+			// No progresa, solucion no aceptable
 			merito_sol(poblacion[ind_mejor_merito]);
 			if (extendida == 1) {
 				me_sol[0] = 1.;
@@ -218,7 +218,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			}
 		}
 		else {
-			//printf("?????????? no progresa, pero la solucion puede ser aceptable, %6d generaciones", generacion);
+			// No progresa, pero la solucion puede ser aceptable
 			merito_sol(poblacion[ind_mejor_merito]);
 			if (extendida == 1) {
 				me_sol[0] = 2.;
@@ -236,7 +236,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 	else if (res_Simulacion == -5) {
 		if (mejor_merito > 0.0001) {
-			//printf("-------- superado el maximo de generaciones, solucion no aceptable, %6d generaciones", generacion);
+			// Superado el maximo de generaciones, solucion no aceptable
 			merito_sol(poblacion[ind_mejor_merito]);
 			if (extendida == 1) {
 				me_sol[0] = 3.;
@@ -252,7 +252,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			}
 		}
 		else {
-			//printf("???????? superado el maximo de generaciones, pero la solucion puede ser aceptable, %6d generaciones", generacion);
+			// Superado el maximo de generaciones, pero la solucion puede ser aceptable
 			merito_sol(poblacion[ind_mejor_merito]);
 			if (extendida == 1) {
 				me_sol[0] = 4.;
@@ -269,7 +269,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	else {
-		//fprintf(fp, "terminacion inesperada\n\n");
+		// Error, terminacion inesperada
 		merito_sol(poblacion[ind_mejor_merito]);
 		if (extendida == 1) {
 			me_sol[0] = -5.;
@@ -849,13 +849,11 @@ void seleccionH(int desde, int hasta) {
 }
 int comprobar_final() {
 	if (mejor_merito < tolerancia) {
-		calificador = "++++++++++";
 		return -2;
 	}
 	if (generacion > 0 && (generacion % gene_control_progreso == 0)) {
 		if ((vant - mejor_merito) < min_progreso) {
 			if (mejor_merito < tol_aceptable) {
-				calificador = "??????????";
 				return -3;
 			}
 			intentos++;
@@ -864,7 +862,6 @@ int comprobar_final() {
 				vant = 1.0e+99;
 			}
 			else {
-				calificador = "----------";
 				return -3;
 			}
 		}
@@ -878,7 +875,6 @@ int comprobar_final() {
 						vant = 1.0e+99;
 					}
 					else {
-						calificador = "----------";
 						return -3;
 					}
 				}
@@ -903,39 +899,6 @@ double distancia_clonacion() {
 		}
 	}
 	return des / (NPOB * NVEC);
-}
-static bool libera_cotas() {
-	bool res = false;
-	if (cotas != NULL) {
-		for (int i = 0; i < 2; i++) {
-			free(cotas[i]);
-		}
-		free(cotas);
-		bool res = sizeof(cotas) == sizeof(double);
-		if (!res) printf("No se pudo liberar las cotas\n");
-	}
-	return res;
-}
-bool libera_poblacion() {
-	bool res = false;
-	if (poblacion != NULL) {
-		for (int i = 0; i < NVEC; i++) {
-			free(poblacion[i]);
-		}
-		free(poblacion);
-		res = sizeof(poblacion) == sizeof(double);
-		if (!res) printf("No se pudo liberar la poblacion\n");
-	}
-	if (res == true && descendiente != NULL) {
-		res = false;
-		for (int i = 0; i < NVEC; i++) {
-			free(descendiente[i]);
-		}
-		free(descendiente);
-		res = sizeof(descendiente) == sizeof(double);
-		if (!res) printf("No se pudo liberar mutantes\n");
-	}
-	return res;
 }
 /*
 *********************

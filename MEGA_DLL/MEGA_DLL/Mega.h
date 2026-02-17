@@ -133,8 +133,6 @@ bool inicia_cotas();
 bool fija_cotas(double* cotasInf, double* cotasSup);
 bool inicia_poblacion(double ajuste);
 static bool genera_poblacion();
-bool libera_cotas();
-bool libera_poblacion();
 int avanza();
 void mutacion_cruze(int desde, int hasta, int hilo);
 void mutacion_cruzeH(int desde, int hasta, int hilo);
