@@ -4,13 +4,9 @@
 
 using namespace std;
 
-template <typename T> double sgn(T val) {
-	return (T(0) < val) - (val < T(0));
-};
 const int NFAC = 2;
 const int NDEM = 2;
 const int NSEC = 6;
-const int NSF = NSEC * NFAC;
 
 typedef struct
 {
@@ -91,12 +87,8 @@ public:
 extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
-extern "C" MEGA_DLL_API double merito(double* vec_opt);
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
-extern "C" MEGA_DLL_API double* vector_prueba();
-extern "C" MEGA_DLL_API double* solucion();
-extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida);
 
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);
@@ -128,6 +120,8 @@ double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double
 double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, double pF0L, double F0[NSEC][NFAC], double F[NSEC][NFAC]);
 
 #pragma region Genetico
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida);
+
 int parametros_alge(double* par);
 bool inicia_cotas();
 bool fija_cotas(double* cotasInf, double* cotasSup);
@@ -136,8 +130,6 @@ static bool genera_poblacion();
 int avanza();
 void mutacion_cruze(int desde, int hasta, int hilo);
 void mutacion_cruzeH(int desde, int hasta, int hilo);
-void mutacion_cruze_ax(int desde, int hasta, int hilo);
-void mutacion_cruze_axH(int desde, int hasta, int hilo);
 void seleccion();
 void seleccionH(int desde, int hasta);
 int comprobar_final();
