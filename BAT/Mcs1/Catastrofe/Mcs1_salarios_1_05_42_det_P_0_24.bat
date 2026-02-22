@@ -4,6 +4,8 @@ mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
 --PREFIJO             =Mcs1_salarios_1_05_42_det_P_0_24 ^
+--USAR_DLL            False ^
+--USAR_ALGE_DLL       False ^
 --ALP_FACTOR          0.24 ^
 --NSAM                1 ^
 --DECIMALES           4 ^
@@ -17,8 +19,8 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --RENTA_FICTICIA      False ^
 --AYD_ADICIONAL       0. 0. 0. 0. ^
 --ARANCELES           0. 0. ^
---OR_PRE_REFERENCIA   0 ^
---PRECIO_F_REFERENCIA 1.0 ^
+--OR_PRE_EXCLUIDO     0 ^
+--PRECIO_F_EXCLUIDO   1.0 ^
 --VALOR_F_TRA         1.05 ^
 --GE_FIX              epsilon ^
 --GE_FIX_LON          1 ^
