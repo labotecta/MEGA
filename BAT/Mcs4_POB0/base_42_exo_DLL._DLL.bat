@@ -20,7 +20,6 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_F_MUTACION     0.72 ^
 --ALGE_RECOMBINACION  0.99 1.10 ^
 --ALGE_CTRL_FACTIBLE  1 ^
---ALGE_CALCULO_AX     0 ^
 --ALGE_RES_EXTENSA    0 ^
 --NSAM                4 ^
 --DECIMALES           1 ^
