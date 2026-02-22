@@ -6,7 +6,7 @@ que está íntegramente en Python.
 
 Otro asunto sobre el que reflexionar, es la conveniencia de normalizar las desviaciones de las variables en el
 resultado de la función objetivo. La aplicación no los normaliza, se trata de desviaciones en importes y todos
-tienen el mismo peso, sea cual sea el importe absoluto de la variable.
+tienen el mismo peso, sea cual sea el importe absoluto de la variable. Casi seguro no serviría de nada.
 
 scipy.differential_evolution si normaliza las variables para que todos los intervalos de existencia sean el mismo.
 
@@ -17,7 +17,12 @@ mismos resultados, lo cual es lógico porque los parámetros se determinan en to
 reproduzcan los valores Xp0 de la MCS y las variaciones que experimentan los Xp en la solución son suficientemente
 pequeñas para que todas las funciones de utilidad repartan los ingresos netos en prácticamente las mismas cantidades.
 
-Resulta increible el papel de Apz, si no se deja libre en un intervalo suficiente, no se encuentra solución
+Resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
+
+El tratamiento del precio de los factores es enrevesado y fuente de multitud de errores, se diseño pensando
+que siempre se fijaría el precio del factor trabajo y por lo tanto no debía formar parte de las soluciones a
+probar, pero los parches al considerar que se podría fijar el del capital o usar la curva Phillips hacen
+incomprensible la gestión de estos precios en las soluciones de prueba.
 '''
 import os
 import sys
@@ -28,7 +33,6 @@ import matplotlib
 import pandas
 import scipy
 import ctypes as ct
-import random as az
 
 from pandas          import Series
 from scipy.optimize  import differential_evolution
@@ -47,16 +51,17 @@ import exterior      as exte
 import restricciones as restri
 
 import dll           as dll
-import genetico      as ge
 
 # los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
 global datos
 global parametros
 
-VERSION = '1.2.0'
-# 4 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
-#               0            1             2              3
-etq_sam  = ['1_hogar','2_hogares','3_hogares_AMP','MCA-ESP-05']
+VERSION = '1.3.0'
+
+# 5 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
+# estas etiquetas solo se usan para construir el nombre del fichero de salida
+#               0           1           2             3           4
+etq_sam  = ['1_hogar','2_hogares','2_hogares','3_hogares_AMP','MCA-ESP-05']
 # escenarios para las pruebas, se selecciona con NCASO
 etq_caso = [
     'base',                     #  0
@@ -82,16 +87,13 @@ etq_caso = [
 try:
     args = argumentos.valores_opciones4()
 except BaseException as e:
-    if __name__ == '__main__':
-        with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-            log.write('Error en la lectura de parámetros {}\n'.format(e.args))
-            log.write(str(e))
     print('Error en la lectura de parámetros {}\n'.format(e.args))
     sys.exit()
 
-# se guradan las notificaciones hasta que esté lista la función 'imprimir'
+# se guardan las notificaciones hasta que esté lista la función 'imprimir'
 errores_diferidos = []
 avisos_diferidos  = []
+
 nfac = args.NFAC    # número de factores 
 ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
@@ -112,9 +114,13 @@ ALGE_NPOB           = args.ALGE_NPOB
 ALGE_F_MUTACION     = args.ALGE_F_MUTACION
 ALGE_RECOMBINACION  = args.ALGE_RECOMBINACION
 ALGE_CTRL_FACTIBLE  = args.ALGE_CTRL_FACTIBLE
-ALGE_CALCULO_AX     = args.ALGE_CALCULO_AX
 ALGE_RES_EXTENSA    = args.ALGE_RES_EXTENSA
 
+if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 4:
+    if __name__ == 'MEGA':
+        errores_diferidos.append('La DLL solo se puede usara con la MCS 4 y se ha especificado la {}'.format(NSAM))
+    else:
+        errores_diferidos.append('')
 NCASO               = np.array(args.NCASO, dtype=int)
 DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
 if len(args.DEM_ADICIONAL) != ndem * nsec:
@@ -134,7 +140,7 @@ else:
 RENTA_FICTICIA      = args.RENTA_FICTICIA
 if (9 in NCASO) and RENTA_FICTICIA:
     if __name__ == 'MEGA':
-        avisos_diferidos.append('Aviso. Se ha seleccionado el caso {} sin renta ficticia'.format(etq_caso[9]))
+        avisos_diferidos.append('Se ha seleccionado el caso {} sin renta ficticia'.format(etq_caso[9]))
 GE_INCLUYE_XP       = args.GE_INCLUYE_XP
 DEM_ESENCIALES      = args.DEM_ESENCIALES
 if len(args.CON_ESENCIALES) != ndem * nsec:
@@ -146,24 +152,24 @@ else:
     CON_ESENCIALES      = np.array(args.CON_ESENCIALES , dtype=np.float64).reshape(ndem, nsec)
     if abs(CON_ESENCIALES).sum() == 0 and DEM_ESENCIALES == True:
         if __name__ == 'MEGA':
-            avisos_diferidos.append('Aviso. No se han especificado consumos esenciales pero DEM_ESENCIALES es True')
+            avisos_diferidos.append('No se han especificado consumos esenciales pero DEM_ESENCIALES es True')
     if abs(CON_ESENCIALES.sum()) == 0:
         if (13 in NCASO) == False and (14 in NCASO) == False:
             # los casos 13 y 14 fijan los consumos esenciales
             if DEM_ESENCIALES == True:
                 if __name__ == 'MEGA':
-                    avisos_diferidos.append('Aviso. Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
+                    avisos_diferidos.append('Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
                     DEM_ESENCIALES = False
             if GE_INCLUYE_XP == True:
                 if __name__ == 'MEGA':
-                    avisos_diferidos.append('Aviso. Se ha especificado GE_INCLUYE_XP = True, sin consumos esenciales')
+                    avisos_diferidos.append('Se ha especificado GE_INCLUYE_XP = True, sin consumos esenciales')
     else:
         if GE_INCLUYE_XP == False and DEM_ESENCIALES == False:
             if __name__ == 'MEGA':
-                avisos_diferidos.append('Aviso. Se han especificado consumos esenciales pero GE_INCLUYE_XP y DEM_ESENCIALES son False')
+                avisos_diferidos.append('Se han especificado consumos esenciales pero GE_INCLUYE_XP y DEM_ESENCIALES son False')
         if GE_INCLUYE_XP == False and DEM_ESENCIALES == True:
             if __name__ == 'MEGA':
-                avisos_diferidos.append('Aviso. Se han especificado consumos esenciales y GE_INCLUYE_XP es False pero DEM_ESENCIALES es True. Stone-Geary puede fallar')
+                avisos_diferidos.append('Se han especificado consumos esenciales y GE_INCLUYE_XP es False pero DEM_ESENCIALES es True. Stone-Geary puede fallar')
 if len(args.SIGMA_CES_DEMANDA) != ndem:
     if __name__ == 'MEGA':
         errores_diferidos.append('El número de datos para SIGMA_CES_DEMANDA {} no es el correcto {}'.format(len(args.SIGMA_CES_DEMANDA), ndem))
@@ -233,18 +239,14 @@ else:
     n = len(args.GE_FIX_LON)
     if k != n:
         if __name__ == 'MEGA':
-            '''
-            with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-                log.write('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n) + '\n')
-            '''
-            print('Error. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
+            errores_diferidos.append('No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
+        else:
+            errores_diferidos.append('')
     if len(args.GE_FIX_LIMITES) != sum(args.GE_FIX_LON) * 2:
         if __name__ == 'MEGA':
-            '''
-            with open('C:/MEGA/Salidas/erroresMEGA.log', "a", encoding="utf-8") as log:
-                log.write('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES) + '\n')
-            '''
-            print('Error. No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES))
+            errores_diferidos.append('No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES))
+        else:
+            errores_diferidos.append('')
     GE_FIX_LIMITES = np.zeros(k, dtype=list)
     ni = 0
     for i in range(k):
@@ -288,10 +290,10 @@ if len(args.VAR_FACTORES) != ndem * nfac:
     else:
         errores_diferidos.append('')
 else:
-    VAR_FACTORES    = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
-SENDA_DATOS         = args.SENDA_DATOS
-SENDA_SALIDAS       = args.SENDA_SALIDAS
-SENDA_GRAFICOS      = args.SENDA_GRAFICOS
+    VAR_FACTORES  = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
+SENDA_DATOS       = args.SENDA_DATOS
+SENDA_SALIDAS     = args.SENDA_SALIDAS
+SENDA_GRAFICOS    = args.SENDA_GRAFICOS
 if (13 in NCASO) and DEM_ESENCIALES:
     if __name__ == 'MEGA':
         errores_diferidos.append('Consumos esenciales iguales a Xp0 es incompatible con Stone-Geary (rentas 0)')
@@ -325,23 +327,24 @@ if GE_WORKERS != 1:
 os.makedirs(SENDA_SALIDAS , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_GRAFICOS, exist_ok=True)  # crear el directorio si no existe
 
-# para el algoritmo genetico de la DLL
-rot_res_ok = [
-            "Solucion encontrada",
-            "No progresa, solucion no aceptable",
-            "No progresa, pero la solucion puede ser aceptable",
-            "Superado el maximo de generaciones, solucion no aceptable",
-            "Superado el maximo de generaciones, pero la solucion puede ser aceptable"
+# para el algoritmo genético de la DLL
+rot_res_dll_ok = [
+            "Solución encontrada",
+            "No progresa, solución no aceptable",
+            "No progresa, pero la solución puede ser aceptable",
+            "Superado el máximo de generaciones, solución no aceptable",
+            "Superado el máximo de generaciones, pero la solución puede ser aceptable"
         ]
-rot_res_error = [
-            "Error al generar la poblacion",
+rot_res_dll_error = [
+            "Error al generar la población",
             "Error al fijar las cotas",
-            "Error al reservar memoria para la poblacion",
-            "Error al generar la poblacion",
-            "Terminacion inesperada",
+            "Error al reservar memoria para la población",
+            "Error al generar la población",
+            "Terminación inesperada",
             "Error en los parámetros",
             "Error al preparar la multitarea"
         ]
+# para asimilar el resultado de la DLL al que devuelve scipy
 class rmin_dll(object):
     def __init__(self, sol, dnit):
         self.x = sol
@@ -454,7 +457,7 @@ else:
     else:
         errores_diferidos.append('')
 
-TOLERA_MCS = 1.0 / 10.0 ** DECIMALES
+TOLERA_MCS = 1.0 / (10.0 ** DECIMALES)
 
 if nfac != len(h):
     if __name__ == 'MEGA':
@@ -463,12 +466,12 @@ if nfac != len(h):
         errores_diferidos.append('')
 if ndem != len(dem):
     if __name__ == 'MEGA':
-        errores_diferidos.append('Error. El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
+        errores_diferidos.append('El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
     else:
         errores_diferidos.append('')
 if nsec != len(ind):
     if __name__ == 'MEGA':
-        errores_diferidos.append('Error. El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
+        errores_diferidos.append('El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
     else:
         errores_diferidos.append('')
 
@@ -501,20 +504,22 @@ mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
+# ya podemos escribir los mensajes de error y avisos
 if len(avisos_diferidos) > 0:
     imprime('')
     imprime('....................................................................................................................................')
     for mensaje in avisos_diferidos:
-        imprime(mensaje)
+        imprime('Aviso. ' + mensaje)
     imprime('....................................................................................................................................')
     imprime('')
-
 if len(errores_diferidos) > 0:
     imprime('')
     imprime('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     for mensaje in errores_diferidos:
-        imprime(mensaje)
+        imprime('Error. ' + mensaje)
     imprime('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    
+    # con errorres se cancela la aplicación
     sys.exit()
 
 def punteros():
@@ -580,7 +585,7 @@ def extrae_var(vp, clave, nfil, ncol):
 def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
           ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_min, ge_var_max,
           ind_pvec_desde, ge_fix, ge_fix_limites, ge_incluye_xp, con_esenciales):
-    # definir el rango de variación de los precios y variables
+    # definir el rango de variación de los precios y variables en LA SOLUCION A PROBAR 'vec_opt'
     bnds = []
     for i in range(nvec_opt):
         bnds.append((0.,0.))
@@ -1189,7 +1194,6 @@ def imprime_opciones(nvec_opt):
         imprime('     F_MUTACION     {:10}'.format(ALGE_F_MUTACION))
         imprime('     RECOMBINACION      [{:5},{:5}]'.format(ALGE_RECOMBINACION[0],ALGE_RECOMBINACION[1]))
         imprime('     CTRL_FACTIBLE  {:10}'.format(ALGE_CTRL_FACTIBLE))
-        imprime('     CALCULO_AX     {:10}'.format(ALGE_CALCULO_AX))
         imprime('     RES_EXTENSA    {:10}'.format(ALGE_RES_EXTENSA))
     imprime('')
     imprime('Rango  de validez de los precios en % -{:9.1f} +{:9.1f}'.format(100. * (GE_PRE_MIN - 1.), 100. * (GE_PRE_MAX - 1.)))
@@ -1243,468 +1247,6 @@ def imprime_opciones(nvec_opt):
     imprime('-------------------------------------------------------------------')
     imprime('-------------------------------------------------------------------')
     imprime('')
-
-def DEPURAR(vec_opt):
-    vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
-    meritoDLL = libc.merito_s(vo)
-    imprime('de DLL     {:12.5e}'.format(meritoDLL))
-    res_ecuaciones = sec_ecuaciones(vec_opt)
-    dist = calcula_desvios(res_ecuaciones, False)
-    imprime('de Python  {:12.5e}'.format(dist))
-
-    res = dll.solucion (libc)
-    rpf = np.zeros(nfac)
-    rpy = np.zeros(nsec)
-    rpq = np.zeros(nsec)
-    rpd = np.zeros(nsec)
-    rpz = np.zeros(nsec)
-    rpe = np.zeros(nsec)
-    rpm = np.zeros(nsec)
-    rF = np.zeros((nsec,nfac));
-    rE = np.zeros(nsec)
-    rM = np.zeros(nsec)
-    rD = np.zeros(nsec)
-    rYp = np.zeros(nsec)
-    rZ = np.zeros(nsec)
-    rXg = np.zeros(nsec)
-    rXv = np.zeros(nsec)
-    rQ = np.zeros(nsec)
-    rTd = np.zeros(ndem)
-    rTz = np.zeros(nsec)
-    rTm = np.zeros(nsec)
-    rSp = np.zeros(ndem)
-    rAgE = np.zeros(nsec)
-    rAgH = np.zeros(ndem)
-    rCssE = np.zeros(nsec)
-    rCssH = np.zeros(ndem)
-    rXp = np.zeros((ndem, nsec))
-    rF = np.zeros((nsec, nfac))
-    rFF = np.zeros((ndem, nfac))
-    rAlp = np.zeros((ndem, nfac))
-    rX = np.zeros((nsec, nsec))
-
-    n = 0
-    for i in range(nfac):
-        rpf[i] = res[n]
-        imprime(res[n])
-        n += 1
-    for i in range(nsec):
-        rpy[i] = res[n]
-        imprime(res[n])
-        n += 1
-    for i in range(nsec):
-        rpq[i] = res[n]
-        imprime(res[n])
-        n += 1
-    for i in range(nsec):
-        rpd[i] = res[n]
-        imprime(res[n])
-        n += 1
-    for i in range(nsec):
-        rpz[i] = res[n]
-        imprime(res[n])
-        n += 1
-    repsilon = res[n]
-    imprime(res[n])
-    n += 1
-    for i in range(nsec):
-        rpe[i] = res[n]
-        imprime(res[n])
-        n += 1
-    for i in range(nsec):
-        rpm[i] = res[n]
-        imprime(res[n])
-        n += 1
-    imprime('variables')
-    rApz = res[n]
-    imprime(res[n])
-    n += 1;
-    imprime('E')
-    for i in range(nsec):
-        rE[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('M')
-    for i in range(nsec):
-        rM[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('D')
-    for i in range(nsec):
-        rD[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Yp')
-    for i in range(nsec):
-        rYp[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Z')
-    for i in range(nsec):
-        rZ[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Xg')
-    for i in range(nsec):
-        rXg[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Xv')
-    for i in range(nsec):
-        rXv[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Q')
-    for i in range(nsec):
-        rQ[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Td')
-    for i in range(ndem):
-        rTd[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Tz')
-    for i in range(nsec):
-        rTz[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Tm')
-    for i in range(nsec):
-        rTm[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Sp')
-    for i in range(ndem):
-        rSp[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('AgE')
-    for i in range(nsec):
-        rAgE[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    for i in range(ndem):
-        rAgH[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('CssE')
-    for i in range(nsec):
-        rCssE[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    for i in range(ndem):
-        rCssH[i] = res[n]
-        imprime(res[n])
-        n += 1;
-    imprime('Sg')
-    rSg = res[n]
-    imprime(res[n])
-    n += 1;
-    rSc = res[n]
-    imprime(res[n])
-    n += 1;
-    rebp = res[n]
-    imprime(res[n])
-    n += 1;
-    imprime('Xp')
-    for i in range(ndem):
-        for j in range(nsec):
-            rXp[i][j] = res[n]
-            imprime(res[n])
-            n += 1;
-    imprime('F')
-    for i in range(nsec):
-        for j in range(nfac):
-            rF[i][j] = res[n]
-            imprime(res[n])
-            n += 1;
-    imprime('FF')
-    for i in range(ndem):
-        for j in range(nfac):
-            rFF[i][j] = res[n]
-            imprime(res[n])
-            n += 1;
-    imprime('Alp')
-    for i in range(ndem):
-        for j in range(nfac):
-            rAlp[i][j] = res[n]
-            imprime(res[n])
-            n += 1;
-    imprime('X')
-    for i in range(nsec):
-        for j in range(nsec):
-            rX[i][j] = res[n]
-            imprime(res[n])
-            n += 1;
-    imprime('')
-
-    pf = np.zeros(nfac)
-    py = np.zeros(nsec)
-    pq = np.zeros(nsec)
-    pd = np.zeros(nsec)
-    pz = np.zeros(nsec)
-    pe = np.zeros(nsec)
-    pm = np.zeros(nsec)
-    F = np.zeros((nsec,nfac));
-    E = np.zeros(nsec)
-    M = np.zeros(nsec)
-    D = np.zeros(nsec)
-    Yp = np.zeros(nsec)
-    Z = np.zeros(nsec)
-    Xg = np.zeros(nsec)
-    Xv = np.zeros(nsec)
-    Q = np.zeros(nsec)
-    Td = np.zeros(ndem)
-    Tz = np.zeros(nsec)
-    Tm = np.zeros(nsec)
-    Sp = np.zeros(ndem)
-    AgE = np.zeros(nsec)
-    AgH = np.zeros(ndem)
-    CssE = np.zeros(nsec)
-    CssH = np.zeros(ndem)
-    Xp = np.zeros((ndem, nsec))
-    F = np.zeros((nsec, nfac))
-    FF = np.zeros((ndem, nfac))
-    Alp = np.zeros((ndem, nfac))
-    X = np.zeros((nsec, nsec))
-
-    dpf = np.zeros(nfac)
-    dpy = np.zeros(nsec)
-    dpq = np.zeros(nsec)
-    dpd = np.zeros(nsec)
-    dpz = np.zeros(nsec)
-    dpe = np.zeros(nsec)
-    dpm = np.zeros(nsec)
-    dF = np.zeros((nsec,nfac));
-    dE = np.zeros(nsec)
-    dM = np.zeros(nsec)
-    dD = np.zeros(nsec)
-    dYp = np.zeros(nsec)
-    dZ = np.zeros(nsec)
-    dXg = np.zeros(nsec)
-    dXv = np.zeros(nsec)
-    dQ = np.zeros(nsec)
-    dTd = np.zeros(ndem)
-    dTz = np.zeros(nsec)
-    dTm = np.zeros(nsec)
-    dSp = np.zeros(ndem)
-    dAgE = np.zeros(nsec)
-    dAgH = np.zeros(ndem)
-    dCssE = np.zeros(nsec)
-    dCssH = np.zeros(ndem)
-    dXp = np.zeros((ndem, nsec))
-    dF = np.zeros((nsec, nfac))
-    dFF = np.zeros((ndem, nfac))
-    dAlp = np.zeros((ndem, nfac))
-    dX = np.zeros((nsec, nsec))
-
-    (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
-    ) = res_ecuaciones
-    pf      = extrae_var(vec_opt,'pF', 0, nfac - 1)
-    pf      = completa_pf(pf, F)
-    py      = extrae_var(vec_opt,'pY', 0, nsec)
-    pq      = extrae_var(vec_opt,'pQ', 0, nsec)
-    pd      = extrae_var(vec_opt,'pD', 0, nsec)
-    epsilon = extrae_var(vec_opt,'epsilon', 0, 0)
-
-    for i in range(nfac):
-        dpf[i] = pf[i] - rpf[i]
-        imprime(pf[i])
-    for i in range(nsec):
-        dpy[i] = py[i] - rpy[i]
-        imprime(py[i])
-    for i in range(nsec):
-        dpq[i] = pq[i] - rpq[i]
-        imprime(pq[i])
-    for i in range(nsec):
-        dpd[i] = pd[i] - rpd[i]
-        imprime(pd[i])
-    for i in range(nsec):
-        dpz[i] = pz[i] - rpz[i]
-        imprime(pz[i])
-    depsilon = epsilon - repsilon
-    imprime(epsilon)
-    for i in range(nsec):
-        dpe[i] = pe[i] - rpe[i]
-        imprime(pe[i])
-    for i in range(nsec):
-        dpm[i] = pm[i] - rpm[i]
-        imprime(pm[i])
-    imprime('variables')
-    dApz = Apz - rApz
-    imprime(Apz.item())
-    imprime('E')
-    for i in range(nsec):
-        dE[i] = E[i] - rE[i]
-        imprime(E[i])
-    imprime('M')
-    for i in range(nsec):
-        dM[i] = M[i] - rM[i]
-        imprime(M[i])
-    imprime('D')
-    for i in range(nsec):
-        dD[i] = Da[i] - rD[i]
-        imprime(Da[i])
-    imprime('Yp')
-    for i in range(nsec):
-        dYp[i] = Yp[i] - rYp[i]
-        imprime(Yp[i])
-    imprime('Z')
-    for i in range(nsec):
-        dZ[i] = Z[i] - rZ[i]
-        imprime(Z[i])
-    imprime('Xg')
-    for i in range(nsec):
-        dXg[i] = Xg[i] - rXg[i]
-        imprime(Xg[i])
-    imprime('Xv')
-    for i in range(nsec):
-        dXv[i] = Xv[i] - rXv[i]
-        imprime(Xv[i])
-    imprime('Q')
-    for i in range(nsec):
-        dQ[i] = Q[i] - rQ[i]
-        imprime(Q[i])
-    imprime('Td')
-    for i in range(ndem):
-        dTd[i] = Td[i] - rTd[i]
-        imprime(Td[i])
-    imprime('Tz')
-    for i in range(nsec):
-        dTz[i] = Tz[i] - rTz[i]
-        imprime(Tz[i])
-    imprime('Tm')
-    for i in range(nsec):
-        dTm[i] = Tm[i] - rTm[i]
-        imprime(Tm[i])
-    imprime('Sp')
-    for i in range(ndem):
-        dSp[i] = Sp[i] - rSp[i]
-        imprime(Sp[i])
-    imprime('AgE')
-    for i in range(nsec):
-        dAgE[i] = AgE[i] - rAgE[i]
-        imprime(AgE[i])
-    for i in range(ndem):
-        dAgH[i] = AgH[i] - rAgH[i]
-        imprime(AgH[i])
-    imprime('CssE')
-    for i in range(nsec):
-        dCssE[i] = CssE[i] - rCssE[i]
-        imprime(CssE[i])
-    for i in range(ndem):
-        dCssH[i] = CssH[i] - rCssH[i]
-        imprime(CssH[i])
-    imprime('Sg')
-    dSg = Sg - rSg
-    imprime(Sg)
-    imprime('--')
-    debp = ebp - rebp
-    imprime(ebp)
-    imprime('Xp')
-    for i in range(ndem):
-        for j in range(nsec):
-            dXp[i][j] = Xp[i][j] - rXp[i][j]
-            imprime(Xp[i][j])
-    imprime('F')
-    for i in range(nsec):
-        for j in range(nfac):
-            dF[i][j] = F[i][j] - rF[i][j]
-            imprime(F[i][j])
-    imprime('FF')
-    for i in range(ndem):
-        for j in range(nfac):
-            dFF[i][j] = FF[i][j] - rFF[i][j]
-            imprime(FF[i][j])
-    imprime('Alp')
-    for i in range(ndem):
-        for j in range(nfac):
-            dAlp[i][j] = Alp[i][j] - rAlp[i][j]
-            imprime(Alp[i][j])
-    imprime('X')
-    for i in range(nsec):
-        for j in range(nsec):
-            dX[j][i] = X[j][i] - rX[i][j]
-            imprime(X[j][i])
-    imprime('')
-    for i in range(nfac):
-        imprime(dpf[i])
-    for i in range(nsec):
-        imprime(dpy[i])
-    for i in range(nsec):
-        imprime(dpq[i])
-    for i in range(nsec):
-        imprime(dpd[i])
-    for i in range(nsec):
-        imprime(dpz[i])
-    imprime(depsilon)
-    for i in range(nsec):
-        imprime(dpe[i])
-    for i in range(nsec):
-        imprime(dpm[i])
-    imprime('variables')
-    imprime(dApz.item())
-    for i in range(nsec):
-        imprime(dE[i])
-    for i in range(nsec):
-        imprime(dM[i])
-    for i in range(nsec):
-        imprime(dD[i])
-    for i in range(nsec):
-        imprime(dYp[i])
-    for i in range(nsec):
-        imprime(dZ[i])
-    for i in range(nsec):
-        imprime(dXg[i])
-    for i in range(nsec):
-        imprime(dXv[i])
-    for i in range(nsec):
-        imprime(dQ[i])
-    imprime('impuestos')
-    for i in range(ndem):
-        imprime(dTd[i])
-    for i in range(nsec):
-        imprime(dTz[i])
-    for i in range(nsec):
-        imprime(dTm[i])
-    for i in range(ndem):
-        imprime(dSp[i])
-    for i in range(nsec):
-        imprime(dAgE[i])
-    for i in range(ndem):
-        imprime(dAgH[i])
-    for i in range(nsec):
-        imprime(dCssE[i])
-    for i in range(ndem):
-        imprime(dCssH[i])
-    imprime('Sg')
-    imprime(dSg)
-    imprime('--')
-    imprime(debp)
-    imprime('Xp')
-    for i in range(ndem):
-        for j in range(nsec):
-            imprime(dXp[i][j])
-    imprime('F')
-    for i in range(nsec):
-        for j in range(nfac):
-            imprime(dF[i][j])
-    imprime('FF')
-    for i in range(ndem):
-        for j in range(nfac):
-            imprime(dFF[i][j])
-    imprime('Alp')
-    for i in range(ndem):
-        for j in range(nfac):
-            imprime(dAlp[i][j])
-    imprime('X')
-    for i in range(nsec):
-        for j in range(nsec):
-            imprime(dX[j][i])
-# FIN DEPURAR
 
 # rótulos para los resultados de verificar la factibilidad de las ecuaciones
 etq_veri = [
@@ -1858,36 +1400,6 @@ if __name__ == '__main__':
         vec_opt = np.concatenate((vec_opt, datos.Xp0.flatten()))
     nvec_opt = len(vec_opt)
     vec_opt_ini = copy.deepcopy(vec_opt)
-    
-    #res = dll.merito(libc, vec_opt)
-    
-    '''
-    pop_size = 5000
-    num_vars = nvec_opt
-    lb = 0.7
-    ub = 1.0e+08
-    num_generations = 10000
-    F = 0.8  # Scaling factor
-    CR = 0.9  # Crossover rate
-    ge.differential_evolution(pop_size, num_vars, lb, ub, num_generations, F, CR)
-    '''
-    '''
-    import cProfile
-    import pstats
-    profiler = cProfile.Profile()
-    profiler.enable()
-    pases = 1000000 if USAR_DLL else 10000
-    for _ in range(pases):
-        fo(vec_opt)
-    profiler.disable()
-    imprime('')
-    with open(FICHERO_LOG, 'a') as stream:
-        stats = pstats.Stats(profiler, stream=stream).sort_stats('tottime')
-        stats.print_stats()
-    imprime('')
-    sys.exit()
-    '''
-
     pzi = copy.deepcopy(datos.pZ0)
     imprime_opciones(nvec_opt)
     if SAL_MCS:
@@ -2078,6 +1590,7 @@ if __name__ == '__main__':
     res_ecuaciones = sec_ecuaciones(vec_opt)
     dist = calcula_desvios(res_ecuaciones, False)
     print('{:>9} {:12.5e}'.format('inicio', dist))
+
     t_inicio = timer()
 
     # minimizar el error de la función objetivo
@@ -2122,7 +1635,6 @@ if __name__ == '__main__':
             par.append(np.float64(ALGE_RECOMBINACION[0]))
             par.append(np.float64(ALGE_RECOMBINACION[1]))
             par.append(np.float64(ALGE_CTRL_FACTIBLE))
-            par.append(np.float64(ALGE_CALCULO_AX))
             par.append(np.float64(GE_SEMILLA))
             par.append(np.float64(nvec_opt));
             
@@ -2245,20 +1757,20 @@ if __name__ == '__main__':
                 sol = np.array([r_sol[i] for i in range(cabecera + 1, r_datos)], dtype=np.float64)
 
             imprime('')
-            imprime('****************************************')
-            imprime('------------- DLL genético -------------')
+            imprime('*****************************************************************')
+            imprime('-------------------------- DLL genético -------------------------')
             if r_res < 0:
-                imprime('error ({:15}) {}'.format(int(r_sol[0]), rot_res_error[-int(r_sol[0])]))
+                imprime('error ({:15}) {}'.format(int(r_sol[0]), rot_res_dll_error[-int(r_sol[0])]))
                 imprime('aplicación cancelada')
                 imprime('')
                 sys.exit()
             else:
-                imprime('respuesta ({:3}) {}'.format(int(r_sol[0]),rot_res_ok[int(r_sol[0])]))
+                imprime('respuesta ({:3}) {}'.format(int(r_sol[0]),rot_res_dll_ok[int(r_sol[0])]))
                 imprime('número de datos         :{:15}'.format(r_datos))
                 imprime('intentos                :{:15}'.format(int(r_sol[2] + 1)))
                 imprime('generaciones            :{:15}'.format(int(r_sol[3])))
                 imprime('merito                  :{:15.5e}'.format(r_sol[4]))
-            imprime('****************************************')
+            imprime('*****************************************************************')
             imprime('')
             rmin = rmin_dll(sol, int(sol[3]))
         else:

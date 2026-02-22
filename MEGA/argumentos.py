@@ -609,7 +609,6 @@ def valores_opciones4():
     parser.add_argument('--ALGE_F_MUTACION'    , type=float , default=0.72 , help="")
     parser.add_argument('--ALGE_RECOMBINACION' , type=float , default=[0.99, 1.10], nargs='*', help="")
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int   , default=1 , help="")
-    parser.add_argument('--ALGE_CALCULO_AX'    , type=int   , default=0 , help="")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int   , default=0 , help="")
 
     parser.add_argument('--NSAM'               , type=int  , default=4    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
@@ -618,7 +617,7 @@ def valores_opciones4():
     parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
     parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
     parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Borra' , help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Bo' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
     '''

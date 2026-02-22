@@ -411,7 +411,7 @@ def envia_parametros(libc, p):
     prin.imprime('')
     '''
 
-def merito(libc, vec_opt):
+def merito_s(libc, vec_opt):
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_s.restype = ct.c_double
     vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
@@ -423,17 +423,6 @@ def merito(libc, vec_opt):
     prin.imprime('')
     '''
     return libc.merito_s(vo)
-
-def vector_prueba(libc):
-    libc.vector_prueba.argtypes = []
-    libc.vector_prueba.restype = ct.POINTER(ct.c_double)
-    res = libc.vector_prueba()
-    return res
-
-def solucion(libc):
-    libc.solucion.argtypes = []
-    libc.solucion.restype = ct.POINTER(ct.c_double)
-    return libc.solucion()
 
 def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida):
     libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int)

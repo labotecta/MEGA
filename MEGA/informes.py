@@ -27,8 +27,8 @@ def valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, V
     imprime('Cantidades')
     imprime('---------------------------------------------------------------------------------------------------------')
     imprime('Factores aportados por los hogares. FF0')
-    mfun.i_tabla('/' , h  , dem             , datos.FF0            , False, DECIMALES)    # factores aportados por cada consumidor
-    mfun.i_tabla(''  , [] , ['suma FF']     , datos.FF0.sum(axis=0), True , DECIMALES)
+    mfun.i_tabla('/' , h  , dem             , datos.FF0             , False, DECIMALES)    # factores aportados por cada consumidor
+    mfun.i_tabla(''  , [] , ['suma FF']     , datos.FF0.sum(axis=0) , True , DECIMALES)
     mfun.i_pie  ('/' , h)
     imprime('Ahorro a largo plazo de los hogares. Alp0')
     mfun.i_tabla(''  , []                 , dem                     , datos.Alp0 , True , DECIMALES)
@@ -86,18 +86,17 @@ def valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, V
     mfun.i_tabla('/' , ind, ['AgE0',]      , datos.AgE0             , True , DECIMALES)
     imprime('Déficit por cuenta corriente. M0 - E0')
     Sfde = datos.M0 - datos.E0
-    mfun.i_tabla(''  , [] , ['Sf sectores',]   , Sfde                  , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['Sf',]        , Sfde.sum()            , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['Sf sectores',]   , Sfde               , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['Sf',]        , Sfde.sum()             , False, DECIMALES)
     imprime('Equilibrio de la balanza de pagos')
-    mfun.i_tabla(''  , [] , ['equi.bal.pag',], ebp_ini               , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['equi.bal.pag',], ebp_ini              , False, DECIMALES)
     imprime('')
-    mfun.i_tabla(''  , [] , ['Apz0',]      , datos.Apz0            , False, 5)
+    mfun.i_tabla(''  , [] , ['Apz0',]      , datos.Apz0             , False, 5)
     imprime('')
     if VALOR_F_TRA == 0:
         paro = 100. * (1. - datos.F0[:,INDICE_F_TRA].sum() / datos.PobAct)
         mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct, False, DECIMALES)
-        mfun.i_tabla(''  , []                   , ['% paro',]     , paro       , False, 2)
-        imprime('')
+        mfun.i_tabla(''  , []                   , ['% paro',]     , paro        , False, 2)
     imprime('')
 
 def salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES):
@@ -527,7 +526,7 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     mfun.i_tabla(''  , []                   , ['Y nec.para Z',] , Yd                 , False, DECIMALES)
     imprime('Consumo intermedio filas: ventas, columnas: compras. X')
     mfun.i_tabla(''  , []                   , ind             , X                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['compras X',]   , X.sum(axis=0)        , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['compras X',]   , X.sum(axis=0)       , False, DECIMALES)
     mfun.i_pie('/'   , ind)
     imprime('Consumo de los hogares. Xp')
     mfun.i_tabla(''  , []                   , dem             , Xp                   , False, DECIMALES)
@@ -578,9 +577,8 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     imprime('')
     if VALOR_F_TRA == 0:
         paro = 100. * (1. - F[:,INDICE_F_TRA].sum() / datos.PobAct)
-        mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct          , False, DECIMALES)
-        mfun.i_tabla(''  , []                   , ['% paro',]     , paro                 , False, 2)
-        imprime('')
+        mfun.i_tabla(''  , []                   , ['Pobla.activa',],datos.PobAct, False, DECIMALES)
+        mfun.i_tabla(''  , []                   , ['% paro',]     , paro        , False, 2)
     imprime('')
 
 def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist):
