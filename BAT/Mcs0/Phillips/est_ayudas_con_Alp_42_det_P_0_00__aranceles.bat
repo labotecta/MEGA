@@ -3,6 +3,8 @@ TITLE est_ayudas_42_det_P_0_00_aranceles
 mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--USAR_DLL            False ^
+--USAR_ALGE_DLL       False ^
 --NSAM                0 ^
 --DECIMALES           4 ^
 --PREFIJO             =est_ayudas_42_det_P_0_00__aranceles ^
@@ -16,8 +18,8 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --RENTA_FICTICIA      False ^
 --AYD_ADICIONAL       0. 10. ^
 --ARANCELES           0.20 0.181818 ^
---OR_PRE_REFERENCIA   0 ^
---PRECIO_F_REFERENCIA 1.0 ^
+--OR_PRE_EXCLUIDO     0 ^
+--PRECIO_F_EXCLUIDO   1.0 ^
 --VALOR_F_TRA         0 ^
 --GE_FIX              epsilon ^
 --GE_FIX_LON          1 ^

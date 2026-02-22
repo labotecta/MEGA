@@ -3,6 +3,8 @@ TITLE Mcs0_base
 mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--USAR_DLL            False ^
+--USAR_ALGE_DLL       False ^
 --NSAM                0 ^
 --DECIMALES           4 ^
 --PREFIJO             =Mcs0_base ^
@@ -16,8 +18,8 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --RENTA_FICTICIA      False ^
 --AYD_ADICIONAL       0. 0. ^
 --ARANCELES           0. 0. ^
---OR_PRE_REFERENCIA   1 ^
---PRECIO_F_REFERENCIA 1.0 ^
+--OR_PRE_EXCLUIDO     1 ^
+--PRECIO_F_EXCLUIDO   1.0 ^
 --VALOR_F_TRA         -1 ^
 --GE_FIX              "" ^
 --GE_FIX_LON          1 ^
