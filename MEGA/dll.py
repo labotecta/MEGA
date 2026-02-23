@@ -83,43 +83,6 @@ class PARAMETROS(ct.Structure):
         ('eta',       (ct.c_double * nsec )),
     )
 
-class SOLUCION(ct.Structure):
-    _fields_ = (
-        ('pf',     (ct.c_double * nfac)),
-        ('py',     (ct.c_double * nsec)),
-        ('pq',     (ct.c_double * nsec)),
-        ('pd',     (ct.c_double * nsec)),
-        ('pz',     (ct.c_double * nsec)),
-        ('epsilon', ct.c_double),
-        ('pe',     (ct.c_double * nsec)),
-        ('pm',     (ct.c_double * nsec)),
-        ('Apz',    ct.c_double),
-        ('E',      (ct.c_double * nsec)),
-        ('M',      (ct.c_double * nsec)),
-        ('D',      (ct.c_double * nsec)),
-        ('Yp',     (ct.c_double * nsec)),
-        ('Z',      (ct.c_double * nsec)),
-        ('Xg',     (ct.c_double * nsec)),
-        ('Xv',     (ct.c_double * nsec)),
-        ('Q',      (ct.c_double * nsec)),
-        ('Td',     (ct.c_double * ndem)),
-        ('Tz',     (ct.c_double * nsec)),
-        ('Tm',     (ct.c_double * nsec)),
-        ('Sp',     (ct.c_double * ndem)),
-        ('AgE',    (ct.c_double * nsec)),
-        ('AgH',    (ct.c_double * ndem)),
-        ('CssE',   (ct.c_double * nsec)),
-        ('CssH',   (ct.c_double * ndem)),
-        ('Sg',      ct.c_double),
-        ('Sc',      ct.c_double),
-        ('ebp',     ct.c_double),
-        ('Xp',     (ct.c_double * nds)),
-        ('F',      (ct.c_double * nsf)),
-        ('FF',     (ct.c_double * ndf)),
-        ('Alp',    (ct.c_double * ndf)),
-        ('X',      (ct.c_double * nsec2)),
-    )
-
 def abre_dll(fichero):
     libc = ct.WinDLL(fichero)
     return libc
