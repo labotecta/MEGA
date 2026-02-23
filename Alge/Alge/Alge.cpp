@@ -43,7 +43,6 @@ typedef double* (*P_merito_sol)(double*);
 P_recibe_opciones recibe_opciones;
 P_recibe_datos recibe_datos;
 P_recibe_parametros recibe_parametros;
-P_merito merito;
 P_merito merito_s;
 P_merito_sol merito_sol;
 
@@ -238,12 +237,6 @@ int punteros_libreria(const wchar_t* fichero) {
 			printf("No se produjo el enlace con la función merito_s\n");
 			return -1;
 		}
-		merito = (P_merito)GetProcAddress(hinstLib, "merito");
-		if (NULL == merito)
-		{
-			printf("No se produjo el enlace con la función merito\n");
-			return -1;
-		}
 		merito_sol = (P_merito_sol)GetProcAddress(hinstLib, "merito_sol");
 		if (NULL == merito_sol)
 		{
@@ -347,31 +340,6 @@ bool inicia() {
 	printf("dimension vector: %d\n\n", NVEC);
 	fprintf(fp, "dimension vector: %d\n\n", NVEC);
 	double v = merito_s(vec);
-	/*
-	double dvec[] = { 1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,20471.0,4407.0,16143.0,3737.0,42859.0,56233.0,36758.0,40779.0,251643.0,158634.0,11109.0,70628.0,8175.0,9065.0,131366.0,88.0,57988.0,39.0,7977.0,36798.0,191303.0,16.0,38310.0,0.0,32647.0,71205.0,311495.0,273578.0,725704.0,147687.0 };
-	double* sol = merito_sol(vec);
-	int n = 6;
-	int nvec = 0;
-	for (int i = 0; i < NFAC; i++)	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++)	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++)	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++)	dvec[nvec++] = sol[n++];
-	dvec[nvec++] = sol[n++];
-	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++)	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++)	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++)	dvec[nvec++] = sol[n++];
-	for (int i = 0; i < NSEC; i++) {
-		for (int j = 0; j < NFAC; j++) {
-			dvec[nvec++] = sol[n++];
-		}
-	}
-	for (int i = 0; i < NVEC; i++) {
-		if (dvec[i] != vec[i]) {
-			printf("%d %12.1f %12.1f\n", i, dvec[i], vec[i]);
-		}
-	}
-	*/
 	if (caso == 0) {
 		printf("resultado merito (931338.2141402321): %f\n\n", v);
 	}
@@ -511,7 +479,7 @@ bool inicia() {
 
 		printf("datos en la solucion inicial: %4f\n", sol[0]);
 		printf("merito inicial              : %12.5e\n", sol[1]);
-		double v = merito(poblacion[ind_mejor_merito]);
+		double v = merito_s(poblacion[ind_mejor_merito]);
 		printf("merito solucion             : %12.5e\n", v);
 		sol = merito_sol(poblacion[ind_mejor_merito]);
 		printf("datos en la solucion        : %4f\n", sol[0]);
