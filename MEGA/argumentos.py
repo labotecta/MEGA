@@ -634,33 +634,30 @@ def valores_opciones():
     '''
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los ficheros de salida en
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Bo' , help="un literal que se añade al principio del nombre de los archivos de salida")
 
-    parser.add_argument('--USAR_DLL'           , type=sab   , default=True, help="si True se usa la DLL en caso contrario la función Python")
-    parser.add_argument('--USAR_ALGE_DLL'      , type=sab   , default=True, help="si True se usa la DLL para el algoritmo genético")
-    parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int   , default=5 , help="")
-    parser.add_argument('--ALGE_N_HILOS'       , type=int   , default=16 , help="")
-    parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float , default=1.0e-05 , help="")
-    parser.add_argument('--ALGE_MODO_POB_INI'  , type=int   , default=0 , help="")
+    parser.add_argument('--USAR_DLL'           , type=sab   , default=True , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
+    parser.add_argument('--USAR_ALGE_DLL'      , type=sab   , default=True , help="si True se usa el algoritmo genético de la DLL")
+    parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int   , default=5    , help="")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int   , default=16   , help="")
+    parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float , default=1.0e-05, help="")
+    parser.add_argument('--ALGE_MODO_POB_INI'  , type=int   , default=0    , help="")
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float , default=0.05 , help="")
-    parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float , default=0.1 , help="")
-    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int   , default=100 , help="")
+    parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float , default=0.1  , help="")
+    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int   , default=100  , help="")
     parser.add_argument('--ALGE_NPOB'          , type=int   , default=1200 , help="")
     parser.add_argument('--ALGE_F_MUTACION'    , type=float , default=0.72 , help="")
     parser.add_argument('--ALGE_RECOMBINACION' , type=float , default=[0.99, 1.10], nargs='*', help="")
-    parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int   , default=1 , help="")
-    parser.add_argument('--ALGE_RES_EXTENSA'   , type=int   , default=0 , help="")
+    parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int   , default=1    , help="")
+    parser.add_argument('--ALGE_RES_EXTENSA'   , type=int   , default=0    , help="")
 
-    parser.add_argument('--NSAM'               , type=int  , default=4    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
-    parser.add_argument('--DECIMALES'          , type=int  , default=1    , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--NSAM'               , type=int  , default=4     , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
+    parser.add_argument('--DECIMALES'          , type=int  , default=1     , help="número de decimales en las cantidades e importes")
     # hay que especificar estos números porque luego hay que redimensionar las matrices aplanadas
-    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
-    parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
-    parser.add_argument('--NSEC'               , type=int  , default=6    , help="número de sectores")
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Bo' , help="un literal que se añade al principio del nombre de los archivos de salida")
-    '''
-    42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
-    '''
-    parser.add_argument('--GE_SEMILLA'         , type=int  , default=42   , help="valor inicial del generador de números aleatorios")
+    parser.add_argument('--NFAC'               , type=int  , default=2     , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=2     , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=6     , help="número de sectores")
+    parser.add_argument('--GE_SEMILLA'         , type=int  , default=42    , help="valor inicial del generador de números aleatorios")
     parser.add_argument('--NCASO'              , type=int  , default=[10,12], nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
 
     #-----------------------------------------------------

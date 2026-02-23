@@ -344,7 +344,7 @@ rot_res_dll_error = [
             "Error en los parámetros",
             "Error al preparar la multitarea"
         ]
-# para asimilar el resultado de la DLL al que devuelve scipy
+# para asimilar el formato del resultado de la DLL al que devuelve scipy
 class rmin_dll(object):
     def __init__(self, sol, dnit):
         self.x = sol
@@ -457,6 +457,7 @@ else:
     else:
         errores_diferidos.append('')
 
+# error máximo para diagnosticar una discrepacia en la MCS recalculada
 TOLERA_MCS = 1.0 / (10.0 ** DECIMALES)
 
 if nfac != len(h):
@@ -574,12 +575,16 @@ def extrae_var(vp, clave, nfil, ncol):
     # extrae del vector solución los valores correspondientes a la variable 'clave' y le da el formato de filas y columnas adecuado
     vendo = vp[ind_pvec_desde[clave]:ind_pvec_hasta[clave]]
     if nfil > 0:
+        # una matriz con 'nfil' filas
         if ncol == 0:
+            # una sola columna
             return vendo.reshape(nfil)
         return vendo.reshape(nfil, ncol)
     else:
         if ncol == 0:
+            # sin filas ni columnas es un escalar
             return vendo.item()
+        # es un vector
         return vendo
 
 def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
@@ -587,6 +592,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
           ind_pvec_desde, ge_fix, ge_fix_limites, ge_incluye_xp, con_esenciales):
     # definir el rango de variación de los precios y variables en LA SOLUCION A PROBAR 'vec_opt'
     bnds = []
+    # primero rellenamos 'bnds' y luego lo iremos modificando
     for i in range(nvec_opt):
         bnds.append((0.,0.))
 
@@ -610,6 +616,8 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
         bnds[i] = ((vi,vs))
 
     # variables
+
+    # preparamos las especificaciones explicitas (manuales) de límites
     if len(ge_fix) > 0:
         # se va a guardar la fila de 'GE_FIX_LIMITES' y el puntero que le corresponde, porque luego necesitamos ordenar
         # 'pt' por punteros de menor a mayor
@@ -628,7 +636,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
         pt = np.zeros((1, 2), dtype=int)
         pt[0,1] = -1
 
-    # desde el principio por si se han establecido límites manualmente para algún precio
+    # desde el principio por si se han establecido límites explicitos (manualmente) para algún precio
     i = 0
     for ii in range(0, nvec_opt):
         n = 0
@@ -637,7 +645,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
             # 'i' aún no ha superado el último puntero
             for nf in range(len(ge_fix)):
                 if i == pt[nf,1]:
-                    # se han especificado limites (en la fila n) para esta variable
+                    # se han especificado límites (en la fila n) para esta variable
                     n = pt[nf,0]
                     esta = True
                     for j in range(len(ge_fix_limites[n])):
@@ -700,11 +708,11 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
                 bnds[i] = (vi,bnds[i][1])
                 i += 1
 
-    # resulta increible el papel de Apz, si no se deja libre en un intervalo suficiente, no se encuentra solución
-    #------------------------------------------------------------------------------------------------------------    
+    # resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
+    #--------------------------------------------------------------------------------------------------------    
     #i = ind_pvec_desde['Apz']
     #bnds[i] = (-0.000001, 0.000001)
-    #------------------------------------------------------------------------------------------------------------    
+    #--------------------------------------------------------------------------------------------------------    
 
     return bnds
 
@@ -859,8 +867,8 @@ def sec_ecuaciones(vec_opt):
         FF = deho.aportacion_factores_FF(datos.FF0, F)
         if ALP_FACTOR > 0:
             # se ahorra a largo plazo (Alp) un porcentaje del exceso de ingresos (FF) respecto a los iniciales (FF0)
-            # lo que significa que no se usará en comprar productos o invertir en los sectores
-            # si AHORRO_L_PLAZO = False, el modelo se retroalimenta además de por los consumos internos, por la demanda final.
+            # lo que significa que no se usará en comprar productos
+            # si AHORRO_L_PLAZO = False, el modelo se realimenta, además de por los consumos internos, por la demanda final.
             exceso = FF - datos.FF0
             Alp = exceso * ALP_FACTOR
             FF -= Alp
@@ -909,6 +917,9 @@ def sec_ecuaciones(vec_opt):
     #--------------------------------------------------------------------------------------------------
     # superhavit / déficit de la seguridad social
     if datos.PssH0.sum() == 0:
+        # si no se han explicitado pensiones en la MCS, suponemos que es el gobierno quien las paga
+        # y no ha lugar un déficit o superhabit de la seguridad social. Esto es un truco para que el modelo trabaje
+        # con las 5 MCS que hemos definido, ya que algunas no tienene separada la cuenta de la seguridad social.
         Sc = 0.
     else:
         Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
@@ -928,7 +939,7 @@ def sec_ecuaciones(vec_opt):
             Xp = deho.demanda_maxima_utilidad_CobbDouglas_Xp(parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)
         else:
             # función de demanda CES
-            Xp = deho.demanda_maxima_utilidad_CES_Xp(parametros.eta_ces, parametros.alfa_ces, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)                        # 6.13
+            Xp = deho.demanda_maxima_utilidad_CES_Xp(parametros.eta_ces, parametros.alfa_ces, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)
 
     # función CES de sustitución con la que determinar el óptimo entre importar (M) o
     # producir localmente (D), la demanda del producto de Armington (Q)
@@ -955,7 +966,7 @@ def sec_ecuaciones(vec_opt):
     # ya que debe haber una correlación entre los ingresos (exportaciones) y pagos (importaciones) en divisas: la que muestra la MCS
 
     # restricción a la balanza de pagos, las importaciones deben ser igual a las exportaciones más
-    # la balanza de pagos inicial (datos.Sf0) que es exógena, en moneda extranjera
+    # la balanza de pagos inicial (datos.Sf0), que es exógena, en moneda extranjera
     ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, datos.Sf0)                                    # 6.16
     
     # Leontief para comparar, no tiene otro uso
@@ -1040,24 +1051,27 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
 
     # Apz no se puede afectar de un coeficiente grande, como se hace en GAMS, porque nuestro método
     # sacrificaría la convergencia de las otras variables para facilitar la anulación de Apz
-    des_Apz = abs(Apz)
+    
+    # Dadp que Apz, en algunos escenarios, necesita ser distinta de cero, implica que la función objetivo
+    # no pueda hacerse cero, o tan pequeña como nostros queramos. Esto se nota especialmente en los escenarios
+    # que afectan al factor trabajo.
+    des_Apz = abs(Apz)  
 
-    # 'ebp' y 'ebpr' deben ser cero
+    # 'ebp' y 'ebpr' deben ser ambas cero
     des_ebp = np.array([abs(ebp) + abs(ebpr)])
 
     # condiciones de equilibrio del mercado.
-    #   Xp.sum(axis=0) = suma de lo que vende cada sector a los hogares = suma de los que compran todos los hogares a ese esector
-    #   Xg             = suma de las ventas de cada sector al gobierno  = lo que compra el gobierno a cada sector
+    #   Xp.sum(axis=0) = suma de lo que vende un sector a los hogares  = suma de los que compran todos los hogares a ese sector
+    #   Xg             = suma de las ventas de cada sector al gobierno = lo que compra el gobierno a cada sector
     #   Xv             = suma de lo ingresado por cada sector como inversiones
-    #   X.sum(axis=1)  = suma de lo que vende cada sector
+    #   X.sum(axis=1)  = suma de lo que vende cada sector a los otros sectores (ventas intermedias)
 
     des_produccion = abs(Q - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))).flatten()      # 6.23
 
     # la utilización total de cada factor por los sectores 'F.sum(axis=0)' debe ser igual a la
     # aportación de los mismos por los hogares 'FF.sum(axis=0)'
     if  FF_ENDOGENA:
-        # está garantizado el cumplimiento de la ecuación 6.24
-        #des_factores = abs(F.sum(axis=0) - FF.sum(axis=0) - Alp.sum(axis=0)).flatten()  # 6.24
+        # ya está garantizado el cumplimiento de la ecuación 6.24, luego no hay desvios por este concepto
         des_factores   = np.zeros(nfac, dtype=np.float64)
         if ALP_FACTOR > 0:
             # el desglose de los ahorros por factor es importante porque cada factor tiene su precio y la renta disponible
@@ -1148,6 +1162,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
             des_Dt = [0]
             des_Yp = [0]
             des_Yd = [0]
+
         param = (des_produccion,des_factores,des_Apz,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
                 des_F ,des_M ,des_E,
@@ -1343,8 +1358,8 @@ el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan 
     datos     : la función 'def __init__' de esta clase crea una serie de variables y les asigna
                 valores de acuerdo con la información leída de la MCS.
     parametros: la función 'def __init__' de esta clase crea unas variables que son los parámetros
-                del modelo y les calcula unos valores de acuerdo a las
-                ecuaciones correspondientes.
+                del modelo y les calcula unos valores de acuerdo a las ecuaciones correspondientes
+                y los valores asignados en la clase 'datos'.
 '''
 datos      = calibrado.datos(sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL)
 parametros = calibrado.parametros(datos, ndem, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA)
@@ -1365,6 +1380,7 @@ ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, d
 # ---------------------------------------------------------------------
 # Solucíonar el MEGA
 # ---------------------------------------------------------------------
+# adaptar algunos valores y parámetros según el escenario que se haya seleccionado
 (CON_ESENCIALES) = esce.escenarios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
                NCASO, DEM_ADICIONAL, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES, UTILIDAD_DEMANDA, RENTA_FICTICIA,
                AYD_ADICIONAL, GE_INCLUYE_XP,
@@ -1373,6 +1389,8 @@ ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, d
                )
 
 if USAR_DLL:
+    # conectar con la DLL y enviarle las opciones, datos y parámetros que necesita la DLL para calcular la función objetivo.
+    # si además se usa el algoritmo genético de la DLL, se enviarán los parámetros de este más adelante
     libc = dll.abre_dll(SENDA_DLL)
     dll.envia_opciones  (libc)
     dll.envia_datos     (libc, datos)
@@ -1381,7 +1399,9 @@ if USAR_DLL:
     libc.merito_s.restype = ct.c_double
 
 if __name__ == '__main__':
-    # sin el precio del último factor ya que su valor se fija de forma exógena
+    # sin el precio del último factor ya que su valor se fija de forma exógena, esto es realmente incorrecto
+    # porque según las opciones el precio del factor que se incluirá en el vector de prueba pueser el del
+    # capital o el del trabajo, pero inicialmente ambos están puestos a 1.0 en 'datos.pF0'
     pf0 = datos.pF0[0:nfac-1].flatten()
     # sólución inicial para la función minimizar
     vec_opt = np.concatenate((
@@ -1399,8 +1419,6 @@ if __name__ == '__main__':
     if GE_INCLUYE_XP:
         vec_opt = np.concatenate((vec_opt, datos.Xp0.flatten()))
     nvec_opt = len(vec_opt)
-    vec_opt_ini = copy.deepcopy(vec_opt)
-    pzi = copy.deepcopy(datos.pZ0)
     imprime_opciones(nvec_opt)
     if SAL_MCS:
         (rot, mcs0) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
@@ -1566,6 +1584,7 @@ if __name__ == '__main__':
             vec_opt[i] = bnds[i][0]
         if vec_opt[i]  > bnds[i][1]:
             vec_opt[i] = bnds[i][1]
+    pzi = copy.deepcopy(datos.pZ0)
     vec_opt_ini = copy.deepcopy(vec_opt)
     if SALIDA_VEC_OPT:
         imprime('    L.INF         V0          L.SUP')

@@ -109,35 +109,6 @@ def envia_opciones(libc):
     libc.recibe_opciones.argtypes = [OPCIONES]
     libc.recibe_opciones.restype = OPCIONES
     libc.recibe_opciones(opciones)
-    '''    
-    prin.imprime('OPCIONES')
-    prin.imprime('{},'.format(prin.OR_PRE_EXCLUIDO))
-    prin.imprime('{},'.format(prin.PRECIO_F_EXCLUIDO))
-    prin.imprime('{},'.format(prin.VALOR_F_TRA))
-    prin.imprime('{},'.format(prin.ALFA_PHILLIPS))
-    prin.imprime('{},'.format(prin.GE_INCLUYE_XP))
-    prin.imprime('{},'.format(prin.FF_ENDOGENA))
-    prin.imprime('{},'.format(prin.ALP_FACTOR))
-    prin.imprime('{},'.format(prin.INDICE_F_TRA))
-    prin.imprime('{},'.format(prin.UTILIDAD_DEMANDA))
-    prin.imprime('{},'.format(prin.DEM_ESENCIALES))
-    prin.imprime('{},'.format(prin.DEM_ADICIONAL_TIPO))
-    prin.imprime('{',False)
-    for i in range(nds):
-        prin.imprime(('{},'.format(prin.DEM_ADICIONAL.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nds):
-        prin.imprime(('{},'.format(prin.CON_ESENCIALES.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nds):
-        prin.imprime(('{},'.format(prin.AYD_ADICIONAL.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{},'.format(prin.RENTA_FICTICIA))
-    prin.imprime('{}'.format(prin.MODO_PSEUDOIMPTOS))
-    prin.imprime('')
-    '''
 
 def envia_datos(libc, d):
     datos = DATOS(
@@ -163,73 +134,6 @@ def envia_datos(libc, d):
     libc.recibe_datos.argtypes = [DATOS]
     libc.recibe_datos.restype = DATOS
     libc.recibe_datos(datos)
-    '''
-    prin.imprime('DATOS')
-    prin.imprime('{',False)
-    for i in range(nfac):
-        prin.imprime(('{},'.format(d.pF0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.pY0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.pQ0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.D0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.pWm.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.pWe.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{},'.format(d.epsilon))
-    prin.imprime('{',False)
-    for i in range(nsf):
-        prin.imprime(('{},'.format(d.F0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.E0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.M0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.D0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(ndf):
-        prin.imprime(('{},'.format(d.FF0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(ndf):
-        prin.imprime(('{},'.format(d.Alp0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(ndem):
-        prin.imprime(('{},'.format(d.PssH0.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.tauz.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{',False)
-    for i in range(nsec):
-        prin.imprime(('{},'.format(d.taum.flatten()[i])),False)
-    prin.imprime('},')
-    prin.imprime('{},'.format(d.Sf0))
-    prin.imprime('{},'.format(d.PobAct))
-    prin.imprime('')
-    '''
 
 def envia_parametros(libc, p):
     parametros = PARAMETROS(
@@ -378,13 +282,6 @@ def merito_s(libc, vec_opt):
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_s.restype = ct.c_double
     vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
-    '''
-    prin.imprime('{',False)
-    for i in range(len(vec_opt)):
-        prin.imprime(('{},'.format(vec_opt[i])), False)
-    prin.imprime('},')
-    prin.imprime('')
-    '''
     return libc.merito_s(vo)
 
 def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida):
@@ -395,10 +292,5 @@ def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida):
     v3 = np.array(cotas_sup).ctypes.data_as(ct.POINTER(ct.c_double))
     v4 = vec.ctypes.data_as(ct.POINTER(ct.c_double))
     res = libc.soluciona(v1, v2, v3, v4, extendida)
-    '''
-    for i in range(int(res[1])):
-        print(i, res[i])
-    print()
-    '''
     return res
 
