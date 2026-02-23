@@ -85,7 +85,7 @@ etq_caso = [
 # extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto,
 # ajustando las dimensiones de las matrices 'reshape' cuando corresponde
 try:
-    args = argumentos.valores_opciones4()
+    args = argumentos.valores_opciones()
 except BaseException as e:
     print('Error en la lectura de parámetros {}\n'.format(e.args))
     sys.exit()
@@ -1573,7 +1573,7 @@ if __name__ == '__main__':
         n = 0
         imprime(etq_vec_opt[n])
         for i in range(len(vec_opt)):
-            if i == ind_pvec_hasta[n]:
+            if i == ind_pvec_hasta.index[n]:
                 n += 1 
                 imprime(etq_vec_opt[n])
             imprime('{:12.5e} {:12.5e} {:12.5e}'.format(bnds[i][0], vec_opt[i], bnds[i][1]))

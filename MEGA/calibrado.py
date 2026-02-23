@@ -91,7 +91,7 @@ class datos(object):
             C2  96804.0
             '''
             self.PssH0 = self.PssH0.to_numpy(dtype=np.float64).reshape(len(dem))    # pensiones consumidor (len(dem), 1)
-            np.nan_to_num(self.PssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
+            self.PssH0 = np.nan_to_num(self.PssH0, copy=True) # si no hay datos (NAN) se sustituye por 0
 
         # factor compuesto para cada sector, igual a la suma de los factores utilizados por el sector en la MCS
         self.Y0 = self.F0.sum(axis=1)                                           # (len(ind), )
@@ -161,7 +161,7 @@ class datos(object):
         TRF  NaN  NaN  NaN  NaN  NaN  NaN
         '''
         self.Tm0 = self.Tm0.to_numpy(dtype=np.float64).reshape(len(ind))        # (len(ind), )
-        np.nan_to_num(self.Tm0, copy=False) # si no hay datos (NAN) se sustituye por 0
+        self.Tm0 = np.nan_to_num(self.Tm0, copy=True) # si no hay datos (NAN) se sustituye por 0
         
         # importaciones (fila 'EXT') pagadas por los sectores (columnas 'ind')
         self.M0 = DataFrame(sam, index=ext, columns=ind)                        # (1, len(ind))
@@ -251,7 +251,7 @@ class datos(object):
             CSS  654.0  1364.0  17216.0  12662.0  43263.0  21254.0
             '''
             self.CssE0 = self.CssE0.to_numpy(dtype=np.float64).reshape(len(ind))    # aportación de cada sector (len(ind), )
-            np.nan_to_num(self.CssE0, copy=False) # si no hay datos (NAN) se sustituye por 0
+            self.CssE0 = np.nan_to_num(self.CssE0, copy=True) # si no hay datos (NAN) se sustituye por 0, hacerlo in situ (copy=False) produce error
         
         # de los hogares
         self.CssH0 = DataFrame(sam, index=css, columns=dem)
@@ -263,7 +263,7 @@ class datos(object):
             CSS  18548.0  2486.0
             '''
             self.CssH0 = self.CssH0.to_numpy(dtype=np.float64).reshape(len(dem))    # aportación de cada consumidor (len(dem), )
-            np.nan_to_num(self.CssH0, copy=False) # si no hay datos (NAN) se sustituye por 0
+            self.CssH0 = np.nan_to_num(self.CssH0, copy=True) # si no hay datos (NAN) se sustituye por 0
 
         # ayudas (pagos) del gobierno a los sectores (empresas) = pago (aportación) de la columna 'AYD' a la fila 'ind'
         self.AgE0 = DataFrame(sam, index=ind, columns=ayd)
@@ -280,7 +280,7 @@ class datos(object):
             AP6     0.0
             '''
             self.AgE0 = self.AgE0.to_numpy(dtype=np.float64).reshape(len(ind))  # (len(ind), )
-            np.nan_to_num(self.AgE0, copy=False) # si no hay datos (NAN) se sustituye por 0
+            self.AgE0 = np.nan_to_num(self.AgE0, copy=True) # si no hay datos (NAN) se sustituye por 0
 
         # ayudas (pagos) del gobierno a los hogares = pago (aportación) de la columna 'AYD' a la fila 'dem'
         self.AgH0 = DataFrame(sam, index=dem, columns=ayd)
@@ -293,7 +293,7 @@ class datos(object):
             C2  0.0
             '''
             self.AgH0 = self.AgH0.to_numpy(dtype=np.float64).reshape(len(dem))  # (len(dem), )
-            np.nan_to_num(self.AgH0, copy=False) # si no hay datos (NAN) se sustituye por 0
+            self.AgH0 = np.nan_to_num(self.AgH0, copy=True) # si no hay datos (NAN) se sustituye por 0
 
         # tasa de impuesto a la producción = impuestos pagados / producción
         self.tauz = (self.Tz0) / self.Z0        # (len(ind), ) / (len(ind), ) se dividen uno a uno
@@ -334,7 +334,7 @@ class datos(object):
             self.Alp0 = np.zeros((len(dem),len(h)), dtype=np.float64)
         else:
             self.Alp0 = self.Alp0.to_numpy(dtype=np.float64).reshape(len(dem),len(h))  # (len(dem), )
-            np.nan_to_num(self.Alp0, copy=False) # si no hay datos (NAN) se sustituye por 0
+            self.Alp0 = np.nan_to_num(self.Alp0, copy=True) # si no hay datos (NAN) se sustituye por 0
 
         # ahorro del gobierno = pago (aportación) de la columna 'GOV' a la fila 'INV'
         self.Sg0 = DataFrame(sam, index=inv, columns=gov)

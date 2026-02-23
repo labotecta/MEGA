@@ -240,8 +240,6 @@ def propension_ahorro_hogares_ssp(Sp, FF, PssH):
     ingresos = FF.sum(axis=1) + PssH
     ingresos[Sp == 0] = 1.          # para evitar divisiones por 0
     ssp = Sp / ingresos 
-    #ssp[ssp == np.inf] = 0          # antes de np.nan_to_num porque puede cambiar el inf por un número
-    #np.nan_to_num(ssp, copy=False)  # si no hay datos (NAN) se sustituye por 0
     return ssp
 
 def tasa_impuestos_directos_taud(Td, FF, PssH):

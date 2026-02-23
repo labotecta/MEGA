@@ -32,13 +32,26 @@ def valores_opciones0():
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los ficheros de salida en
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados
 
-    parser.add_argument('--USAR_DLL'           , type=sab  , default=True , help="si True se usa la DLL en caso contrario la función Python")
+    parser.add_argument('--USAR_DLL'           , type=sab  , default=False , help="si True se usa la DLL en caso contrario la función Python")
+    parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=False, help="si True se usa la DLL para el algoritmo genético")
+    parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int   , default=5 , help="")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int   , default=16 , help="")
+    parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float , default=1.0e-05 , help="")
+    parser.add_argument('--ALGE_MODO_POB_INI'  , type=int   , default=0 , help="")
+    parser.add_argument('--ALGE_F_INICIO_POB'  , type=float , default=0.05 , help="")
+    parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float , default=0.1 , help="")
+    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int   , default=100 , help="")
+    parser.add_argument('--ALGE_NPOB'          , type=int   , default=1200 , help="")
+    parser.add_argument('--ALGE_F_MUTACION'    , type=float , default=0.72 , help="")
+    parser.add_argument('--ALGE_RECOMBINACION' , type=float , default=[0.99, 1.10], nargs='*', help="")
+    parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int   , default=1 , help="")
+    parser.add_argument('--ALGE_RES_EXTENSA'   , type=int   , default=0 , help="")
     parser.add_argument('--NSAM'               , type=int  , default=0    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=2    , help="número de decimales en las cantidades e importes")
     # hay que especificar estos números porque luego hay que redimensionar las matrices aplanadas
-    parser.add_argument('--nfac'               , type=int  , default=2    , help="número de factores")
-    parser.add_argument('--ndem'               , type=int  , default=1    , help="número de hogares")
-    parser.add_argument('--nsec'               , type=int  , default=2    , help="número de sectores")
+    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=1    , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=2    , help="número de sectores")
     parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs0' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
@@ -116,7 +129,7 @@ def valores_opciones0():
     parser.add_argument('--MODO_PSEUDOIMPTOS'  , type=int  , default=0     , help="0: variables según cambian las cotizaciones a la seguridad social y las ayudas del gobierno; 1: fijos iguales a los que resultam de la MCS")
 
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False , help="imprimir los valores de los parámetros calibrados")
-    parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False , help="salida de los valores iniciales de las variables y sus límites")
+    parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=True , help="salida de los valores iniciales de las variables y sus límites")
     parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False , help="calcular una primera valoración de modelo")
     parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False , help="salida con el detalla de las desviaciones")
     parser.add_argument('--SAL_AUXILIARES'     , type=sab  , default=False , help="imprimir los valores del historial y la evolución de la solución")
@@ -220,13 +233,26 @@ def valores_opciones1():
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los ficheros de salida en
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados
 
-    parser.add_argument('--USAR_DLL'           , type=sab  , default=False , help="si True se usa la DLL en caso contrario la función Python")
+    parser.add_argument('--USAR_DLL'           , type=sab   , default=False, help="si True se usa la DLL en caso contrario la función Python")
+    parser.add_argument('--USAR_ALGE_DLL'      , type=sab   , default=False, help="si True se usa la DLL para el algoritmo genético")
+    parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int   , default=5 , help="")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int   , default=16 , help="")
+    parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float , default=1.0e-05 , help="")
+    parser.add_argument('--ALGE_MODO_POB_INI'  , type=int   , default=0 , help="")
+    parser.add_argument('--ALGE_F_INICIO_POB'  , type=float , default=0.05 , help="")
+    parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float , default=0.1 , help="")
+    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int   , default=100 , help="")
+    parser.add_argument('--ALGE_NPOB'          , type=int   , default=1200 , help="")
+    parser.add_argument('--ALGE_F_MUTACION'    , type=float , default=0.72 , help="")
+    parser.add_argument('--ALGE_RECOMBINACION' , type=float , default=[0.99, 1.10], nargs='*', help="")
+    parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int   , default=1 , help="")
+    parser.add_argument('--ALGE_RES_EXTENSA'   , type=int   , default=0 , help="")
     parser.add_argument('--NSAM'               , type=int  , default=1    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4    , help="número de decimales en las cantidades e importes")
     # hay que especificar estos números porque luego hay que redimensionar las matrices aplanadas
-    parser.add_argument('--nfac'               , type=int  , default=2    , help="número de factores")
-    parser.add_argument('--ndem'               , type=int  , default=2    , help="número de hogares")
-    parser.add_argument('--nsec'               , type=int  , default=2    , help="número de sectores")
+    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=2    , help="número de sectores")
     parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs1' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
@@ -408,13 +434,26 @@ def valores_opciones2():
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los ficheros de salida en
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados
 
-    parser.add_argument('--USAR_DLL'           , type=sab  , default=False , help="si True se usa la DLL en caso contrario la función Python")
+    parser.add_argument('--USAR_DLL'           , type=sab  , default=False, help="si True se usa la DLL en caso contrario la función Python")
+    parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=False, help="si True se usa la DLL para el algoritmo genético")
+    parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int   , default=5 , help="")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int   , default=16 , help="")
+    parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float , default=1.0e-05 , help="")
+    parser.add_argument('--ALGE_MODO_POB_INI'  , type=int   , default=0 , help="")
+    parser.add_argument('--ALGE_F_INICIO_POB'  , type=float , default=0.05 , help="")
+    parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float , default=0.1 , help="")
+    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int   , default=100 , help="")
+    parser.add_argument('--ALGE_NPOB'          , type=int   , default=1200 , help="")
+    parser.add_argument('--ALGE_F_MUTACION'    , type=float , default=0.72 , help="")
+    parser.add_argument('--ALGE_RECOMBINACION' , type=float , default=[0.99, 1.10], nargs='*', help="")
+    parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int   , default=1 , help="")
+    parser.add_argument('--ALGE_RES_EXTENSA'   , type=int   , default=0 , help="")
     parser.add_argument('--NSAM'               , type=int  , default=2    , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4    , help="número de decimales en las cantidades e importes")
     # hay que especificar estos números porque luego hay que redimensionar las matrices aplanadas
-    parser.add_argument('--nfac'               , type=int  , default=2    , help="número de factores")
-    parser.add_argument('--ndem'               , type=int  , default=2    , help="número de hogares")
-    parser.add_argument('--nsec'               , type=int  , default=2    , help="número de sectores")
+    parser.add_argument('--NFAC'               , type=int  , default=2    , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=2    , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=2    , help="número de sectores")
     parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs2' , help="un literal que se añade al principio del nombre de los archivos de salida")
     '''
     42, 333, 1755, 1234, 7000, 933, 2255, 1515, 29
@@ -572,7 +611,7 @@ def valores_opciones2():
     args = parser.parse_args()
     return args
 
-def valores_opciones4():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     '''
     NCASO
