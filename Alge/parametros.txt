@@ -1,0 +1,30 @@
+5       # intentos
+0       # caso
+16	# hilos  
+500000  # max generaciones
+1000    # generaciones para mostrar evolucion
+1.e-10  # tolerancia de la funcion objetivo
+1.e-05  # tolerancia aceptable
+1000    # generaciones para controlar el progreso
+1.e-10   # progreso minimo
+0       # modo poblacion inicial
+0.01	# factor inicio
+1.05 	# factor merito acceso
+0.1     # sigma inicio
+100	# tramos Latin Hypercube Sampling
+1200    # individuos en la poblacion
+0.72    # factor recombinacion (mutacion)
+0.99    # factor recombinacion minimo
+1.10    # factor recombinacion maximo
+2.0     # cota precios minima
+2.0     # cota precios maxima
+5.0     # cota variables minima
+5.0     # cota variables maxima
+1       # control factibilidad
+0        # calculo AX256
+0       # mostrar solucion
+1       # fijar epsilon
+10000   # rango variables con valor inicial a 0 (Apz)
+1234  	# semilla numeros aleatorios
+0 	# el mejor primero
+0 	# incluir el centro de masas como individuo
