@@ -50,7 +50,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_TIPO_RE          0 ^
 --GE_TOLERANCIA       1.e-11 ^
 --GE_VERIFICAR        1.e-08 ^
---GE_PROGRESO         100 ^
+--GE_PROGRESO         1000 ^
 --GE_HISTORIAL        100 ^
 --GE_SOLUCIONES       100 ^
 --GE_PRE_MIN          3.0 ^
