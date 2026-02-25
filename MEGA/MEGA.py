@@ -1055,7 +1055,9 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     # Dadp que Apz, en algunos escenarios, necesita ser distinta de cero, implica que la función objetivo
     # no pueda hacerse cero, o tan pequeña como nostros queramos. Esto se nota especialmente en los escenarios
     # que afectan al factor trabajo.
-    des_Apz = abs(Apz)  
+    # la solución es no incluirla en el cálculo de los desvios
+    #des_Apz = abs(Apz)
+    des_Apz = np.zeros(1)
 
     # 'ebp' y 'ebpr' deben ser ambas cero
     des_ebp = np.array([abs(ebp) + abs(ebpr)])
@@ -1877,8 +1879,9 @@ if __name__ == '__main__':
 
     imprime('-----------------------------------------------------------')
     imprime('La distancia (error de la función objetivo) es {:9.3e}'.format(dist))
-    dist_dll = fo(sol);
-    imprime('                                           DLL {:9.3e}'.format(dist_dll))
+    if USAR_DLL:
+        dist_dll = fo(sol);
+        imprime('                                           DLL {:9.3e}'.format(dist_dll))
     imprime('-----------------------------------------------------------')
     imprime('')
     # verificar la solución, se prepara el vector que se pasará como parámetro a la función 'veri_solucion'

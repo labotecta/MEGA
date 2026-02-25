@@ -634,10 +634,10 @@ def valores_opciones():
     '''
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los ficheros de salida en
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Bo' , help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=a1' , help="un literal que se añade al principio del nombre de los archivos de salida")
 
-    parser.add_argument('--USAR_DLL'           , type=sab   , default=True , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
-    parser.add_argument('--USAR_ALGE_DLL'      , type=sab   , default=True , help="si True se usa el algoritmo genético de la DLL")
+    parser.add_argument('--USAR_DLL'           , type=sab   , default=False , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
+    parser.add_argument('--USAR_ALGE_DLL'      , type=sab   , default=False , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int   , default=5    , help="")
     parser.add_argument('--ALGE_N_HILOS'       , type=int   , default=16   , help="")
     parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float , default=1.0e-05, help="")
@@ -760,7 +760,7 @@ def valores_opciones():
     parser.add_argument('--GE_ACTUALIZACION'   , type=str  , default='immediate', help="cada vez que se cambia un individuo")
     parser.add_argument('--GE_RECONBINACION'   , type=float, default=0.99  , help="recombinación")
     parser.add_argument('--GE_DIM_POBLACION'   , type=int  , default=15    , help="factor para establecer el tamaño de la población (por defecto es 15)")
-    parser.add_argument('--GE_WORKERS'         , type=int  , default=1     , help="número de procesadores a utilizar (en esta máquina el máximo es 61 y el óptimo 32)")
+    parser.add_argument('--GE_WORKERS'         , type=int  , default=32     , help="número de procesadores a utilizar (en esta máquina el máximo es 61 y el óptimo 32)")
     parser.add_argument('--GE_IMG_FIL'         , type=int  , default=5     , help="número de filas del mapa de gráficos con la evolución de los precios y las variables")
     parser.add_argument('--GE_IMG_COL'         , type=int  , default=6     , help="número de columnas del mapa de gráficos con la evolución de los precios y las variables")
     '''
