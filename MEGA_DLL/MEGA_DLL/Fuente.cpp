@@ -1243,9 +1243,11 @@ double merito_s(double* vec_opt) {
 
 	double dd;
 	double dist = 0.;
-
+	/*
 	dd = abs(Apz);
 	dist += dd * dd;
+	*/
+
 	dd = abs(ebp) + abs(ebpr);
 	dist += dd * dd;
 	for (int i = 0; i < NSEC; i++) {
@@ -1646,9 +1648,11 @@ double* merito_sol(double* vec_opt) {
 
 	double dd;
 	double dist = 0.;
-
+	/*
 	dd = abs(Apz);
 	dist += dd * dd;
+	*/
+
 	dd = abs(ebp) + abs(ebpr);
 	dist += dd * dd;
 	for (int i = 0; i < NSEC; i++) {
