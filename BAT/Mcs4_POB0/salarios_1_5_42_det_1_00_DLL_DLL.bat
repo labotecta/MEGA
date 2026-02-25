@@ -19,7 +19,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_RES_EXTENSA    0 ^
 --NSAM                4 ^
 --DECIMALES           1 ^
---PREFIJO             =salarios_1_5_42_det_1_00_DLL_DLL_0 ^
+--PREFIJO             =salarios_1_5_42_det_1_00_DLL_DLL_0_Z ^
 --GE_SEMILLA          42 ^
 --NCASO               0 ^
 --NFAC                2 ^
