@@ -1049,15 +1049,8 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
 
     # Se trata de forma individualizada la desviación en valor absoluto de cada variable
 
-    # Apz no se puede afectar de un coeficiente grande, como se hace en GAMS, porque nuestro método
-    # sacrificaría la convergencia de las otras variables para facilitar la anulación de Apz
-    
-    # Dadp que Apz, en algunos escenarios, necesita ser distinta de cero, implica que la función objetivo
-    # no pueda hacerse cero, o tan pequeña como nostros queramos. Esto se nota especialmente en los escenarios
-    # que afectan al factor trabajo.
-    # la solución es no incluirla en el cálculo de los desvios
-    #des_Apz = abs(Apz)
-    des_Apz = np.zeros(1)
+    # Apz es como los precios, no es el resultado de ninguna ecuación y por tanto no se puede
+    # calcular un desvío para ella
 
     # 'ebp' y 'ebpr' deben ser ambas cero
     des_ebp = np.array([abs(ebp) + abs(ebpr)])
@@ -1124,7 +1117,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
         des_Yp         = abs(Ypr  - Yp  ).flatten()    
         des_Yd         = abs(Ydr  - Yd  ).flatten()    
         desvios = np.concatenate(
-            (   des_produccion,des_factores,des_Apz,des_ebp,
+            (   des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
                 des_F ,des_M ,des_E,
                 des_Da,des_Dt,
@@ -1137,7 +1130,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
         )
     else:
         desvios = np.concatenate(
-            (   des_produccion,des_factores,des_Apz,des_ebp,
+            (   des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Xpi,
                 des_F ,des_M ,des_E,
                 des_Dat,
@@ -1165,7 +1158,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
             des_Yp = [0]
             des_Yd = [0]
 
-        param = (des_produccion,des_factores,des_Apz,des_ebp,
+        param = (des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
                 des_F ,des_M ,des_E,
                 des_Da,des_Dt,

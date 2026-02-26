@@ -586,7 +586,7 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
             Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
             Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
         ) = res_ecuaciones
-        (des_produccion,des_factores,des_Apz,des_ebp,
+        (des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
                 des_F ,des_M ,des_E,
                 des_Da,des_Dt,
@@ -634,7 +634,6 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         mfun.tabla_2De(['des CssE',]  , des_CssE)
         mfun.tabla_2De(['des CssH',]  , des_CssH)
         mfun.tabla_2De(['des b.pag',] , des_ebp)
-        mfun.tabla_2De(['des Apz',]   , des_Apz)
         imprime('')
         mfun.tabla_2De(['Errdesvios',], dist)
         imprime('')
@@ -677,7 +676,6 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssE' , des_CssE.sum()      , 100. * des_CssE.sum()       / (1 if np.mean(CssE)==0 else np.mean(CssE)) , prec=DECIMALES))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssH' , des_CssH.sum()      , 100. * des_CssH.sum()       / (1 if np.mean(CssH)==0 else np.mean(CssH)) , prec=DECIMALES))
         imprime('{:10} {:9.{prec}e} '.format       ('des b.pag', des_ebp.sum(), prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} '.format       ('des Apz'  , des_Apz.sum(), prec=DECIMALES))
         imprime('---------- --------- ---------')
         imprime('')
     
