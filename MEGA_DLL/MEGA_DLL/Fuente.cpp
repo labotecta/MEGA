@@ -1243,10 +1243,6 @@ double merito_s(double* vec_opt) {
 
 	double dd;
 	double dist = 0.;
-	/*
-	dd = abs(Apz);
-	dist += dd * dd;
-	*/
 
 	dd = abs(ebp) + abs(ebpr);
 	dist += dd * dd;
@@ -1648,10 +1644,6 @@ double* merito_sol(double* vec_opt) {
 
 	double dd;
 	double dist = 0.;
-	/*
-	dd = abs(Apz);
-	dist += dd * dd;
-	*/
 
 	dd = abs(ebp) + abs(ebpr);
 	dist += dd * dd;
