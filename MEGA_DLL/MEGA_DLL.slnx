@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="MEGA_DLL/MEGA_DLL.vcxproj" Id="f501ed4a-9bde-4fbd-858a-5dcf8356de4e" />
+</Solution>
