@@ -115,7 +115,12 @@ class datos(object):
         AP6    122005.0
         '''
         
-        # impuestos directos a los hogares
+        '''
+        Aquí hay un error de nomenclatura, los impuestos se toman de la fila del gobierno cuando
+        parece mejor que sean de la fila 'idt' (INP), motivado porque en las primeras MCS no existía
+        la cuenta INP. Como ambos se suman cuando es necesario, no afecta a los resultados
+        '''
+        # impuestos directos a los hogares (en realidad otros impuestos, cuando existe la uenta 'INP')
         # ingresos (ventas) del gobierno (fila gov) de los hogares (columnas dem)
         self.Tid0 = DataFrame(sam, index=gov, columns=dem)
         '''
@@ -124,7 +129,8 @@ class datos(object):
         '''
         self.Tid0 = self.Tid0.to_numpy(dtype=np.float64).reshape(len(dem))        # (1, len(dem))
         
-        # otros impuestos sobre los productos pagados por los hogares
+        # otros impuestos (en realidad estos son los impuestos directos cuando existe la cuenta INP) sobre
+        # los productos pagados por los hogares
         self.Toi0 = DataFrame(sam, index=idt, columns=dem)
         if self.Toi0.empty:
             self.Toi0 = np.zeros(len(dem), dtype=np.float64)
@@ -138,14 +144,23 @@ class datos(object):
         # sumamos todos los impuestos pagados por los hogares al gobierno
         self.Td0 = self.Tid0 + self.Toi0
 
-        # impuestos indirectos (fila idt) pagados por los sectores (columnas 'ind')
-        self.Tz0 = DataFrame(sam, index=idt, columns=ind)
+        # la separación de los impuestos pagados por las empresas en directos e indirectos no se
+        # utiliza para nada, debería hacerse al recalcular la MCS como se hace con los impuestos de los hogares
+        self.Tiz0 = DataFrame(sam, index=idt, columns=ind)
+        self.Tiz0 = self.Tiz0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(ind))
+
+        # impuestos indirectos (fila idt) pagados por los sectores (columnas 'ind'), en realidad son
+        # los impuestos a la producción (directos) cuando existe esta cuenta (INP)
+        self.Toz0 = DataFrame(sam, index=gov, columns=ind)
         '''
              AP1     AP2  AP3     AP4      AP5     AP6
         INP  0.0  1257.0  0.0  2453.0  16951.0  4467.0
         '''
-        self.Tz0 = self.Tz0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(ind))
+        self.Toz0 = self.Toz0.to_numpy(dtype=np.float64).sum(axis=0).reshape(len(ind))
 
+        # sumamos todos los impuestos pagados por las empresas al gobierno
+        self.Tz0 = self.Tiz0 + self.Toz0
+            
         # impuestos (fila idt) pagados por el gobierno (columnas 'gov')
         self.Tg0 = DataFrame(sam, index=idt, columns=gov)
         '''
@@ -154,6 +169,22 @@ class datos(object):
         '''
         self.Tg0 = self.Tg0.to_numpy(dtype=np.float64).item()
         
+        # impuestos (fila idt) pagados por el ahorro+inversión (columnas 'A-I') para la NSAM == 5
+        self.Ti0 = DataFrame(sam, index=idt, columns=inv)
+        '''
+                 A-I
+        INP  21052.3
+        '''
+        self.Ti0 = self.Ti0.to_numpy(dtype=np.float64).item()
+
+        # impuestos (fila idt) pagados por el sector exterior (columnas 'SE') 
+        self.Te0 = DataFrame(sam, index=idt, columns=ext)
+        '''
+                SE
+        INP -92.19
+        '''
+        self.Te0 = self.Te0.to_numpy(dtype=np.float64).item()
+
         # aranceles (fila 'TRF') pagados por los sectores (columnas 'ind')
         self.Tm0 = DataFrame(sam, index=trf, columns=ind)                       # (1, len(ind))
         '''
@@ -183,7 +214,7 @@ class datos(object):
         AP6    1878.0    257.0
         '''
         self.Xp0 = self.Xp0.to_numpy(dtype=np.float64).T.reshape(len(dem), len(ind))    # trasponemos para que el primer indice sea la demanda (len(dem), len(ind))
-        
+
         # demanda del gobierno a cada sector = ventas de los sectores (filas 'ind') al gobierno (columna 'GOV')
         self.Xg0 = DataFrame(sam, index=ind, columns=gov)                       # (len(ind), 1)
         '''
@@ -311,10 +342,15 @@ class datos(object):
             else:
                 self.taum[i] = self.Tm0[i] / self.M0[i]
 
-        # demanda local de cada producto. A la producción (Z0) se le
-        # añaden los impuestos a la producción y se restan las exportaciones
-        #self.D0 = (1 + self.tauz) * self.Z0 - self.E0 + self.CssE0
-        self.D0 = (1 + self.tauz) * self.Z0 - self.E0 + self.CssE0 - self.AgE0  # (len(ind), )
+        # D0, la demanda local debe pagar todos los costes de la producción local menos las ayudas recibidas y los ingresos por exportación, además
+        # deberá pagar el coste de las importaciones con lo que D0 se completa a Q0 
+        #   + Z0      producción bruta (que suma las compras intermedias y los factores de producción)
+        #   + tauz    impuestos a la producción 
+        #   + CssE0   pagos a la seguridad social
+        #   - AgE0    ayudas recibidas
+        #   - E0      ingresos de la exportación
+        # las importaciones es lo que le falta a D0 para ser Q0
+        self.D0 = (1 + self.tauz) * self.Z0 + self.CssE0 - self.AgE0 - self.E0  # (len(ind), )
         '''
         [32647.0, 71205.0, 311495.0, 273578.0, 725704.0, 147687.0]
         '''
@@ -352,6 +388,8 @@ class datos(object):
             self.Sc0 = self.CssE0.sum() + self.CssH0.sum() - self.PssH0.sum().item()    # () escalar
 
         # balanza de pagos = ahorro exterior = pago (aportación) de la columna 'EXT' a la fila 'INV'
+        # esto no parece correcto si hay algún pago o ingreso adicional en el sector exterior, como
+        #por ejemplo: un pago de impuestos en la columna de exportaciones (positivo o negativo)
         self.Sf0 = DataFrame(sam, index=inv, columns=ext)
         '''
                   SE
@@ -365,7 +403,7 @@ class datos(object):
         self.PobAct = ecua.poblacion_activa_PobAct(INDICE_F_TRA, self.FF0, PARO_INICIAL)
 
 class parametros(object):
-    def __init__(self, datos, ncon, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA):
+    def __init__(self, datos, ndem, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA):
         # elasticidad de sustitución, entre local e importación, del producto de Argminton (CES)
         # la elasticidad de sustitución es la misma en cualquier punto a lo largo de una isocuanta, sin importar cual sea la relación en que son utilizados los insumos. 
         # variable exógena puesta a 2.
@@ -449,14 +487,16 @@ class parametros(object):
         # coeficientes de participación (alfa) de los productos en la utilidad de la demanda
         self.alfa = ecua.demanda_CobbDouglas_alfa(datos.Xp0)
         #self.alfa = ecua.demanda_CobbDouglas_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, datos.pF0, datos.pQ0, 0, np.zeros((ncon,nsec), dtype=np.float64))
-
-        renta = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
-        if np.any(renta <= 0):
-            print('Renta menor o igual a 0')
-            for i in range(len(renta)):
-                print('{:3} {:12.5e}'.format(i + 1, renta[i]))
-            sys.exit()
-        self.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+        if DEM_ESENCIALES:
+            renta = ecua.demanda_StoneGeary_renta(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+            if np.any(renta <= 0):
+                print('Renta menor o igual a 0')
+                for i in range(len(renta)):
+                    print('{:3} {:12.5e}'.format(i + 1, renta[i]))
+                sys.exit()
+            self.alfa_esen = ecua.demanda_StoneGeary_alfa(datos.FF0, datos.PssH0, datos.AgH0, datos.Sp0, datos.Td0, datos.CssH0, datos.Xp0, CON_ESENCIALES, datos.pF0, datos.pQ0)
+        else:
+            self.alfa_esen = np.zeros((ndem,nsec), dtype=np.float64)
 
         self.sigma_ces = SIGMA_CES_DEMANDA
         self.eta_ces = (self.sigma_ces - 1.) / self.sigma_ces
@@ -477,7 +517,7 @@ class parametros(object):
         self.mu    = ecua.coeficientes_demanda_gobierno_mu(datos.Xg0)
 
         # coeficientes de participaciones en las inversiones
-        self.landa = ecua.coeficientes_inversiones_landa(datos.Xv0, datos.Sp0, datos.Sg0, datos.Sc0, datos.epsilon, datos.Sf0)
+        self.landa = ecua.coeficientes_inversiones_landa(datos.Xv0, datos.Sp0, datos.Sg0, datos.Sc0, datos.epsilon, datos.Sf0, datos.Ti0, datos.Te0)
 
         # ------
         # elasticidad de sustitución, entre local e importación, del producto de Argminton (Utilidad CES)
@@ -495,6 +535,12 @@ class parametros(object):
         self.xid   = ecua.coeficiente_CET_local_xid(self.phi, datos.E0, datos.D0)
         # coeficiente de participación en la CET de la exportación
         self.xie   = ecua.coeficiente_CET_exportacion_xie(self.phi, datos.E0, datos.D0)
+        xid_neg = [self.xid < 0.][0]
+        self.xid[xid_neg] = 0.
+        self.xie[xid_neg] = 1.
+        xie_neg = [self.xie < 0.][0]
+        self.xid[xie_neg] = 1.
+        self.xie[xie_neg] = 0.
         # coeficiente de escala de la CET de exportación
         self.teta  = ecua.coeficiente_escala_CET_teta(datos.Z0, self.xie, datos.E0, self.xid, datos.D0, self.phi)
         # ------
@@ -507,13 +553,13 @@ class parametros(object):
         self.taud_oi  = ecua.tasa_impuestos_directos_taud(datos.Toi0, datos.FF0, datos.PssH0)
         
         # propensión al ahorro del gobierno
-        self.ssg   = ecua.propension_ahorro_gobierno_ssg(datos.Sg0, datos.Td0, datos.Tz0, datos.Tm0, datos.AgE0, datos.AgH0)
+        self.ssg   = ecua.propension_ahorro_gobierno_ssg(datos.Sg0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos. Ti0, datos.Te0, datos.AgE0, datos.AgH0, datos.CssE0, datos.CssH0, datos.PssH0)
 
         # ayudas del gobierno a las empresas
-        self.cage = ecua.coeficiente_ayudas_gobierno_empresas_cage(datos.AgE0, datos.Td0, datos.Tz0, datos.Tm0)
+        self.cage = ecua.coeficiente_ayudas_gobierno_empresas_cage(datos.AgE0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos. Ti0, datos.Te0)
         
         # ayudas del gobierno a los hogares
-        self.cagh = ecua.coeficiente_ayudas_gobierno_hogares_cagh(datos.AgH0, datos.Td0, datos.Tz0, datos.Tm0)
+        self.cagh = ecua.coeficiente_ayudas_gobierno_hogares_cagh(datos.AgH0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos. Ti0, datos.Te0)
         
         # ATENCION se está suponiendo que el trabajo es la coluna 1 (segunda columna) de FF
 

@@ -1,10 +1,14 @@
 import ctypes as ct
-import MEGA as prin
 import numpy as np
+import MEGA as prin
 
-nfac  = 2
-ndem  = 2
-nsec  = 6
+# es preciso que prin.'nfac, ndem y nsec' tengan los valores correctos cuando 'prin'
+# importa este módulo para que la definición de las 'class' sea correcta
+
+nfac  = prin.nfac
+ndem  = prin.ndem
+nsec  = prin.nsec
+
 nds   = ndem * nsec
 nsf   = nsec * nfac
 ndf   = ndem * nfac
@@ -28,6 +32,7 @@ class OPCIONES(ct.Structure):
         ('AYD_ADICIONAL',     (ct.c_double * nds )),
         ('RENTA_FICTICIA',     ct.c_bool),
         ('MODO_PSEUDOIMPTOS',  ct.c_int),
+        ('EQ_BAL_PAGOS',       ct.c_bool),
     )
 
 class DATOS(ct.Structure):
@@ -48,6 +53,9 @@ class DATOS(ct.Structure):
         ('PssH0',   (ct.c_double * ndem)),
         ('tauz',    (ct.c_double * nsec)),
         ('taum',    (ct.c_double * nsec)),
+        ('Tg0',      ct.c_double),
+        ('Ti0',      ct.c_double),
+        ('Te0',      ct.c_double),
         ('Sf0',      ct.c_double),
         ('PobAct',   ct.c_double),
     )
@@ -105,10 +113,12 @@ def envia_opciones(libc):
             (ct.c_double * nds) (*(prin.AYD_ADICIONAL .flatten())),
             ct.c_bool(prin.RENTA_FICTICIA),
             ct.c_int(prin.MODO_PSEUDOIMPTOS),
+            ct.c_bool(prin.EQ_BAL_PAGOS),
     )
     libc.recibe_opciones.argtypes = [OPCIONES]
     libc.recibe_opciones.restype = OPCIONES
-    libc.recibe_opciones(opciones)
+    res = libc.recibe_opciones(opciones)
+    return 
 
 def envia_datos(libc, d):
     datos = DATOS(
@@ -128,12 +138,16 @@ def envia_datos(libc, d):
         (ct.c_double * ndem) (*(d.PssH0.flatten())),
         (ct.c_double * nsec) (*(d.tauz. flatten())),
         (ct.c_double * nsec) (*(d.taum. flatten())),
+        ct.c_double(d.Tg0),
+        ct.c_double(d.Ti0),
+        ct.c_double(d.Te0),
         ct.c_double(d.Sf0),
         ct.c_double(d.PobAct),
     )
     libc.recibe_datos.argtypes = [DATOS]
     libc.recibe_datos.restype = DATOS
-    libc.recibe_datos(datos)
+    res = libc.recibe_datos(datos)
+    return 
 
 def envia_parametros(libc, p):
     parametros = PARAMETROS(
@@ -167,7 +181,8 @@ def envia_parametros(libc, p):
     )
     libc.recibe_parametros.argtypes = [PARAMETROS]
     libc.recibe_parametros.restype = PARAMETROS
-    libc.recibe_parametros(parametros)
+    res = libc.recibe_parametros(parametros)
+    return 
     '''
     prin.imprime('PARAMETROS')
     prin.imprime('{',False)
@@ -283,6 +298,58 @@ def merito_s(libc, vec_opt):
     libc.merito_s.restype = ct.c_double
     vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
     return libc.merito_s(vo)
+
+def merito_sol(libc, vec_opt):
+    libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
+    libc.merito_sol.restype = ct.POINTER(ct.c_double)
+    vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
+    r_sol = libc.merito_sol(vo)
+    return r_sol[4]
+    '''
+    NFAC = nfac
+    NDEM = ndem
+    NSEC = nsec
+    LVAR = 1+1+1+1+1+NFAC+NSEC+NSEC+NSEC+1+1+NSEC*NFAC+NSEC+NSEC+NSEC+NDEM*NSEC+NSEC+NSEC+NSEC+NSEC+NSEC+NSEC+NSEC+NSEC+NDEM+NSEC+NSEC+NDEM+NSEC+NDEM+NSEC+NDEM+1+1+1+NDEM*NSEC+NDEM*NFAC+NDEM*NFAC+NSEC*NSEC
+    if prin.GE_INCLUYE_XP == False:
+        LVAR -= NDEM * NSEC
+    r_res = r_sol[0]
+    r_datos = int(r_sol[1])
+    if r_datos != LVAR:
+        print('Error número de datos no coincide {} {}'.format(LVAR, r_datos))
+    print(r_res)
+    print(r_datos)
+    print(r_sol[2])
+    print(r_sol[3])
+    print(r_sol[4])
+    N = 5;
+    for i in range(NFAC):
+        prin.imprime('{:10.1f} '.format(r_sol[N]),False)
+        N += 1
+    prin.imprime('')
+    for k in range(3):
+        for i in range(NSEC):
+            prin.imprime('{:10.1f} '.format(r_sol[N]),False)
+            N += 1
+        prin.imprime('')
+    prin.imprime(r_sol[N])
+    N += 1
+    prin.imprime(r_sol[N])
+    N += 1
+    for k in range(NFAC):
+        for i in range(NSEC):
+            prin.imprime('{:10.1f} '.format(r_sol[N]),False)
+            N += 1
+        prin.imprime('')
+    for k in range(3):
+        for i in range(NSEC):
+            prin.imprime('{:10.1f} '.format(r_sol[N]),False)
+            N += 1
+        prin.imprime('')
+
+    print(r_sol[LVAR-2])
+    print(r_sol[LVAR-1])
+    return r_sol
+    '''
 
 def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida):
     libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int)

@@ -12,6 +12,7 @@ def demanda_CobbDouglas_alfa(Xp):
     ndem = Xp.shape[0]
     nsec = Xp.shape[1]
     suma = Xp.sum(axis=1)    # demanda total de cada hogar
+    suma[suma == 0] = 1.
     alfa = np.zeros((ndem,nsec), dtype=np.float64)
     for consu in range(ndem):
         for sector in range(nsec):
@@ -49,6 +50,8 @@ def demanda_CES_alfa(sigma, Xp):
     for consu in range(ndem):
         a = Xp[consu] ** (1. / sigma[consu])
         suma = a.sum()
+        if suma == 0:
+           suma = 1.
         for sector in range(nsec):
             alfa[consu,sector] = a[sector] / suma
     return alfa
@@ -104,7 +107,10 @@ def demanda_CobbDouglas_beta(F):
     denominador = F.sum(axis=1) # suma por fila (sector) (len(ind), )
     for i in range(nsec):
         for j in range(nfac):
-            beta[i,j] = F[i,j] / denominador[i]
+            if denominador[i] < 0:
+                beta[i,j] = 0.
+            else:
+                beta[i,j] = F[i,j] / denominador[i]
     return beta
 
 def demanda_CobbDouglas_b(Y, F, beta):
@@ -117,7 +123,11 @@ def demanda_CobbDouglas_b(Y, F, beta):
     denominador = np.ones(nsec)
     for i in range(nsec):
         for j in range(nfac):
-            denominador[i] *= F[i,j] ** beta[i,j]
+            if F[i,j] < 0:
+                denominador[i] = 1.
+                break
+            else:
+                denominador[i] *= F[i,j] ** beta[i,j]
     return Y / denominador
 
 def coeficientes_consumos_intermedios_ax(X, Z):
@@ -133,9 +143,8 @@ def coeficientes_consumos_intermedios_ax(X, Z):
             # X[j,i] son las compras de 'i' a los sectores 'j'
             # Z[i] producción bruta del sector 'i'
             # ax[i,j] compras intermedias, por unidad de producción bruta, que hace el sector 'i' a los sectores 'j'
-            ax[i,j] = X[j,i] / Z[i]
-    ax[ax == np.inf] = 0                    # porque el denominador puede ser 0, antes de np.nan_to_num porque puede cambiar el inf por un número
-    np.nan_to_num(ax, copy=False)           # si no hay datos (NAN) se sustituye por 0
+            if X[j,i] > 0.000001 and Z[i] != 0:
+                ax[i,j] = X[j,i] / Z[i]
     return ax
 
 def coeficientes_factor_compuesto_ay(Y, Z):
@@ -157,16 +166,23 @@ def coeficientes_demanda_gobierno_mu(X):
     '''
     return X / X.sum()
 
-def coeficientes_inversiones_landa(Xv, Sp, Sg, Sc, epsilon, Sf):
+def coeficientes_inversiones_landa(Xv, Sp, Sg, Sc, epsilon, Sf, Ti, Te):
     '''
-    Coeficiente para repartir por sectores los ahorros
+    Coeficiente para repartir por sectores los ahorros menos los impuestos al ahorro + inversión
+    es el resultado de dividir la inversión en cada sector por la suma de los
+    ahorros de todos los agentes menos los impuestos que paga A-I
+
     Xv : ingresos de los sectores aportados por 'INV'
     Sp : ahorro de los hogares
     Sg : ahorro del gobierno
     Sc : ahorro de la seguridad social
     Sf : ahorro exterior
+    Ti : impuestos pagados por el ahorro
+
+    Te : impuestos pagados por el sector exterior
     '''
-    return Xv / (Sp.sum() + Sg + Sc + Sf * epsilon)
+    #return Xv / (Sp.sum() + Sg + Sc + Sf * epsilon - Ti - Te)
+    return Xv / (Sp.sum() + Sg + Sc + Sf * epsilon - Ti)
     
 def coeficientes_armington_deltam_deltad(taum, eta, M, D):
     '''
@@ -178,11 +194,17 @@ def coeficientes_armington_deltam_deltad(taum, eta, M, D):
     M    : importaciones pagadas por los sectores
     D    : demanda local de cada sector
     '''
-    a = (1 + taum) * (M ** (1 - eta)) # se añaden los aranceles a la importación
-    b = (1 + taum) * (M ** (1 - eta)) + D ** (1 - eta)
+    # mientras 'eta' sea menor que 1, no hay problema en que algún elemento de M sea 0
+    Me = np.copysign(1, M) * (abs(M) ** (1. - eta))
+    De = np.copysign(1, D) * (abs(D) ** (1. - eta))
+    # se añaden los aranceles a la importación
+    a = (1. + taum) * Me
+    b = (1. + taum) * Me + De
+
     deltam = a / b
-    a = D ** (1 - eta)
-    deltad = a / b
+    deltad = De / b
+    assert np.all(deltam >= 0.), 'detam negativo\n'
+    assert np.all(deltad >= 0.), 'detad negativo\n'
     return (deltam, deltad)
 
 def coeficiente_escala_armington_gamma(Q, deltam, deltad, eta, M, D):
@@ -196,34 +218,59 @@ def coeficiente_escala_armington_gamma(Q, deltam, deltad, eta, M, D):
     M      : importaciones pagadas por los sectores
     D      : demanda local de cada sector
     '''
-    return Q / ((deltam * (M ** eta) + deltad * (D ** eta)) ** (1. / eta))
+    # mientras 'eta' sea positivo no hay problema en que algún elemento de M sea 0
+    Me = np.copysign(1, M) * (abs(M) ** eta)
+    De = np.copysign(1, D) * (abs(D) ** eta)
+    return Q / ((deltam * Me + deltad * De) ** (1. / eta))
 
 def coeficiente_CET_local_xid(fi, E, D):
     '''
     Coeficiente de participación en la CET de la demanda local para cada sector
     '''
-    umfi = 1 - fi
-    xid = (D ** umfi) / (E ** umfi + D ** umfi)
+    # si E tiene algún valor a 0 y 'umfi' es negativo (que es lo normal) se produce una división por 0
+    umfi = 1. - fi
+    De = np.copysign(1, D) * (abs(D) ** umfi)
+    nsec = fi.shape[0]
+    xid = np.zeros(nsec, dtype=np.float64)
+    for i in range(nsec):
+        if E[i] == 0:
+            xid[i] = 1.
+        else:
+            Ee = np.copysign(1, E[i]) * (abs(E[i]) ** umfi[i])
+            xid[i] = De[i] / (Ee + De[i])
+    #np.nan_to_num(xid, copy=False) # convierte nan a 0, por lo que NO es una alternativa
     return xid
 
 def coeficiente_CET_exportacion_xie(fi, E, D):
     '''
     Coeficiente de participación en la CET de la exportación para cada sector
     '''
-    umfi = 1 - fi
-    xie = (E ** umfi) / (E ** umfi + D ** umfi)
-    # si E tiene algún valor a 0 y 'umfi' es negativo se produce una división por 0
-    # por lo que la instrucción siguiente sustiyuiora el NAN resultante por 0
-    np.nan_to_num(xie, copy=False)
+    # si E tiene algún valor a 0 y 'umfi' es negativo (que es lo normal) se produce una división por 0
+    umfi = 1. - fi
+    De = np.copysign(1, D) * (abs(D) ** umfi)
+    nsec = fi.shape[0]
+    xie = np.zeros(nsec, dtype=np.float64)
+    for i in range(nsec):
+        if E[i] == 0:
+            xie[i] = 0.
+        else:
+            Ee = np.copysign(1, E[i]) * (abs(E[i]) ** umfi[i])
+            xie[i] = Ee / (Ee + De[i])
+    #np.nan_to_num(xie, copy=False) # convierte nan a 0, por lo que SI es una alternativa
     return xie
 
 def coeficiente_escala_CET_teta(Z, xie, E, xid, D, fi):
     '''
     Coeficiente de escala de la CET de exportación
     '''
-    teta = Z / ((xie * E ** fi + xid * D ** fi) ** (1/fi))
-    teta[teta == np.inf] = 0                # antes de np.nan_to_num porque puede cambiar el inf por un número
-    np.nan_to_num(teta, copy=False)         # si no hay datos (NAN) se sustituye por 0
+    #no hay problema si E tiene algún valor a 0 ya que 'fi' es normalmente positivo, y por tanto '1. / fi' tambien, con lo que no produce una división por 0
+
+    teta = Z / ((xie * E ** fi + xid * D ** fi) ** (1. / fi))
+
+    assert np.all(np.isnan(teta)==False), 'coeficiente_escala_CET_teta incorrecto\n'
+
+    #teta[teta == np.inf] = 0                # antes de np.nan_to_num porque puede cambiar el inf por un número
+    #np.nan_to_num(teta, copy=False)         # si no hay datos (NAN) se sustituye por 0
     return teta
 
 def propension_ahorro_hogares_ssp(Sp, FF, PssH):
@@ -238,7 +285,7 @@ def propension_ahorro_hogares_ssp(Sp, FF, PssH):
         ssp[k] = Sp[k] / suma[k]
     '''
     ingresos = FF.sum(axis=1) + PssH
-    ingresos[Sp == 0] = 1.          # para evitar divisiones por 0
+    ingresos[ingresos == 0] = 1.          # para evitar divisiones por 0
     ssp = Sp / ingresos 
     return ssp
 
@@ -255,26 +302,49 @@ def tasa_impuestos_directos_taud(Td, FF, PssH):
     taud = Td / ingresos
     return taud
 
-def propension_ahorro_gobierno_ssg(Sg, Td, Tz, Tm, AgE, AgH):
+def propension_ahorro_gobierno_ssg(Sg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, CssE, CssH, PssH):
     '''
     Propensión al ahorro del gobierno
-
-    Hay que restar las pensiones porque están incluidas en Td y no las ingresa el gobierno
+    No contemplamos (pura pereza) que el gobierno recaude las cotizaciones de la seguridad social y pague las
+    pensiones, como hacemos en otros apartados, pero somos coherentes al calcular el ahorro 'ayudas_empresas_AgE'
+    Td : impuestos pagados por los hogares
+    Tz : impuestos pagados por los sectores
+    Tm : aranceles de importación
+    Ti : impuestos pagados por la inversión+ahorro
+    Te : impuestos pagados por el sector exterior
+    No sumamos Tg (impuestos que paga el gobierno) porque también hay que restarlo
+    AgE: ayudas a las empresas pagadas por el gobierno
+    Agh: ayudas a los hogares pagadas por el gobierno
     '''
-    ssg = Sg / (Td.sum() + Tz.sum() + Tm.sum() - AgE.sum() - AgH.sum())
-    ssg = np.nan_to_num(ssg)      # si no hay datos (NAN) se sustituye por 0
+    if PssH.sum() == 0:
+        # el gobierno paga las pensiones, por tanto recauda las cotizaciones
+        Css = CssH.sum() + CssE.sum()
+    else:
+        Css = 0.
+    ssg = Sg / (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te + Css - AgE.sum() - AgH.sum())
+    assert np.isnan(ssg).any() == False, 'error en el cálculo del coeficiente de ahorro del gobierno\n'
     return ssg
 
-def coeficiente_ayudas_gobierno_empresas_cage(AgE, Td, Tz, Tm):
-    cage = AgE / (Td.sum() + Tz.sum() + Tm.sum())
-    cage[cage == np.inf] = 0       # antes de np.nan_to_num porque puede cambiar el inf por un número
-    cage = np.nan_to_num(cage)     # si no hay datos (NAN) se sustituye por 0
+def coeficiente_ayudas_gobierno_empresas_cage(AgE, Td, Tz, Tm, Tg, Ti, Te):
+    # no está adaptado al caso en que el gobierno paga las pensiones, por tanto recauda las cotizaciones
+    # No sumamos Tg porque tambien hay que restarlo
+    '''
+    No contemplamos (pura pereza) que el gobierno recaude las cotizaciones de la seguridad social y pague las
+    pensiones, como hacemos en otros apartados, pero somos coherentes al calcular las ayudas en 'ayudas_empresas_AgE'
+    '''
+    cage = AgE / (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te)
+    assert np.isnan(cage).any() == False, 'error en el cálculo del coeficiente de ayudas del gobierno a las empresas\n'
     return cage
 
-def coeficiente_ayudas_gobierno_hogares_cagh(AgH, Td, Tz, Tm):
-    cagh = AgH / (Td.sum() + Tz.sum() + Tm.sum())
-    cagh[cagh == np.inf] = 0       # antes de np.nan_to_num porque puede cambiar el inf por un número
-    cagh = np.nan_to_num(cagh)     # si no hay datos (NAN) se sustituye por 0
+def coeficiente_ayudas_gobierno_hogares_cagh(AgH, Td, Tz, Tm, Tg, Ti, Te):
+    # no está adaptado al caso en que el gobierno paga las pensiones, por tanto recauda las cotizaciones
+    # No sumamos Tg porque tambien hay que restarlo
+    '''
+    No contemplamos (pura pereza) que el gobierno recaude las cotizaciones de la seguridad social y pague las
+    pensiones, como hacemos en otros apartados, pero somos coherentes al calcular las ayudas en 'ayudas_hogares_AgH'
+    '''
+    cagh = AgH / (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te)
+    assert np.isnan(cagh).any() == False, 'error en el cálculo del coeficiente de ayudas del gobierno a los hogares\n'
     return cagh
 
 def poblacion_activa_PobAct(INDICE_F_TRA, FF0, paro):

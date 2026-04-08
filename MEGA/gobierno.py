@@ -30,30 +30,48 @@ def aranceles_importacion_Tm(taum, pm, M):
     '''
     return taum * M * pm
 
-def ayudas_empresas_AgE(cage, Td, Tz, Tm):
+def ayudas_empresas_AgE(cage, Td, Tz, Tm, Tg, Ti, Te):
+    # no está adaptado al caso en que el gobierno paga las pensiones, por tanto recauda las cotizaciones
     '''
     ayudas del gobierno a los sectores
-    '''
-    return cage * (Td.sum() + Tz.sum() + Tm.sum())
 
-def ayudas_hogares_AgH(cagh, Td, Tz, Tm, inc_ayd):
+    Td : impuestos pagados por los hogares
+    Tz : impuestos pagados por los sectores
+    Tm : aranceles de importación
+    Ti : impuestos pagados por la inversión+ahorro
+    Te : impuestos pagados por el sector exterior
+    No sumamos Tg (impuestos que paga el gobierno) porque también hay que restarlo
+    Ti   : impuestos pagados por la inversión
+    '''
+    return cage * (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te)
+
+def ayudas_hogares_AgH(cagh, Td, Tz, Tm, Tg, Ti, Te, inc_ayd):
+    # no está adaptado al caso en que el gobierno paga las pensiones, por tanto recauda las cotizaciones
     '''
     ayudas del gobierno a los hogares
 
-    PssH : pensiones que paga la seguridad social pero que están incluidas en Td
+    Td : impuestos pagados por los hogares
+    Tz : impuestos pagados por los sectores
+    Tm : aranceles de importación
+    Ti : impuestos pagados por la inversión+ahorro
+    Te : impuestos pagados por el sector exterior
+    No sumamos Tg (impuestos que paga el gobierno) porque también hay que restarlo
+    Ti   : impuestos pagados por la inversión
     '''
-    return cagh * (Td.sum() + Tz.sum() + Tm.sum()) + inc_ayd
+    return cagh * (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te) + inc_ayd
 
-def demanda_gobierno_Xg(mu, pq, Td, Tz, Tm, Sg, AgE, AgH, PssH, CssH, CssE):
+def demanda_gobierno_Xg(mu, pq, Td, Tz, Tm, Tg, Ti, Te, Sg, AgE, AgH, PssH, CssH, CssE):
     '''
     demanda (consumos) de productos por el gobierno
 
     mu   : coeficiente de reparto de la demanda del gobierno por productos
     pq   : precio de producto de Armington (producto compuesto: local + importación)
     ingresos:
-    Td   : impuestos directos a los hogares
-    Tz   : impuestos indirectos a las empresas
-    Tm   : aranceles de importación
+    Td : impuestos pagados por los hogares
+    Tz : impuestos pagados por los sectores
+    Tm : aranceles de importación
+    Ti : impuestos pagados por la inversión+ahorro
+    Te : impuestos pagados por el sector exterior
     Css  : si es el gobierno quien paga las pensiones, ingresos recibidos de la seguridad social
     restan:
     Sg   : ahorro del gobierno
@@ -66,7 +84,7 @@ def demanda_gobierno_Xg(mu, pq, Td, Tz, Tm, Sg, AgE, AgH, PssH, CssH, CssE):
         Css = CssH.sum() + CssE.sum()
     else:
         Css = 0.
-    return mu * (Td.sum() + Tz.sum() + Tm.sum() + Css - (Sg + AgE.sum() + AgH.sum())) / pq
+    return mu * (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te + Css - (Sg + AgE.sum() + AgH.sum())) / pq
 
 def seguridad_social_empresas_CssE(ctzsse, pf, F, INDICE_F_TRA):
     # F incluye las Alp

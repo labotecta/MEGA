@@ -73,6 +73,9 @@ def valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, V
     mfun.i_tabla(''  , [] , ['Tz0',]       , datos.Tz0              , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['Tm0',]       , datos.Tm0              , False, DECIMALES)
     mfun.i_tabla('/' , dem, ['Td0',]       , datos.Td0              , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['Tg0',]       , datos.Tg0              , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['Ti0',]       , datos.Ti0              , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['Te0',]       , datos.Te0              , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['CssH0',]     , datos.CssH0            , True , DECIMALES)
     mfun.i_tabla('/' , ind, ['CssE0',]     , datos.CssE0            , True , DECIMALES)
     mfun.i_tabla(''  , [] , ['def/sup ss',], datos.CssE0.sum() + datos.CssH0.sum() - datos.PssH0.sum(), False, DECIMALES)
@@ -135,7 +138,13 @@ def salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES):
     imprime('')
     imprime('TMS. Tasa Marginal de Sustitución local/importación (CES)')
     mfun.cabecera('Sector', ['TMS',])
-    TMS = parametros.deltad / parametros.deltam * ((datos.M0 / datos.D0) ** (1 - parametros.eta))
+
+    deno1 = copy.deepcopy(parametros.deltad)
+    deno1[deno1 == 0] = 1.
+    deno2 = copy.deepcopy(datos.D0)
+    deno2[deno2 == 0] = 1.
+    base = parametros.deltad / deno1 * (datos.M0 / deno2)
+    TMS = np.copysign(1, base) * (abs(base) ** (1 - parametros.eta))
     mfun.cuerpo2D(ind, TMS.reshape(nsec,1))
     mfun.cierre(['TMS',])
     imprime('')
@@ -301,7 +310,7 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nfac = len(h)
     nsec = len(ind)
     ndem = len(dem)
-    (pf,py,pz,pq,pd,epsilon,Apz,F,Z,E,M,D,FF,Y,X,Xp,Xg,Xv,Q,ebp,Sp,Sg,Td,Tz,Tm,CssE,CssH,AgE,AgH,Alp) = vec_veri_sol
+    (pf,py,pz,pq,pd,epsilon,Apz,F,Z,E,M,D,FF,Y,X,Xp,Xg,Xv,Q,ebp,Sp,Sg,Sf,Td,Tz,Tm,CssE,CssH,AgE,AgH,Alp) = vec_veri_sol
 
     nvar_end = 0
     nvar_end += pf.size
@@ -321,32 +330,32 @@ def veri_solucion(datos, parametros, ind, dem, h,
     ay = parametros.ay
 
     v_medio     = np.zeros(len(etq_veri), dtype=np.ndarray)
-    v_medio[0]  = np.median(abs(Y))
-    v_medio[1]  = np.median(abs(F))
-    v_medio[2]  = np.median(abs(X))
-    v_medio[3]  = np.median(abs(Y))
-    v_medio[4]  = np.median(abs(pz))
-    v_medio[5]  = np.median(abs(Td))
-    v_medio[6]  = np.median(abs(Tz))
-    v_medio[7]  = np.median(abs(Tm))
-    v_medio[8]  = np.median(abs(Xg))
-    v_medio[9]  = np.median(abs(Xv))
-    v_medio[10] = np.median(abs(Sp))
-    v_medio[11] = np.median(abs(Sg))
-    v_medio[12] = np.median(abs(Xp))
-    v_medio[13] = np.median(abs(ebp))
-    v_medio[14] = np.median(abs(Q))
-    v_medio[15] = np.median(abs(M))
-    v_medio[16] = np.median(abs(D))
-    v_medio[17] = np.median(abs(Z))
-    v_medio[18] = np.median(abs(E))
-    v_medio[19] = np.median(abs(D))
-    v_medio[20] = np.median(abs(CssE))
-    v_medio[21] = np.median(abs(CssH))
-    v_medio[22] = np.median(abs(AgE))
-    v_medio[23] = np.median(abs(AgH))
-    v_medio[24] = np.median(abs(Q))
-    v_medio[25] = np.median(abs(F.sum(axis=0)))
+    v_medio[0]  = np.mean(abs(Y))
+    v_medio[1]  = np.mean(abs(F))
+    v_medio[2]  = np.mean(abs(X))
+    v_medio[3]  = np.mean(abs(Y))
+    v_medio[4]  = np.mean(abs(pz))
+    v_medio[5]  = np.mean(abs(Td))
+    v_medio[6]  = np.mean(abs(Tz))
+    v_medio[7]  = np.mean(abs(Tm))
+    v_medio[8]  = np.mean(abs(Xg))
+    v_medio[9]  = np.mean(abs(Xv))
+    v_medio[10] = np.mean(abs(Sp))
+    v_medio[11] = np.mean(abs(Sg))
+    v_medio[12] = np.mean(abs(Xp))
+    v_medio[13] = np.mean(abs(ebp))
+    v_medio[14] = np.mean(abs(Q))
+    v_medio[15] = np.mean(abs(M))
+    v_medio[16] = np.mean(abs(D))
+    v_medio[17] = np.mean(abs(Z))
+    v_medio[18] = np.mean(abs(E))
+    v_medio[19] = np.mean(abs(D))
+    v_medio[20] = np.mean(abs(CssE))
+    v_medio[21] = np.mean(abs(CssH))
+    v_medio[22] = np.mean(abs(AgE))
+    v_medio[23] = np.mean(abs(AgH))
+    v_medio[24] = np.mean(abs(Q))
+    v_medio[25] = np.mean(abs(F.sum(axis=0)))
 
     desviacion     = np.zeros(len(etq_veri), dtype=np.ndarray)
     desviacion[0]  = Y     - prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)           # 6. 1
@@ -365,17 +374,17 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += Tz.size
     desviacion[7]  = Tm    - gob.aranceles_importacion_Tm(datos.taum, pm, M)                                # 6. 8
     nvar_end += Tm.size
-    desviacion[8]  = Xg    - gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
+    desviacion[8]  = Xg    - gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
     nvar_end += Xg.size
     if datos.PssH0.sum() == 0:
         Sc = 0.
     else:
         Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
-    desviacion[9]  = Xv    - ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, datos.Sf0)    # 6.10
+    desviacion[9]  = Xv    - ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0)    # 6.10
     nvar_end += Xv.size
     desviacion[10] = Sp    - ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
     nvar_end += Sp.size
-    desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
+    desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
     nvar_end += 1
                                                                                                             # 6.13
     if DEM_ESENCIALES:
@@ -406,9 +415,9 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += CssE.size
     desviacion[21]  = CssH - gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)    # CssH
     nvar_end += CssH.size
-    desviacion[22]  = AgE  - gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm)                           # AgE
+    desviacion[22]  = AgE  - gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0)                           # AgE
     nvar_end += AgE.size
-    desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, AYD_ADI_DEM)               # AgH
+    desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM)               # AgH
     nvar_end += AgH.size
     desviacion[24]  = Q    - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))                                     # 6.23
     desviacion[25]  = F.sum(axis=0) - (FF.sum(axis=0) + Alp.sum(axis=0))                                    # 6.24
@@ -486,8 +495,8 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     nsec = len(ind)
     ndem = len(dem)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
     pf = prin.extrae_var(vec_opt, 'pF', 0, nfac - 1)
     # el precio del otro factor se añade al principio o al final de 'pf'
@@ -506,74 +515,77 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     imprime('Cantidades')
     imprime('---------------------------------------------------------------------------------------------------------')
     imprime('Factores aportados por los hogares. FF')
-    mfun.i_tabla('/' , h                    , dem             , FF                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['suma FF']     , FF.sum(axis=0)       , False, DECIMALES)
+    mfun.i_tabla('/' , h                    , dem             , FFr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['suma FF']     , FFr.sum(axis=0)       , False, DECIMALES)
     mfun.i_pie('/'   , h)
     imprime('Ahorro a largo plazo de los hogares. Alp')
-    mfun.i_tabla(''  , []                   , dem             , Alp                  , True , DECIMALES)
-    mfun.i_tabla(''  , []                   , ['suma Alp']    , Alp.sum(axis=0)      , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , dem             , Alpr                  , True , DECIMALES)
+    mfun.i_tabla(''  , []                   , ['suma Alp']    , Alpr.sum(axis=0)      , False, DECIMALES)
     mfun.i_pie  ('/' , h)
     imprime('Factores aportados por los hogares. FF + Alp')
-    mfun.i_tabla(''  , []                   , dem             , FF + Alp             , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['suma FF+Alp'] , (FF+Alp).sum(axis=0) , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , dem             , FFr + Alpr             , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['suma FF+Alp'] , (FFr+Alpr).sum(axis=0) , False, DECIMALES)
     mfun.i_pie('/'   , h)
     imprime('Factores utilizados por los sectores. F')
-    mfun.i_tabla(''  , []                   , ind             , F                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['suma F',]     , F.sum(axis=0)        , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ind             , Fr                    , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['suma F',]     , Fr.sum(axis=0)        , False, DECIMALES)
     mfun.i_pie('/'   , h)
     imprime('Factor compuesto. Y (Valor Añadido Bruto)')
-    mfun.i_tabla('/' , ind                  , ['Y óptimo F',] , Yp                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Y nec.para Z',] , Yd                 , False, DECIMALES)
+    mfun.i_tabla('/' , ind                  , ['Y óptimo F',] , Ypr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Y nec.para Z',], Ydr                 , False, DECIMALES)
     imprime('Consumo intermedio filas: ventas, columnas: compras. X')
-    mfun.i_tabla(''  , []                   , ind             , X                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['compras X',]   , X.sum(axis=0)       , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ind             , Xr                    , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['compras X',]   , Xr.sum(axis=0)       , False, DECIMALES)
     mfun.i_pie('/'   , ind)
     imprime('Consumo de los hogares. Xp')
-    mfun.i_tabla(''  , []                   , dem             , Xp                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['suma Xp',]    , Xp.sum(axis=0)       , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , dem             , Xpr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['suma Xp',]    , Xpr.sum(axis=0)       , False, DECIMALES)
     mfun.i_pie('/'   , ind)
     imprime('Consumo del gobierno. Xg')
-    mfun.i_tabla(''  , []                   , ['Xg',]         , Xg                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Xg',]         , Xgr                   , False, DECIMALES)
     imprime('Consumo de inversión. Xv')
-    mfun.i_tabla(''  , []                   , ['Xv',]         , Xv                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Xv',]         , Xvr                   , False, DECIMALES)
     mfun.i_pie('/'   , ind)
     imprime('Consumo total')
-    mfun.i_tabla(''  , []                   , ['X+Xp+Xg+Xv']  , Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1), False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['X+Xp+Xg+Xv']  , Xpr.sum(axis=0) + Xg + Xv + X.sum(axis=1), False, DECIMALES)
     imprime('Producción total')
-    mfun.i_tabla(''  , []                   , ['Q',]          , Q                    , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Q',]          , Qr                    , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
-    mfun.i_tabla(''  , []                   , ['D 6.19',]     , Da                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['D 6.22',]     , Dt                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['M',]          , M                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['E',]          , E                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Z',]          , Z                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Z leontief',] , Zl                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['D 6.19',]     , Dar                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['D 6.22',]     , Dtr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['M',]          , Mr                    , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['E',]          , Er                    , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Z',]          , Zr                    , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Z leontief',] , Zl                    , False, DECIMALES)
     imprime('---------------------------------------------------------------------------------------------------------')
     imprime('Importes')
     imprime('---------------------------------------------------------------------------------------------------------')
     imprime('Impuestos')
-    mfun.i_tabla(''  , []                   , ['Tz',]         , Tz                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Tm',]         , Tm                   , False, DECIMALES)
-    mfun.i_tabla('/' , dem                  , ['Td',]         , Td                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['CssH',]       , CssH                 , True , DECIMALES)
-    mfun.i_tabla('/' , ind                  , ['CssE',]       , CssE                 , True , DECIMALES)
-    mfun.i_tabla(''  , []                   , ['def/sup ss',] , CssE.sum() + CssH.sum() - datos.PssH0.sum(), False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Tz',]         , Tzr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Tm',]         , Tmr                   , False, DECIMALES)
+    mfun.i_tabla('/' , dem                  , ['Td',]         , Tdr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Tg',]         , datos.Tg0             , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Ti',]         , datos.Ti0             , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Te',]         , datos.Te0             , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['CssH',]       , CssHr                 , True , DECIMALES)
+    mfun.i_tabla('/' , ind                  , ['CssE',]       , CssEr                 , True , DECIMALES)
+    mfun.i_tabla(''  , []                   , ['def/sup ss',] , CssEr.sum() + CssHr.sum() - datos.PssH0.sum(), False, DECIMALES)
     imprime('Ahorro-Inversión')
-    mfun.i_tabla('/' , dem                  , ['Sp',]         , Sp                   , True , DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Sg',]         , Sg                   , False, DECIMALES)
+    mfun.i_tabla('/' , dem                  , ['Sp',]         , Spr                   , True , DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Sg',]         , Sgr                   , False, DECIMALES)
     imprime('Pensiones')
-    mfun.i_tabla('/' , dem                  , ['PssH0',]      , datos.PssH0          , True , DECIMALES)
+    mfun.i_tabla('/' , dem                  , ['PssH0',]      , datos.PssH0           , True , DECIMALES)
     imprime('Ayudas del gobierno')
-    mfun.i_tabla('/' , dem                  , ['AgH',]        , AgH                  , False, DECIMALES)
-    mfun.i_tabla('/' , ind                  , ['AgE',]        , AgE                  , True , DECIMALES)
+    mfun.i_tabla('/' , dem                  , ['AgH',]        , AgHr                  , False, DECIMALES)
+    mfun.i_tabla('/' , ind                  , ['AgE',]        , AgEr                  , True , DECIMALES)
     imprime('Déficit por cuenta corriente. M - E')
-    Sfde = M - E
-    mfun.i_tabla(''  , []                   , ['Sf Ind',]    , Sfde                  , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Sf',]        , Sfde.sum()            , False, DECIMALES)
+    Sfde = Mr - Er
+    mfun.i_tabla(''  , []                   , ['Sf Ind',]    , Sfde                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Sf',]        , Sfde.sum()             , False, DECIMALES)
     imprime('Equilibrio de la balanza de pagos')
-    mfun.i_tabla(''  , []                   , ['equi.bal.pag',], ebp                 , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['equi.bal.pag',], ebpr                 , False, DECIMALES)
     imprime('')
-    mfun.i_tabla(''  , []                   , ['Apz',]       , Apz                   , False, 5)
+    mfun.i_tabla(''  , []                   , ['Apz',]       , Apz                    , False, 5)
     imprime('')
     if VALOR_F_TRA == 0:
         paro = 100. * (1. - F[:,INDICE_F_TRA].sum() / datos.PobAct)
@@ -583,8 +595,8 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
 
 def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist):
         (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
         ) = res_ecuaciones
         (des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
@@ -594,89 +606,166 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
                 des_Yp,des_Yd,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
         ) = param
-        mfun.tabla_2De(['equilib Q',] , des_produccion)
-        mfun.tabla_2De(['equilib F',] , des_factores)
-        mfun.tabla_2De(['des Fi',]    , des_Fi)
-        mfun.tabla_2De(['des Ei',]    , des_Ei)
-        mfun.tabla_2De(['des Mi',]    , des_Mi)
-        if GE_INCLUYE_XP:
-            mfun.tabla_2De(['des Xpi',], des_Xpi)
 
+        # todos son positivos porque se ha guardado el valor absoluto de las diferencias
+        des_produccion = des_produccion ** 2
+        des_factores = des_factores ** 2
+        des_Fi  = des_Fi ** 2
+        des_Ei  = des_Ei ** 2
+        des_Mi  = des_Mi ** 2
+        des_Di  = des_Di ** 2
+        des_Xpi = des_Xpi ** 2
         if OPT_DESVIOS == 0:
-            mfun.tabla_2De(['des Di',]    , des_Di)
+            des_Yp = des_Yp ** 2
+            des_Yd = des_Yd ** 2
+            des_Da = des_Da ** 2
+            des_Dt = des_Dt ** 2
+        des_Alp  = des_Alp ** 2
+        des_F    = des_F ** 2
+        des_FF   = des_FF ** 2
+        des_Ydp  = des_Ydp ** 2
+        des_Z    = des_Z ** 2
+        des_X    = des_X ** 2
+        des_Xp   = des_Xp ** 2
+        des_Xg   = des_Xg ** 2
+        des_Xv   = des_Xv ** 2
+        des_Q    = des_Q ** 2
+        des_M    = des_M ** 2
+        des_Dat  = des_Dat ** 2
+        des_E    = des_E ** 2
+        des_Td   = des_Td ** 2
+        des_Tz   = des_Tz ** 2
+        des_Tm   = des_Tm ** 2
+        des_Sp   = des_Sp ** 2
+        des_Sg   = des_Sg ** 2
+        des_Sf   = des_Sf ** 2
+        des_AgE  = des_AgE ** 2
+        des_AgH  = des_AgH ** 2
+        des_CssE = des_CssE ** 2
+        des_CssH = des_CssH ** 2
+        des_ebp  = des_ebp ** 2
+
+        suma = des_produccion.sum()
+        suma += des_factores.sum()
+        suma += des_Fi.sum()
+        suma += des_Ei.sum()
+        suma += des_Mi.sum()
+        suma += des_Di.sum()
+        suma += des_Xpi.sum()
+        if OPT_DESVIOS == 0:
+            suma += des_Yp.sum()
+            suma += des_Yd.sum()
+            suma += des_Da.sum()
+            suma += des_Dt.sum()
+        suma += des_Alp.sum()
+        suma += des_F.sum()
+        suma += des_FF.sum()
+        suma += des_Ydp.sum()
+        suma += des_Z.sum()
+        suma += des_X.sum()
+        suma += des_Xp.sum()
+        suma += des_Xg.sum()
+        suma += des_Xv.sum()
+        suma += des_Q.sum()
+        suma += des_M.sum()
+        suma += des_Dat.sum()
+        suma += des_E.sum()
+        suma += des_Td.sum()
+        suma += des_Tz.sum()
+        suma += des_Tm.sum()
+        suma += des_Sp.sum()
+        suma += des_Sg.sum()
+        suma += des_Sf.sum()
+        suma += des_AgE.sum()
+        suma += des_AgH.sum()
+        suma += des_CssE.sum()
+        suma += des_CssH.sum()
+        suma += des_ebp.sum()
+
+        mfun.tabla_2De(['equilib Q',] , des_produccion, 6)
+        mfun.tabla_2De(['equilib F',] , des_factores, 6)
+        mfun.tabla_2De(['des Fi',]    , des_Fi, 6)
+        mfun.tabla_2De(['des Ei',]    , des_Ei, 6)
+        mfun.tabla_2De(['des Mi',]    , des_Mi, 6)
+        mfun.tabla_2De(['des Di',]    , des_Di, 6)
+        mfun.tabla_2De(['des Xpi',]   , des_Xpi, 6)
+        if OPT_DESVIOS == 0:
             mfun.tabla_2De(['des Yp',]    , des_Yp)
             mfun.tabla_2De(['des Yd',]    , des_Yd)
             mfun.tabla_2De(['des Da',]    , des_Da)
             mfun.tabla_2De(['des Dt',]    , des_Dt)
 
-        mfun.tabla_2De(['des Alp',]   , des_Xg)
-        mfun.tabla_2De(['des F',]     , des_FF)
-        mfun.tabla_2De(['des FF',]    , des_FF)
-        mfun.tabla_2De(['des Yd-p',]  , des_Ydp)
-        mfun.tabla_2De(['des Z',]     , des_Z)
-        mfun.tabla_2De(['des X',]     , des_X)
-        mfun.tabla_2De(['des Xp',]    , des_Xp)
-        mfun.tabla_2De(['des Xg',]    , des_Xg)
-        mfun.tabla_2De(['des Xv',]    , des_Xv)
-        mfun.tabla_2De(['des Q',]     , des_Q)
-        mfun.tabla_2De(['des M',]     , des_M)
-        mfun.tabla_2De(['des Da-t',]  , des_Dat)
-        mfun.tabla_2De(['des E',]     , des_E)
-        mfun.tabla_2De(['des Td',]    , des_Td)
-        mfun.tabla_2De(['des Tz',]    , des_Tz)
-        mfun.tabla_2De(['des Tm',]    , des_Tm)
-        mfun.tabla_2De(['des Sp',]    , des_Sp)
-        mfun.tabla_2De(['des Sg',]    , des_Sg)
-        mfun.tabla_2De(['des AgE',]   , des_AgE)
-        mfun.tabla_2De(['des AgH',]   , des_AgH)
-        mfun.tabla_2De(['des CssE',]  , des_CssE)
-        mfun.tabla_2De(['des CssH',]  , des_CssH)
-        mfun.tabla_2De(['des b.pag',] , des_ebp)
+        mfun.tabla_2De(['des Alp',]   , des_Alp, 6)
+        mfun.tabla_2De(['des F',]     , des_F, 6)
+        mfun.tabla_2De(['des FF',]    , des_FF, 6)
+        mfun.tabla_2De(['des Yd-p',]  , des_Ydp, 6)
+        mfun.tabla_2De(['des Z',]     , des_Z, 6)
+        mfun.tabla_2De(['des X',]     , des_X, 6)
+        mfun.tabla_2De(['des Xp',]    , des_Xp, 6)
+        mfun.tabla_2De(['des Xg',]    , des_Xg, 6)
+        mfun.tabla_2De(['des Xv',]    , des_Xv, 6)
+        mfun.tabla_2De(['des Q',]     , des_Q, 6)
+        mfun.tabla_2De(['des M',]     , des_M, 6)
+        mfun.tabla_2De(['des Da-t',]  , des_Dat, 6)
+        mfun.tabla_2De(['des E',]     , des_E, 6)
+        mfun.tabla_2De(['des Td',]    , des_Td, 6)
+        mfun.tabla_2De(['des Tz',]    , des_Tz, 6)
+        mfun.tabla_2De(['des Tm',]    , des_Tm, 6)
+        mfun.tabla_2De(['des Sp',]    , des_Sp, 6)
+        mfun.tabla_2De(['des Sg',]    , des_Sg, 6)
+        mfun.tabla_2De(['des Sf',]    , des_Sf, 6)
+        mfun.tabla_2De(['des AgE',]   , des_AgE, 6)
+        mfun.tabla_2De(['des AgH',]   , des_AgH, 6)
+        mfun.tabla_2De(['des CssE',]  , des_CssE, 6)
+        mfun.tabla_2De(['des CssH',]  , des_CssH, 6)
+        mfun.tabla_2De(['des b.pag',] , des_ebp, 6)
         imprime('')
-        mfun.tabla_2De(['Errdesvios',], dist)
+        imprime('{:10} {:9.{prec}e} '.format       ('Errdesvios', dist, prec=5))
         imprime('')
         imprime('---------- --------- ---------')
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('desvios Q', des_produccion.sum(), 100. * des_produccion.sum() / (1 if np.mean(Q) ==0   else np.mean(Q))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('desvios F', des_factores.sum()  , 100. * des_factores.sum()   / (1 if np.mean(Fi)==0   else np.mean(Fi))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Fi'   , des_Fi.sum()        , 100. * des_Fi.sum()         / (1 if np.mean(Fi)==0   else np.mean(Fi))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Ei'   , des_Ei.sum()        , 100. * des_Ei.sum()         / (1 if np.mean(Ei)==0   else np.mean(Ei))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Mi'   , des_Mi.sum()        , 100. * des_Mi.sum()         / (1 if np.mean(Mi)==0   else np.mean(Mi))   , prec=DECIMALES))
-        if GE_INCLUYE_XP:
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xpi', des_Xpi.sum()     , 100. * des_Xpi.sum()        / (1 if np.mean(Xpi)==0  else np.mean(Xpi))  , prec=DECIMALES))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('desvios Q', des_produccion.sum(), 100. * des_produccion.sum() / (1 if np.mean(Q) ==0   else np.mean(Q))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('desvios F', des_factores.sum()  , 100. * des_factores.sum()   / (1 if np.mean(Fi)==0   else np.mean(Fi))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Fi'   , des_Fi.sum()        , 100. * des_Fi.sum()         / (1 if np.mean(Fi)==0   else np.mean(Fi))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Ei'   , des_Ei.sum()        , 100. * des_Ei.sum()         / (1 if np.mean(Ei)==0   else np.mean(Ei))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Mi'   , des_Mi.sum()        , 100. * des_Mi.sum()         / (1 if np.mean(Mi)==0   else np.mean(Mi))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Di'   , des_Di.sum()        , 100. * des_Di.sum()         / (1 if np.mean(Di)==0   else np.mean(Di))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xpi'  , des_Xpi.sum()       , 100. * des_Xpi.sum()        / (1 if np.mean(Xpi)==0  else np.mean(Xpi))  , prec=6))
 
         if OPT_DESVIOS == 0:
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Di'   , des_Di.sum()        , 100. * des_Di.sum()         / (1 if np.mean(Di)==0   else np.mean(Di))   , prec=DECIMALES))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yp'   , des_Yp.sum()        , 100. * des_Yp.sum()         / (1 if np.mean(Yp)==0   else np.mean(Yp))   , prec=DECIMALES))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yd'   , des_Yd.sum()        , 100. * des_Yd.sum()         / (1 if np.mean(Yd)==0   else np.mean(Yd))   , prec=DECIMALES))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Da '  , des_Da.sum()        , 100. * des_Da.sum()         / (1 if np.mean(Da)==0   else np.mean(Da))   , prec=DECIMALES))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Dt'   , des_Dt.sum()        , 100. * des_Dt.sum()         / (1 if np.mean(Dt)==0   else np.mean(Dt))   , prec=DECIMALES))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Di'   , des_Di.sum()        , 100. * des_Di.sum()         / (1 if np.mean(Di)==0   else np.mean(Di))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yp'   , des_Yp.sum()        , 100. * des_Yp.sum()         / (1 if np.mean(Yp)==0   else np.mean(Yp))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yd'   , des_Yd.sum()        , 100. * des_Yd.sum()         / (1 if np.mean(Yd)==0   else np.mean(Yd))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Da '  , des_Da.sum()        , 100. * des_Da.sum()         / (1 if np.mean(Da)==0   else np.mean(Da))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Dt'   , des_Dt.sum()        , 100. * des_Dt.sum()         / (1 if np.mean(Dt)==0   else np.mean(Dt))   , prec=6))
 
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Alp'  , des_Alp.sum()       , 100. * des_Alp.sum()        / (1 if np.mean(Alp)==0  else np.mean(Alp))  , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des F'    , des_F .sum()        , 100. * des_F.sum()          / (1 if np.mean(F)==0    else np.mean(F))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des FF'   , des_FF.sum()        , 100. * des_FF.sum()         / (1 if np.mean(FF)==0   else np.mean(FF))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yd-Yp', des_Ydp.sum()       , 100. * des_Ydp.sum()        / (1 if np.mean(Yd)==0   else np.mean(Yd))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Z'    , des_Z.sum()         , 100. * des_Z.sum()          / (1 if np.mean(Z) ==0   else np.mean(Z))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des X'    , des_X.sum()         , 100. * des_X.sum()          / (1 if np.mean(X) ==0   else np.mean(X))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xp'   , des_Xp.sum()        , 100. * des_Xp.sum()         / (1 if np.mean(Xp)==0   else np.mean(Xp))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xg'   , des_Xg.sum()        , 100. * des_Xg.sum()         / (1 if np.mean(Xg)==0   else np.mean(Xg))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xv'   , des_Xv.sum()        , 100. * des_Xv.sum()         / (1 if np.mean(Xv)==0   else np.mean(Xv))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Q'    , des_Q.sum()         , 100. * des_Q.sum()          / (1 if np.mean(Q) ==0   else np.mean(Q))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des M'    , des_M.sum()         , 100. * des_M.sum()          / (1 if np.mean(M) ==0   else np.mean(M))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Da-Dt', des_Dat.sum()       , 100. * des_Dat.sum()        / (1 if np.mean(Da)==0   else np.mean(Da))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des E'    , des_E.sum()         , 100. * des_E.sum()          / (1 if np.mean(E) ==0   else np.mean(E))    , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Td'   , des_Td.sum()        , 100. * des_Td.sum()         / (1 if np.mean(Td)==0   else np.mean(Td))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Tz'   , des_Tz.sum()        , 100. * des_Tz.sum()         / (1 if np.mean(Tz)==0   else np.mean(Tz))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Tm'   , des_Tm.sum()        , 100. * des_Tm.sum()         / (1 if np.mean(Tm)==0   else np.mean(Tm))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sp'   , des_Sp.sum()        , 100. * des_Sp.sum()         / (1 if np.mean(Sp)==0   else np.mean(Sp))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sg'   , des_Sg.sum()        , 100. * des_Sg.sum()         / (1 if np.mean(Sg)==0   else np.mean(Sg))   , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des AgE'  , des_AgE.sum()       , 100. * des_AgE.sum()        / (1 if np.mean(AgE)==0  else np.mean(AgE))  , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des AgH'  , des_AgH.sum()       , 100. * des_AgH.sum()        / (1 if np.mean(AgH)==0  else np.mean(AgH))  , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssE' , des_CssE.sum()      , 100. * des_CssE.sum()       / (1 if np.mean(CssE)==0 else np.mean(CssE)) , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssH' , des_CssH.sum()      , 100. * des_CssH.sum()       / (1 if np.mean(CssH)==0 else np.mean(CssH)) , prec=DECIMALES))
-        imprime('{:10} {:9.{prec}e} '.format       ('des b.pag', des_ebp.sum(), prec=DECIMALES))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Alp'  , des_Alp.sum()       , 100. * des_Alp.sum()        / (1 if np.mean(Alp)==0  else np.mean(Alp))  , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des F'    , des_F .sum()        , 100. * des_F.sum()          / (1 if np.mean(F)==0    else np.mean(F))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des FF'   , des_FF.sum()        , 100. * des_FF.sum()         / (1 if np.mean(FF)==0   else np.mean(FF))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yd-Yp', des_Ydp.sum()       , 100. * des_Ydp.sum()        / (1 if np.mean(Yd)==0   else np.mean(Yd))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Z'    , des_Z.sum()         , 100. * des_Z.sum()          / (1 if np.mean(Z) ==0   else np.mean(Z))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des X'    , des_X.sum()         , 100. * des_X.sum()          / (1 if np.mean(X) ==0   else np.mean(X))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xp'   , des_Xp.sum()        , 100. * des_Xp.sum()         / (1 if np.mean(Xp)==0   else np.mean(Xp))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xg'   , des_Xg.sum()        , 100. * des_Xg.sum()         / (1 if np.mean(Xg)==0   else np.mean(Xg))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xv'   , des_Xv.sum()        , 100. * des_Xv.sum()         / (1 if np.mean(Xv)==0   else np.mean(Xv))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Q'    , des_Q.sum()         , 100. * des_Q.sum()          / (1 if np.mean(Q) ==0   else np.mean(Q))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des M'    , des_M.sum()         , 100. * des_M.sum()          / (1 if np.mean(M) ==0   else np.mean(M))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Da-Dt', des_Dat.sum()       , 100. * des_Dat.sum()        / (1 if np.mean(Da)==0   else np.mean(Da))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des E'    , des_E.sum()         , 100. * des_E.sum()          / (1 if np.mean(E) ==0   else np.mean(E))    , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Td'   , des_Td.sum()        , 100. * des_Td.sum()         / (1 if np.mean(Td)==0   else np.mean(Td))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Tz'   , des_Tz.sum()        , 100. * des_Tz.sum()         / (1 if np.mean(Tz)==0   else np.mean(Tz))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Tm'   , des_Tm.sum()        , 100. * des_Tm.sum()         / (1 if np.mean(Tm)==0   else np.mean(Tm))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sp'   , des_Sp.sum()        , 100. * des_Sp.sum()         / (1 if np.mean(Sp)==0   else np.mean(Sp))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sg'   , des_Sg.sum()        , 100. * des_Sg.sum()         / (1 if np.mean(Sg)==0   else np.mean(Sg))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sf'   , des_Sf.sum()        , 100. * des_Sf.sum()         / (1 if np.mean(Sf)==0   else np.mean(Sf))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des AgE'  , des_AgE.sum()       , 100. * des_AgE.sum()        / (1 if np.mean(AgE)==0  else np.mean(AgE))  , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des AgH'  , des_AgH.sum()       , 100. * des_AgH.sum()        / (1 if np.mean(AgH)==0  else np.mean(AgH))  , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssE' , des_CssE.sum()      , 100. * des_CssE.sum()       / (1 if np.mean(CssE)==0 else np.mean(CssE)) , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssH' , des_CssH.sum()      , 100. * des_CssH.sum()       / (1 if np.mean(CssH)==0 else np.mean(CssH)) , prec=6))
+        imprime('{:10} {:9.{prec}e} '.format       ('des b.pag', des_ebp.sum(), prec=6))
         imprime('---------- --------- ---------')
+        imprime('{:10} {:9.{prec}e} '.format       ('Suma      ', suma, prec=6))
         imprime('')
     
 def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, dem, h, vec_opt_ini, vec_opt, npre_sol, etq_precios, ebp_ini, res_ecuaciones, rot):
@@ -684,8 +773,8 @@ def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, 
     nsec = len(ind)
     ndem = len(dem)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
     imprime('Diferencias entre los valores finales y los iniciales')
     imprime('')
@@ -769,6 +858,12 @@ def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, 
     mfun.i_tabla(''  , [] , ['Tm',]       , dTm0                   , False, DECIMALES)
     dTd0 = Td - datos.Td0
     mfun.i_tabla('/' , dem, ['Td',]       , dTd0                   , False, DECIMALES)
+    dTg0 = datos.Tg0 - datos.Tg0
+    mfun.i_tabla(''  , [] , ['Tg',]      , dTg0                    , False, DECIMALES)
+    dTi0 = datos.Ti0 - datos.Ti0
+    mfun.i_tabla(''  , [] , ['Ti',]      , dTi0                    , False, DECIMALES)
+    dTe0 = datos.Te0 - datos.Te0
+    mfun.i_tabla(''  , [] , ['Te',]      , dTe0                    , False, DECIMALES)
     dCssH0 = CssH - datos.CssH0
     mfun.i_tabla(''  , [] , ['CssH',]     , dCssH0                 , True , DECIMALES)
     dCssE0 = CssE - datos.CssE0
@@ -805,8 +900,8 @@ def diferencias_importes_finales_iniciales(datos, parametros, DECIMALES, ind, de
     nsec = len(ind)
     ndem = len(dem)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
     imprime('Diferencias entre los valores finales y los iniciales')
     imprime('')
@@ -888,12 +983,16 @@ def diferencias_importes_finales_iniciales(datos, parametros, DECIMALES, ind, de
     mfun.i_tabla(''  , [] , ['Tz',]       , dTz0                   , False, DECIMALES)
     dTm0 = Tm * pm - datos.Tm0 * datos.pWm * datos.epsilon0
     mfun.i_tabla(''  , [] , ['Tm',]       , dTm0                   , False, DECIMALES)
-
     dTd0 = Td - datos.Td0
     mfun.i_tabla('/' , dem, ['Td',]       , dTd0                   , False, DECIMALES)
+    dTg0 = datos.Tg0 - datos.Tg0
+    mfun.i_tabla(''  , [] , ['Tg',]      , dTg0                    , False, DECIMALES)
+    dTi0 = datos.Ti0 - datos.Ti0
+    mfun.i_tabla(''  , [] , ['Ti',]      , dTi0                    , False, DECIMALES)
+    dTe0 = datos.Te0 - datos.Te0
+    mfun.i_tabla(''  , [] , ['Te',]      , dTe0                    , False, DECIMALES)
     dCssH0 = CssH - datos.CssH0
     mfun.i_tabla(''  , [] , ['CssH',]     , dCssH0                 , True , DECIMALES)
-
     dCssE0 = CssE * pq - datos.CssE0 * datos.pQ0
     mfun.i_tabla('/' , ind, ['CssE',]     , dCssE0                 , True , DECIMALES)
     mfun.i_tabla(''  , [] , ['def/sup ss',], dCssE0.sum() + dCssH0.sum(), False, DECIMALES)
@@ -933,8 +1032,8 @@ def datos_grafico_solucion(datos, parametros, ind, dem, h, v):
     ndem = len(dem)
     res_ecuaciones = prin.sec_ecuaciones(v)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
     # precios
     pf      = prin.extrae_var(v,'pF', 0, nfac - 1)
@@ -1478,7 +1577,10 @@ def isocuanta_sector(i, SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h,
     imprime('{} gamma :{:10.6f} deltaD :{:10.6f} deltaM :{:10.6f} eta :{:10.6f}     M0/D0 :{:10.6f}'.format(
                 sector, gamma, deltad, deltam, eta, datos.M0[i] / datos.D0[i]))
     imprime('Isocuanta de producción Q:{:10.0f} para los valores D:{:10.0f} M:{:10.0f}'.format(vQ, Dini, Mini))
-    rel_coef  = deltad / deltam
+    if deltam == 0:
+        rel_coef  = 1.
+    else:
+        rel_coef  = deltad / deltam
     exponente = (1. - eta)
     imprime('-----------------------------------------------------------------------------------------------------------------------------------')
     puntos = []
@@ -1559,7 +1661,9 @@ def isocuanta_sector(i, SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h,
         return vQ, np.array([])
 
 def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
-                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,Y,X,F,Z,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Tm,E,Sf,tolerancia,titulo,cuadre):
+                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,Y,X,F,Z,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Ti,Te,Tm,E,Sf,tolerancia,titulo,infor_cuadre):
+
+    Sf = (M.dot(pm) - E.dot(pe))
 
     fil_col_ind = 0
     nfac = len(h)
@@ -1758,7 +1862,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     if len(idt) > 0:
         col = fil_col_idt
         fil = fil_col_gov
-        mcs[fil,col] = Tz.sum() + Td_id + Td_oi + Tg
+        mcs[fil,col] = Tz.sum() + Td_id + Td_oi + Tg + Ti + Te
     #------------------------------------------------------------------------------------------------
     # aranceles. Las siguientes 'len(trf)' columnas  (una)
     # transferencia de los aranceles, recaudados de los sectores por 'trf', al gobierno
@@ -1781,10 +1885,18 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     col = fil_col_gov
     fil = fil_col_inv
     mcs[fil,col] = Sg
-    # impuestos
+    # impuestos gobierno
     col = fil_col_gov
     fil = fil_col_idt
     mcs[fil,col] = Tg
+    # impuestos ahorro
+    col = fil_col_inv
+    fil = fil_col_idt
+    mcs[fil,col] = Ti
+    # impuestos sector exterior
+    col = fil_col_ext
+    fil = fil_col_idt
+    mcs[fil,col] = Te
     # ayudas
     col = fil_col_gov
     fil = fil_col_ayd
@@ -1803,7 +1915,8 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     # ahorro + inversión
     col = fil_col_ext
     fil = fil_col_inv
-    mcs[fil,col] = Sf * epsilon
+    #mcs[fil,col] = Sf * epsilon
+    mcs[fil,col] = Sf
     #------------------------------------------------------------------------------------------------
     # ayudas. Las siguientes 'len(ayd)' columnas  (una)
     #------------------------------------------------------------------------------------------------
@@ -1849,36 +1962,25 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
             fil += 1
 
     #------------------------------------------------------------------------------------------------
-    # Cuadre
+    # comprobar cuadre de filas y columnas
     #------------------------------------------------------------------------------------------------
-    descuadre = False
-    mensaje = ''
     recursos    = mcs.sum(axis=1) # suma de las filas
     empleos     = mcs.sum(axis=0) # suma de las columnas
     diferencias = empleos - recursos
-    if abs(diferencias.sum()) > tolerancia:
-        mensaje = ' Alp descuadra.'
-        descuadre = True
-    if cuadre:
-        #------------------------------------------------------------------------------------------------
-        # comprobar cuadre de filas y columnas
-        #------------------------------------------------------------------------------------------------
-        if np.any(abs(empleos - recursos) > tolerancia):
-            # el criterio no se cumple para algún elemento
-            descuadre = True
-            mensaje += ' la suma de filas y columnas no coincide.'
-    if descuadre:
-            imprime('')
-            imprime('ERROR. ' + titulo + '. No cuadra.' + mensaje)
-            imprime('                 empleos     recursos   diferencia')
-            imprime('------------ ------------ ------------ ------------')
-            for i in range(len(empleos)):
-                imprime('{:<12} {:12.{prec}f} {:12.{prec}f} {:12.{prec}f}'.format(rot[i], empleos[i], recursos[i], empleos[i] - recursos[i], prec=prin.DECIMALES))
-            imprime('------------ ------------ ------------ ------------')
-            imprime('')
+    if infor_cuadre and (np.any(abs(diferencias) > tolerancia)):
+        # al menos una cuenta difiere ( abs(columna - fila) ) en más que 'tolerancia'
+        imprime('')
+        imprime('ERROR. ' + titulo + '. No cuadra. La suma de fila y columna de al menos una cuenta no coincide.')
+        imprime('                 empleos     recursos   diferencia')
+        imprime('------------ ------------ ------------ ------------')
+        for i in range(len(empleos)):
+            imprime('{:<12} {:12.{prec}f} {:12.{prec}f} {:12.{prec}f}'.format(rot[i], empleos[i], recursos[i], empleos[i] - recursos[i], prec=prin.DECIMALES))
+        imprime('------------ ------------ ------------ ------------')
+        imprime('{:<12}                           {:12.{prec}f}'.format('suma', diferencias.sum(), prec=prin.DECIMALES))
+        imprime('')
     return (rot, mcs)
 
-def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo, cuadre):
+def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo, infor_cuadre):
     if DECIMALES == 0:
         ESPA = 8
         subraya = '--------'
@@ -1888,21 +1990,45 @@ def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo, cuadre):
     imprime(titulo)
     imprime('')
     n = len(rot)
+    # 'recursos' y 'empleos' sumaran valores redondeados a DECIMALES
     empleos  = np.zeros(n, dtype=np.float64)
     recursos = np.zeros(n, dtype=np.float64)
     imprime('{:12}'.format(''), False)
     for i in range(n):
         imprime(' {:>{espa}}'.format(rot[i], espa=ESPA), False)
-    imprime('{:>{espa}}'.format('Recursos', espa=ESPA))
+    imprime(' {:>{espa}}'.format('Recursos', espa=ESPA))
     imprime('{:12}'.format('------------'), False)
     for i in range(n):
+        if i == prin.nsec:
+            imprime('  ', False)
         imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
     imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
+    # para cada fila
     for i in range(n):
-        # para cada fila
+        if i == prin.nsec:
+            imprime('{:12}'.format('------------'), False)
+            for k in range(n):
+                if k == prin.nsec:
+                    imprime('  ', False)
+                imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
+            imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
+            imprime('{:12}'.format(''), False)
+            for k in range(n):
+                if k == prin.nsec:
+                    imprime('  ', False)
+                imprime(' {:>{espa}}'.format(rot[k], espa=ESPA), False)
+            imprime(' {:>{espa}}'.format('Recursos', espa=ESPA))
+            imprime('{:12}'.format('------------'), False)
+            for k in range(n):
+                if k == prin.nsec:
+                    imprime('  ', False)
+                imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
+            imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
         imprime('{:12}'.format(rot[i]), False)
+        # para cada columna de la fila
         for j in range(n):
-            # para cada columna de la fila
+            if j == prin.nsec:
+                imprime('  ', False)
             v = np.round(mcs[i,j], DECIMALES) 
             imprime(' {:{espa}.{prec}f}'.format(v, espa=ESPA, prec=DECIMALES), False)
             recursos[i] += v    # suma de la fila 'i'
@@ -1910,19 +2036,23 @@ def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo, cuadre):
         imprime(' {:{espa}.{prec}f}'.format(recursos[i], espa=ESPA, prec=DECIMALES))
     imprime('{:>{espa}}'.format('------------', espa=ESPA), False)
     for i in range(n):
+        if i == prin.nsec:
+            imprime('  ', False)
         imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
     imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
     imprime('{:12}'.format('Empleos'), False)
     for i in range(n):
+        if i == prin.nsec:
+            imprime('  ', False)
         imprime(' {:{espa}.{prec}f}'.format(empleos[i], espa=ESPA, prec=DECIMALES), False)
     imprime('')
     imprime('')
-    if cuadre:
-        if np.all(abs(empleos - recursos) < tolerancia) == False:
-            # el criterio no se cumple para algún elemento
+    if infor_cuadre:
+        if np.any(abs(empleos - recursos) > tolerancia):
+            # al menos una cuenta difiere ( abs(columna - fila) redondeadas) en más que 'tolerancia'
             if np.all(abs(mcs.sum(axis=0) - mcs.sum(axis=1)) < tolerancia) == True:
-                # el criterio se cumple para todos los elementos
+                # las sumas de fila y columna, sin redondear, de todas las cuentas coinciden 
                 imprime('Las diferencias entre empleos y recursos se deben exclusivamente a los redondeos de impresión')
             else:
-                imprime('ERROR. ' + titulo + '. No cuadra. Impresión')
+                imprime('ERROR en la impresión. ' + titulo + '. No cuadra.')
             imprime('')

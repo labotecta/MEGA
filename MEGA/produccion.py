@@ -17,7 +17,7 @@ def produccion_factor_compuesto_Y(F, beta, b):
     for i in range(nsec):
         Y[i] = b[i]
         for j in range(nfac):
-            Y[i] *= np.sign(F[i,j]) * (np.abs(F[i,j])) ** beta[i,j]
+            Y[i] *= np.copysign(1, F[i,j]) * (np.abs(F[i,j])) ** beta[i,j]
     return Y
 
 def consumo_intermedio_X(Z, ax):

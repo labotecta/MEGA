@@ -18,9 +18,9 @@ def utilidad_CobbDouglas(Xp, alfa, b=1.):
 
     if len(Xp.shape) == 1:
         # para el caso de un solo consumidor en forma de vector y no de matriz, nunca debería pasar por aquí
-        u_cd = (np.sign(Xp) * (np.abs(Xp)) ** alfa).prod()
+        u_cd = (np.copysign(1, Xp) * (np.abs(Xp)) ** alfa).prod()
     else:
-        u_cd = (np.sign(Xp) * (np.abs(Xp)) ** alfa).prod(axis=1)
+        u_cd = (np.copysign(1, Xp) * (np.abs(Xp)) ** alfa).prod(axis=1)
     
     # 'u_cd' vector (vertical) de la utilidad de los vectores (filas) de demanda Xp[i]
     return b * u_cd    
@@ -152,9 +152,9 @@ def demanda_maxima_utilidad_CES_Xp(eta, alfa, pq, pf, FF, Sp, Td, CssH, AgH, Pss
     S = np.zeros(ndem, dtype=np.float64)
     for consu in range(ndem):
         for sector in range(nsec):
-            S[consu] +=  (alfa[consu,sector] ** sigma[sector]) * (pq[sector] ** uno_sigma[sector])
+            S[consu] +=  (alfa[consu, sector] ** sigma[consu]) * (pq[sector] ** uno_sigma[consu])
         for sector in range(nsec):
-            Xp[consu,sector] = ingreso_neto[consu] * ((alfa[consu,sector] / pq[sector]) ** sigma[sector]) / S[consu]
+            Xp[consu,sector] = ingreso_neto[consu] * ((alfa[consu, sector] / pq[sector]) ** sigma[consu]) / S[consu]
             if inc_dem_tipo == 0:
                 # se añade 'inc_dem' al importe demandado 
                 Xp[consu,sector] += inc_dem[consu, sector] / pq[sector]

@@ -10,19 +10,34 @@ tienen el mismo peso, sea cual sea el importe absoluto de la variable. Casi segu
 
 scipy.differential_evolution si normaliza las variables para que todos los intervalos de existencia sean el mismo.
 
-Los pagos de impuestos directos del gobierno no se usan para nada.
+Los pagos de impuestos directos del gobierno no se usan para nada (Tg0).
+Los pagos de impuestos directos del ahorro+inversión no se usan para nada (Ti0).
+Los pagos de impuestos directos del sector exterior no se usan para nada (Te0).
 
 Utilizar para la demanda la función de utilidad Cobb-Douglas o la CES con cualquier valor de sigma, da prácticamente los
 mismos resultados, lo cual es lógico porque los parámetros se determinan en todos los casos para que se
-reproduzcan los valores Xp0 de la MCS y las variaciones que experimentan los Xp en la solución son suficientemente
+reproduzcan los valores Xp0 de la MCS y las variaciones que experimentan los Xp en otros esenarios son suficientemente
 pequeñas para que todas las funciones de utilidad repartan los ingresos netos en prácticamente las mismas cantidades.
 
 Resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
 
 El tratamiento del precio de los factores es enrevesado y fuente de multitud de errores, se diseño pensando
-que siempre se fijaría el precio del factor trabajo y por lo tanto no debía formar parte de las soluciones a
+que siempre se fijaría el precio del factor trabajo y que por lo tanto no debía formar parte de las soluciones a
 probar, pero los parches al considerar que se podría fijar el del capital o usar la curva Phillips hacen
 incomprensible la gestión de estos precios en las soluciones de prueba.
+'''
+'''
+Mejoras:
+    1. Relacionar los pagos de impestos por: el gobierno, el ahorro+inversión y el sector exterior con sus
+    correspondientes catidades
+
+    2. Establecer una relación entre el reparto de las inversiones por sectores y el uso que hace cada uno de ellos del
+    factor capital.
+
+    3. Desglosar la cuenta del IVA
+
+    4. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
+
 '''
 import os
 import sys
@@ -50,20 +65,18 @@ import demanda       as deho
 import exterior      as exte
 import restricciones as restri
 
-import dll           as dll
-
 # los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
 global datos
 global parametros
 
-VERSION = '1.3.0'
+VERSION = '1.5.0'
 
-# 5 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
+# 7 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
-#               0           1           2             3           4
-etq_sam  = ['1_hogar','2_hogares','2_hogares','3_hogares_AMP','MCA-ESP-05']
+#               0           1              2              3               4              5            6
+etq_sam  = ('1_hogar', '2_hogares', '2_hogares_SS', '3_hogares_AMP', 'MCA-ESP-05', 'españa 2022', 'MCA-ESP-08')
 # escenarios para las pruebas, se selecciona con NCASO
-etq_caso = [
+etq_caso = (
     'base',                     #  0
     'alfa',                     #  1
     'beta',                     #  2
@@ -80,8 +93,26 @@ etq_caso = [
     'aranceles',                # 12
     'Xp0',                      # 13 consumos esenciales = Xp0
     'Xp0m1',                    # 14 consumos esenciales = Xp0 - 1
-]
+)
 
+etq_mpob =(
+    "intervalo simétrico centrado en 'vec_ini' con distribución uniforme",
+    "centrado en el centro de intervalo de validez de la variable con distribución uniforme",
+    "intervalo simétrico centrado en 'vec_ini' con distribución normal",
+    "centrado en el centro de intervalo de validez de la variable con distribución normal",
+    "Latin Hypercube Sampling con permutaciones distintas para cada variable",
+    "Latin Hypercube Sampling con la misma permutación para todas las variables",
+    "secuencia de valores uniformemente espaciados entre cotas y permutaciones distintas para cada variable",
+	"secuencia de valores uniformemente espaciados entre cotas y la misma permutación para todas las variables",
+    "valores próximos al extremo inferior del entorno de existencia de las variables, con permutaciones distintas para cada variable",
+    "valores próximos al extremo inferior del entorno de existencia de las variables, con la misma permutación para todas las variables",
+    "valores próximos al extremo superior del entorno de existencia de las variables",
+    'valores próximos a los extremos de los entornos de existencia de las variables',
+    'valores próximos, o iguales, al extremo inferior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
+    'valores próximos, o iguales, al extremo inferior del entorno de existencia de las variables',
+    'valores próximos, o iguales, al extremo superior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
+    'valores próximos, o iguales, al extremo inferior, con permutaciones distintas para cada variable y desplazamiento independiente',
+)
 # extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto,
 # ajustando las dimensiones de las matrices 'reshape' cuando corresponde
 try:
@@ -94,17 +125,34 @@ except BaseException as e:
 errores_diferidos = []
 avisos_diferidos  = []
 
+HISTO_MAX = 201
 nfac = args.NFAC    # número de factores 
 ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
+
+#----------------------------------------------------------------------------
+# retrasamos hasta aquí la imortación del módulo 'dll'
+# para que al importarlo ya estén definidas 'nfac, ndem y nsec'
+#----------------------------------------------------------------------------
+import dll           as dll
+
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
+FI_SOL_LEE          = args.FI_SOL_LEE
+FI_SOL_SALVA        = args.FI_SOL_SALVA
+
 USAR_DLL            = args.USAR_DLL
 SENDA_DLL           = args.SENDA_DLL
-
 USAR_ALGE_DLL       = args.USAR_ALGE_DLL
+if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 4 and NSAM != 5 and NSAM != 6:
+    if __name__ == 'MEGA':
+        errores_diferidos.append('La DLL solo se puede usar con las MCS 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
+    else:
+        errores_diferidos.append('')
+ALGE_ID_SALIDA      = args.ALGE_ID_SALIDA
 ALGE_MAX_INTENTOS   = args.ALGE_MAX_INTENTOS
 ALGE_N_HILOS        = args.ALGE_N_HILOS
+GE_MIN_PROGRESO     = args.GE_MIN_PROGRESO
 ALGE_TOL_ACEPTABLE  = args.ALGE_TOL_ACEPTABLE
 ALGE_MODO_POB_INI   = args.ALGE_MODO_POB_INI
 ALGE_F_INICIO_POB   = args.ALGE_F_INICIO_POB
@@ -115,61 +163,96 @@ ALGE_F_MUTACION     = args.ALGE_F_MUTACION
 ALGE_RECOMBINACION  = args.ALGE_RECOMBINACION
 ALGE_CTRL_FACTIBLE  = args.ALGE_CTRL_FACTIBLE
 ALGE_RES_EXTENSA    = args.ALGE_RES_EXTENSA
+EL_MEJOR_PRIMERO    = args.EL_MEJOR_PRIMERO
+ALGE_INCLUIR_X0     = args.ALGE_INCLUIR_X0
 
-if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 4:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('La DLL solo se puede usara con la MCS 4 y se ha especificado la {}'.format(NSAM))
-    else:
-        errores_diferidos.append('')
 NCASO               = np.array(args.NCASO, dtype=int)
+EQ_BAL_PAGOS        = args.EQ_BAL_PAGOS
+if len(args.PRECIO_IMPORTACION) > 0:
+    n_precios_importacion = len(args.PRECIO_IMPORTACION) // 2
+    if n_precios_importacion * 2 != len(args.PRECIO_IMPORTACION):
+        if __name__ == 'MEGA':
+            errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_AD_HO_PRO), 3 * args.DEM_AD_LON))
+        else:
+            errores_diferidos.append('')
+    else:
+        precios_importacion = []
+        for i in range(0, n_precios_importacion, 2):
+            precios_importacion.append([int(args.PRECIO_IMPORTACION[i]), np.float64(args.PRECIO_IMPORTACION[i + 1])])
+else:
+    n_precios_importacion =  0
 DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
-if len(args.DEM_ADICIONAL) != ndem * nsec:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_ADICIONAL), ndem * nsec))
+DEM_ADICIONAL       = np.zeros((ndem, nsec), dtype=np.float64)
+if args.DEM_AD_LON > 0:
+    if len(args.DEM_AD_HO_PRO) != 3 * args.DEM_AD_LON:
+        if __name__ == 'MEGA':
+            errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_AD_HO_PRO), 3 * args.DEM_AD_LON))
+        else:
+            errores_diferidos.append('')
     else:
-        errores_diferidos.append('')
-else:
-    DEM_ADICIONAL       = np.array(args.DEM_ADICIONAL, dtype=np.float64).reshape(ndem, nsec)
-if len(args.AYD_ADICIONAL) != ndem * nsec:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_ADICIONAL), ndem * nsec))
+        n = args.DEM_AD_LON
+        i = 0
+        for _ in range(n):
+            j = int(args.DEM_AD_HO_PRO[i])
+            k = int(args.DEM_AD_HO_PRO[i+1])
+            DEM_ADICIONAL[j][k] = args.DEM_AD_HO_PRO[i+2]
+            i += 3
+AYD_ADICIONAL = np.zeros((ndem, nsec), dtype=np.float64)
+if args.AYD_AD_LON > 0:
+    if len(args.AYD_AD_HO_PRO) != 3 * args.AYD_AD_LON:
+        if __name__ == 'MEGA':
+            errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_AD_HO_PRO), 3 * args.AYD_AD_LON))
+        else:
+            errores_diferidos.append('')
     else:
-        errores_diferidos.append('')
-else:
-    AYD_ADICIONAL   = np.array(args.AYD_ADICIONAL  , dtype=np.float64).reshape(ndem, nsec)
+        n = args.AYD_AD_LON
+        i = 0
+        for _ in range(0,n,3):
+            j = int(args.AYD_AD_HO_PRO[i])
+            k = int(args.AYD_AD_HO_PRO[i+1])
+            AYD_ADICIONAL[j][k] = args.AYD_AD_HO_PRO[i+2]
+            i += 3
 RENTA_FICTICIA      = args.RENTA_FICTICIA
 if (9 in NCASO) and RENTA_FICTICIA:
     if __name__ == 'MEGA':
         avisos_diferidos.append('Se ha seleccionado el caso {} sin renta ficticia'.format(etq_caso[9]))
 GE_INCLUYE_XP       = args.GE_INCLUYE_XP
 DEM_ESENCIALES      = args.DEM_ESENCIALES
-if len(args.CON_ESENCIALES) != ndem * nsec:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_ESENCIALES), ndem * nsec))
-    else:
-        errores_diferidos.append('')
-else:
-    CON_ESENCIALES      = np.array(args.CON_ESENCIALES , dtype=np.float64).reshape(ndem, nsec)
-    if abs(CON_ESENCIALES).sum() == 0 and DEM_ESENCIALES == True:
+CON_ESENCIALES = np.zeros((ndem, nsec), dtype=np.float64)
+if args.CON_AD_LON > 0:
+    if len(args.CON_AD_HO_PRO) != 3 * args.CON_AD_LON:
         if __name__ == 'MEGA':
-            avisos_diferidos.append('No se han especificado consumos esenciales pero DEM_ESENCIALES es True')
-    if abs(CON_ESENCIALES.sum()) == 0:
-        if (13 in NCASO) == False and (14 in NCASO) == False:
-            # los casos 13 y 14 fijan los consumos esenciales
-            if DEM_ESENCIALES == True:
-                if __name__ == 'MEGA':
-                    avisos_diferidos.append('Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
-                    DEM_ESENCIALES = False
-            if GE_INCLUYE_XP == True:
-                if __name__ == 'MEGA':
-                    avisos_diferidos.append('Se ha especificado GE_INCLUYE_XP = True, sin consumos esenciales')
+            errores_diferidos.append('El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_AD_HO_PRO), 3 * args.CON_AD_LON))
+        else:
+            errores_diferidos.append('')
     else:
-        if GE_INCLUYE_XP == False and DEM_ESENCIALES == False:
+        n = args.CON_AD_LON
+        i = 0
+        for _ in range(n):
+            j = int(args.CON_AD_HO_PRO[i])
+            k = int(args.CON_AD_HO_PRO[i+1])
+            CON_ESENCIALES[j][k] = args.CON_AD_HO_PRO[i+2]
+            i += 3
+if abs(CON_ESENCIALES).sum() == 0 and DEM_ESENCIALES == True:
+    if __name__ == 'MEGA':
+        avisos_diferidos.append('No se han especificado consumos esenciales pero DEM_ESENCIALES es True')
+if abs(CON_ESENCIALES.sum()) == 0:
+    if (13 in NCASO) == False and (14 in NCASO) == False:
+        # los casos 13 y 14 fijan los consumos esenciales
+        if DEM_ESENCIALES == True:
             if __name__ == 'MEGA':
-                avisos_diferidos.append('Se han especificado consumos esenciales pero GE_INCLUYE_XP y DEM_ESENCIALES son False')
-        if GE_INCLUYE_XP == False and DEM_ESENCIALES == True:
+                avisos_diferidos.append('Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
+                DEM_ESENCIALES = False
+        if GE_INCLUYE_XP == True:
             if __name__ == 'MEGA':
-                avisos_diferidos.append('Se han especificado consumos esenciales y GE_INCLUYE_XP es False pero DEM_ESENCIALES es True. Stone-Geary puede fallar')
+                avisos_diferidos.append('Se ha especificado GE_INCLUYE_XP = True, sin consumos esenciales')
+else:
+    if GE_INCLUYE_XP == False and DEM_ESENCIALES == False:
+        if __name__ == 'MEGA':
+            avisos_diferidos.append('Se han especificado consumos esenciales pero GE_INCLUYE_XP y DEM_ESENCIALES son False')
+    if GE_INCLUYE_XP == False and DEM_ESENCIALES == True:
+        if __name__ == 'MEGA':
+            avisos_diferidos.append('Se han especificado consumos esenciales y GE_INCLUYE_XP es False pero DEM_ESENCIALES es True. Stone-Geary puede fallar')
 if len(args.SIGMA_CES_DEMANDA) != ndem:
     if __name__ == 'MEGA':
         errores_diferidos.append('El número de datos para SIGMA_CES_DEMANDA {} no es el correcto {}'.format(len(args.SIGMA_CES_DEMANDA), ndem))
@@ -177,20 +260,44 @@ if len(args.SIGMA_CES_DEMANDA) != ndem:
         errores_diferidos.append('')
 else:
     SIGMA_CES_DEMANDA = np.array(args.SIGMA_CES_DEMANDA, dtype=np.float64).reshape(ndem)
-if len(args.SIGMA_ESCENARIO) != nsec:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para SIGMA_ESCENARIO {} no es el correcto {}'.format(len(args.SIGMA_ESCENARIO), nsec))
-    else:
-        errores_diferidos.append('')
+if len(args.SIGMA_ESCENARIO) == 0:
+    SIGMA_ESCENARIO = np.empty(nsec, dtype=np.float64)
+    SIGMA_ESCENARIO.fill(2.)
+    if args.SIGMA_ESCE_LON > 0:
+        if len(args.SIGMA_ESCE) != 2 * args.SIGMA_ESCE_LON:
+            if __name__ == 'MEGA':
+                errores_diferidos.append('El número de datos para SIGMA_ESCENARIO {} no es el correcto {}'.format(len(args.SIGMA_ESCE), 2 * args.SIGMA_ESCE_LON))
+            else:
+                errores_diferidos.append('')
+        else:
+            n = args.SIGMA_ESCE_LON
+            i = 0
+            for _ in range(n):
+                j = int(args.SIGMA_ESCE[i])
+                SIGMA_ESCENARIO[j] = args.SIGMA_ESCE[i+1]
+                i += 2
 else:
-    SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
-if len(args.ARANCELES) != nsec:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para ARANCELES {} no es el correcto {}'.format(len(args.ARANCELES), nsec))
+    if len(args.SIGMA_ESCENARIO) != nsec:
+        if __name__ == 'MEGA':
+            errores_diferidos.append('El número de datos para SIGMA_ESCENARIO {} no es el correcto {}'.format(len(args.SIGMA_ESCENARIO), nsec))
+        else:
+            errores_diferidos.append('')
     else:
-        errores_diferidos.append('')
-else:
-    ARANCELES           = np.array(args.ARANCELES, dtype=np.float64)
+        SIGMA_ESCENARIO     = np.array(args.SIGMA_ESCENARIO, dtype=np.float64)
+ARANCELES = np.zeros(nsec, dtype=np.float64)
+if args.ARANCELES_LON > 0:
+    if len(args.ARANCELES_PRO) != 2 * args.ARANCELES_LON:
+        if __name__ == 'MEGA':
+            errores_diferidos.append('El número de datos para ARANCELES {} no es el correcto {}'.format(len(args.ARANCELES_PRO), 2 * args.ARANCELES_LON))
+        else:
+            errores_diferidos.append('')
+    else:
+        n = args.ARANCELES_LON
+        i = 0
+        for _ in range(n):
+            j = int(args.ARANCELES_PRO[i])
+            ARANCELES[j] = args.ARANCELES_PRO[i+1]
+            i += 2
 PREFIJO             = args.PREFIJO if args.PREFIJO != '"' else ''
 OR_PRE_EXCLUIDO     = args.OR_PRE_EXCLUIDO
 PRECIO_F_EXCLUIDO   = np.float64(args.PRECIO_F_EXCLUIDO)
@@ -200,64 +307,93 @@ ALFA_PHILLIPS       = np.float64(args.ALFA_PHILLIPS)
 FF_ENDOGENA         = args.FF_ENDOGENA
 ALP_FACTOR          = args.ALP_FACTOR
 OPT_DESVIOS         = args.OPT_DESVIOS
-PRIMERA_VALORACION  = args.PRIMERA_VALORACION
 UTILIDAD_DEMANDA    = args.UTILIDAD_DEMANDA
 MODO_PSEUDOIMPTOS   = args.MODO_PSEUDOIMPTOS
 SAL_CALIBRADO       = args.SAL_CALIBRADO
+PRIMERA_VALORACION  = args.PRIMERA_VALORACION
 SALIDA_VEC_OPT      = args.SALIDA_VEC_OPT
+SALIDA_VAL_INI      = args.SALIDA_VAL_INI
 SALIDA_DESVIOS      = args.SALIDA_DESVIOS
-SAL_GRAFICOS_EVOL   = args.SAL_GRAFICOS_EVOL
-SAL_GRAFICO_CES_DM  = args.SAL_GRAFICO_CES_DM
-SAL_ISOCUANTA       = args.SAL_ISOCUANTA
 SAL_VARIACIONES     = args.SAL_VARIACIONES
 SAL_MCS             = args.SAL_MCS
 SAL_VAR_MCS         = args.SAL_VAR_MCS
-GE_RESTRICCIONES    = args.GE_RESTRICCIONES
-GE_TIPO_RE          = args.GE_TIPO_RE
-GE_TOLERANCIA       = np.float64(args.GE_TOLERANCIA)
-GE_VERIFICAR        = np.float64(args.GE_VERIFICAR)
-GE_PROGRESO         = args.GE_PROGRESO
-SAL_AUXILIARES      = args.SAL_AUXILIARES
-if SAL_AUXILIARES:
-    GE_HISTORIAL    = args.GE_HISTORIAL
-    GE_SOLUCIONES   = args.GE_SOLUCIONES
+if USAR_ALGE_DLL:
+    # la DLL no aporta estos detalles
+    SAL_AUXILIARES    = False
+    SAL_GRAFICOS_EVOL = False
 else:
-    # no tiene sentido guardarlas para luego no salvarlas
-    GE_HISTORIAL    = 0
-    GE_SOLUCIONES   = 0
+    SAL_AUXILIARES      = args.SAL_AUXILIARES
+    SAL_GRAFICOS_EVOL   = args.SAL_GRAFICOS_EVOL
+SAL_GRAFICO_CES_DM  = args.SAL_GRAFICO_CES_DM
+SAL_ISOCUANTA       = args.SAL_ISOCUANTA
+GE_HISTORIAL        = args.GE_HISTORIAL
+GE_SOLUCIONES       = args.GE_SOLUCIONES
 GE_PRE_MIN          = np.float64(args.GE_PRE_MIN)
 GE_PRE_MAX          = np.float64(args.GE_PRE_MAX)
 GE_VAR_MIN          = np.float64(args.GE_VAR_MIN)
 GE_VAR_MAX          = np.float64(args.GE_VAR_MAX)
 GE_VAR_CERO         = np.float64(args.GE_VAR_CERO)
-if len(args.GE_FIX) == 0 or args.GE_FIX[0] == '':
-    GE_FIX = []
-    GE_FIX_LIMITES = np.zeros(0, dtype=list)
+GE_VAR_CAN_MIN      = np.float64(args.GE_VAR_CAN_MIN)
+if len(args.FIX) == 0 or args.FIX[0] == '':
+    FIX = []
+    FIX_LIMITES = np.zeros(0, dtype=list)
 else:
-    GE_FIX = args.GE_FIX
-    k = len(args.GE_FIX)
-    n = len(args.GE_FIX_LON)
+    FIX     = args.FIX
+    FIX_LON = args.FIX_LON
+    k = len(args.FIX)
+    n = len(args.FIX_LON)
     if k != n:
         if __name__ == 'MEGA':
-            errores_diferidos.append('No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
+            errores_diferidos.append('FIX. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
         else:
             errores_diferidos.append('')
-    if len(args.GE_FIX_LIMITES) != sum(args.GE_FIX_LON) * 2:
+    if len(args.FIX_LIMITES) != sum(args.FIX_LON) * 3:
         if __name__ == 'MEGA':
-            errores_diferidos.append('No coincide el número de parejas de limites {} con el de tamaño de GE_FIX_LIMITES {}'.format(sum(args.GE_FIX_LON) * 2, args.GE_FIX_LIMITES))
+            errores_diferidos.append('FIX. No coincide el número de ternas de limites {} con el de tamaño de FIX_LIMITES {}'.format(sum(args.FIX_LON) * 2, args.FIX_LIMITES))
         else:
             errores_diferidos.append('')
-    GE_FIX_LIMITES = np.zeros(k, dtype=list)
+
+    # cada elemento de la matriz 'FIX_LIMITES' es una lista de tres valores
+    FIX_LIMITES = np.zeros(k, dtype=list)
     ni = 0
     for i in range(k):
         # para cada variable 'i'
         sec = []
-        for j in range(args.GE_FIX_LON[i]):
-            # para cada par (lim inferior, lim superior) de la variable
-            sec.append(args.GE_FIX_LIMITES[ni:(ni + 2)])
-            ni += 2
-        GE_FIX_LIMITES[i] = sec
+        for j in range(FIX_LON[i]):
+            # 3 valores para cada terna (índice, lim inferior, lim superior) de la variable
+            terna = args.FIX_LIMITES[ni:(ni + 3)]
+            try:
+                terna[0] = int(terna[0])
+            except BaseException as e:
+                if __name__ == 'MEGA':
+                    errores_diferidos.append('FIX {}. El primer elemento de la terna {} debe ser un número'.format(FIX[i], terna[0]))
+                else:
+                    errores_diferidos.append('')
+            try:
+                terna[1] = float(terna[1])
+            except BaseException as e:
+                if terna[1] != '*':
+                    if __name__ == 'MEGA':
+                        errores_diferidos.append('FIX {}. El segundo elemento de la terna {} debe ser un número o un *'.format(FIX[i], terna[1]))
+                    else:
+                        errores_diferidos.append('')
+            try:
+                terna[2] = float(terna[2])
+            except BaseException as e:
+                if terna[2] != '*':
+                    if __name__ == 'MEGA':
+                        errores_diferidos.append('FIX {}. El tercer elemento de la terna {} debe ser un número o un *'.format(FIX[i], terna[1]))
+                    else:
+                        errores_diferidos.append('')
+            sec.append(terna)
+            ni += 3
+        FIX_LIMITES[i] = sec
 GE_MAX_ITER         = args.GE_MAX_ITER
+GE_RESTRICCIONES    = args.GE_RESTRICCIONES
+GE_TIPO_RE          = args.GE_TIPO_RE
+GE_TOLERANCIA       = np.float64(args.GE_TOLERANCIA)
+GE_VERIFICAR        = np.float64(args.GE_VERIFICAR)
+GE_PROGRESO         = args.GE_PROGRESO
 GE_ACTUALIZACION    = args.GE_ACTUALIZACION
 GE_RECONBINACION    = args.GE_RECONBINACION
 GE_DIM_POBLACION    = args.GE_DIM_POBLACION
@@ -269,6 +405,7 @@ GE_ESTRATEGIA       = args.GE_ESTRATEGIA
 METRICA_ERROR       = args.METRICA_ERROR
 POT_DESVIOS         = args.POT_DESVIOS
 PRECIO_INI          = np.float64(args.PRECIO_INI)
+
 if len(args.FACTOR_CSSH) != ndem:
     if __name__ == 'MEGA':
         errores_diferidos.append('El número de datos para FACTOR_CSSH {} no es el correcto {}'.format(len(args.FACTOR_CSSH), ndem))
@@ -276,14 +413,29 @@ if len(args.FACTOR_CSSH) != ndem:
         errores_diferidos.append('')
 else:
     FACTOR_CSSH         = np.array(args.FACTOR_CSSH, dtype=np.float64)
-
-if len(args.FACTOR_CSSE) != nsec:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para FACTOR_CSSE {} no es el correcto {}'.format(len(args.FACTOR_CSSE), nsec))
-    else:
-        errores_diferidos.append('')
+if len(args.FACTOR_CSSE) == 0:
+    FACTOR_CSSE = np.ones(nsec, dtype=np.float64)
+    if args.F_CSSE_LON > 0:
+        if len(args.F_CSSE) != 2 * args.F_CSSE_LON:
+            if __name__ == 'MEGA':
+                errores_diferidos.append('El número de datos para FACTOR_CSSE {} no es el correcto {}'.format(len(args.F_CSSE), 2 * args.F_CSSE_LON))
+            else:
+                errores_diferidos.append('')
+        else:
+            n = args.F_CSSE_LON
+            i = 0
+            for _ in range(n):
+                j = int(args.F_CSSE[i])
+                FACTOR_CSSE[j] = args.F_CSSE[i+1]
+                i += 2
 else:
-    FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
+    if len(args.FACTOR_CSSE) != nsec:
+        if __name__ == 'MEGA':
+            errores_diferidos.append('El número de datos para FACTOR_CSSE {} no es el correcto {}'.format(len(args.FACTOR_CSSE), nsec))
+        else:
+            errores_diferidos.append('')
+    else:
+        FACTOR_CSSE         = np.array(args.FACTOR_CSSE, dtype=np.float64)
 if len(args.VAR_FACTORES) != ndem * nfac:
     if __name__ == 'MEGA':
         errores_diferidos.append('El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
@@ -291,9 +443,11 @@ if len(args.VAR_FACTORES) != ndem * nfac:
         errores_diferidos.append('')
 else:
     VAR_FACTORES  = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
+
 SENDA_DATOS       = args.SENDA_DATOS
 SENDA_SALIDAS     = args.SENDA_SALIDAS
 SENDA_GRAFICOS    = args.SENDA_GRAFICOS
+SENDA_SOLUCIONES  = args.SENDA_SOLUCIONES
 if (13 in NCASO) and DEM_ESENCIALES:
     if __name__ == 'MEGA':
         errores_diferidos.append('Consumos esenciales iguales a Xp0 es incompatible con Stone-Geary (rentas 0)')
@@ -304,12 +458,6 @@ if USAR_ALGE_DLL and GE_WORKERS != 1:
         errores_diferidos.append('Para usar el algoritmo genético desde la DLL en número de Workers ({}) debe ser 1'.format(GE_WORKERS))
     else:
         errores_diferidos.append('')
-if USAR_ALGE_DLL:
-    # la DLL no aporta estos detalles
-    GE_HISTORIAL      = False
-    GE_SOLUCIONES     = False
-    SAL_GRAFICOS_EVOL = False
-    SAL_AUXILIARES    = False
 
 if len(errores_diferidos) == 0:
     # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
@@ -324,8 +472,9 @@ if GE_WORKERS != 1:
     if n_cores <= GE_WORKERS:
         aviso_workers = True
 
-os.makedirs(SENDA_SALIDAS , exist_ok=True)  # crear el directorio si no existe
-os.makedirs(SENDA_GRAFICOS, exist_ok=True)  # crear el directorio si no existe
+os.makedirs(SENDA_SALIDAS   , exist_ok=True)  # crear el directorio si no existe
+os.makedirs(SENDA_GRAFICOS  , exist_ok=True)  # crear el directorio si no existe
+os.makedirs(SENDA_SOLUCIONES, exist_ok=True)  # crear el directorio si no existe
 
 # para el algoritmo genético de la DLL
 rot_res_dll_ok = [
@@ -333,16 +482,20 @@ rot_res_dll_ok = [
             "No progresa, solución no aceptable",
             "No progresa, pero la solución puede ser aceptable",
             "Superado el máximo de generaciones, solución no aceptable",
-            "Superado el máximo de generaciones, pero la solución puede ser aceptable"
+            "Superado el máximo de generaciones, pero la solución puede ser aceptable",
+            "Cancelado",
         ]
 rot_res_dll_error = [
+            "El número de individuos debe ser multiplo del número de hilos",
             "Error al generar la población",
             "Error al fijar las cotas",
             "Error al reservar memoria para la población",
             "Error al generar la población",
-            "Terminación inesperada",
+            "Terminación imposible",
             "Error en los parámetros",
-            "Error al preparar la multitarea"
+            "Error al preparar la multitarea",
+            "Error al abrir el fichero de salida",
+            "Error inesperado",
         ]
 # para asimilar el formato del resultado de la DLL al que devuelve scipy
 class rmin_dll(object):
@@ -420,6 +573,8 @@ elif NSAM == 3:
     #
 elif NSAM == 4:
     # MCA-ESP-05 corregida
+    SENDA_DLL = 'C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA4.dll'
+
     '''
     Actividades_Agrarias_y_pesca                AP1
     Energía_e_industrias_extractivas            AP2
@@ -440,6 +595,59 @@ elif NSAM == 4:
     '''
     FICHERO_SAM = '{}/{}.xlsx'.format(SENDA_DATOS, "MCA-ESP-05_ajustada_imp_final")
     ind  = ('AP1','AP2','AP3','AP4','AP5','AP6')    # sectores (industria)
+    h    = ('K'  ,'L')                              # factores de producción
+    dem  = ('C1','C2')                              # demanda de los hogares
+    idt  = ('INP',)                                 # impuestos a la producción, otros impuestos a la producción
+    trf  = ('TRF',)                                 # aranceles pagados por la producción (no los hay en esta MCS)
+    gov  = ('SP',)                                  # gobierno
+    ayd  = ('AYD',)                                 # ayudas del gobierno
+    inv  = ('A-I',)                                 # ahorro e inversión
+    ext  = ('SE',)                                  # sector exterior
+    css  = ('CSS',)                                 # cotizaciones a la seguridad social
+    alp  = ('ALP',)                                 # ahorro a largo plazo
+    #
+elif NSAM == 5:
+    # España 2022
+    SENDA_DLL = 'C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll'
+    
+    #FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/INE', "mcs_22_final")
+    #SAM_HOJA    = '63R'
+    FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/INE', "mcs_22_sin_R32_R64")
+    SAM_HOJA    = 'MCS'
+    # B3
+    SAM_COL     = 1     # B = 1 contando desde 0
+    SAM_FIL     = 2     # 3 = 2 contando desde 0
+    
+    # sectores (industria)
+    ind = []
+    for i in range(63):
+        ind.append('R' + str(i + 1))
+    ind = tuple(ind)
+    h    = ('K'  ,'L')                              # factores de producción
+    dem  = ('C1','C2','C3')                         # demanda de los hogares
+    idt  = ('INP',)                                 # impuestos a la producción, otros impuestos a la producción
+    trf  = ('TRF',)                                 # aranceles pagados por la producción (no los hay en esta MCS)
+    gov  = ('SP',)                                  # gobierno
+    ayd  = ('AYD',)                                 # ayudas del gobierno
+    inv  = ('A-I',)                                 # ahorro e inversión
+    ext  = ('SE',)                                  # sector exterior
+    css  = ('CSS',)                                 # cotizaciones a la seguridad social
+    alp  = ('ALP',)                                 # ahorro a largo plazo
+    #
+elif NSAM == 6:
+    # España 2008
+    SENDA_DLL   = 'C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll'
+    FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/Datos', "MCS-ESP-RENO")
+    SAM_HOJA    = 'Ajustada'
+    # C3
+    SAM_COL     = 2     # C = 2 contando desde 0
+    SAM_FIL     = 2     # 3 = 2 contando desde 0
+    
+    # sectores (industria)
+    ind = []
+    for i in range(31):
+        ind.append('R' + str(i + 1))
+    ind = tuple(ind)
     h    = ('K'  ,'L')                              # factores de producción
     dem  = ('C1','C2')                              # demanda de los hogares
     idt  = ('INP',)                                 # impuestos a la producción, otros impuestos a la producción
@@ -491,7 +699,7 @@ else:
     CASO += '_' + GE_ESTRATEGIA + '_' + 'Mcu' if METRICA_ERROR == 0 else ('Mab' if METRICA_ERROR == 1 else 'Mpt' + str(POT_DESVIOS))
     CASO += '_Da_{:1}_{}'.format(DEM_ADICIONAL_TIPO,'SR' if RENTA_FICTICIA else 'CR') if abs(DEM_ADICIONAL).sum() != 0 else ''
     CASO += '_Ay_' if abs(AYD_ADICIONAL).sum() != 0 else ''
-    CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(GE_FIX)) if len(GE_FIX) > 0 else '')
+    CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(FIX)) if len(FIX) > 0 else '')
     CASO += '_{:05}'.format(GE_SEMILLA)
 
 FICHERO_IMG     = CASO
@@ -588,7 +796,125 @@ def extrae_var(vp, clave, nfil, ncol):
         return vendo
 
 def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
-          ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_min, ge_var_max,
+          ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_can_min, ge_var_min, ge_var_max,
+          ind_pvec_desde, fix, fix_limites, ge_incluye_xp, con_esenciales):
+    # definir el rango de variación de los precios y variables en LA SOLUCION A PROBAR 'vec_opt'
+
+    # primero rellenamos 'bnds' con 0 y luego lo iremos modificando
+    bnds = []
+    for i in range(nvec_opt):
+        bnds.append((0.,0.))
+
+    # limites con criterio general para todas las variables en el vector solución
+    for i in range(nvec_opt):
+        if i == 0 and or_pre_referencia != indice_f_tra and valor_f_tra > 0:
+            # el precio del factor OR_PRE_EXCLUIDO no forma parte del vector solución
+            # el que forma parte es el otro, luego si OR_PRE_EXCLUIDO es el capital (!= INDICE_F_TRA),
+            # el incluido en la solución es el trabajo y lo hacemos igual a VALOR_F_TRA, salvo que sea 0 o -1
+            vi = valor_f_tra
+            vs = valor_f_tra
+        else:
+            v = vec_opt[i]
+            if abs(v) < 0.001:
+                # para evitar que las variables inicialmente a 0, queden acotados a (0,0)
+                if i < npre_sol:
+                    # aunque no tiene mucho sentido un precio inicialmente a 0, le ponemos un rango razonable: positivo a partir de 0
+                    vi = 0.
+                    vs = 3.
+                else:
+                    vi = np.float64(-ge_var_cero)
+                    vs = np.float64(+ge_var_cero)
+            else:
+                vi = v * (1. - ge_var_min / 100.)
+                vs = v * (1. + ge_var_max / 100.)
+        bnds[i] = ((vi,vs))
+
+    # procesamos las especificaciones explicitas de límites (especificadas manualmente)
+    if len(fix) > 0:
+        for n in range(len(fix)):
+            # 'n' es la fila de 'FIX_LIMITES' que corresponde a la variable
+            clave = fix[n]
+            # puntero al inicio de la variable
+            i = ind_pvec_desde[clave]
+            # para cada terna 'j' de limites de la variable 'n'
+            for j in range(len(fix_limites[n])):
+                # 'k' es el primer elemento de la terna y es el índice dentro de la variable (desplazamiento desde su origen)
+                k = fix_limites[n][j][0]
+                # límite inferior
+                if type(fix_limites[n][j][1]) is str:
+                    # cualquier caracter hace que se ponga el valor inicial de la variable en el vector de prueba
+                    vi = vec_opt[i + k]
+                else:
+                    # ...[1] es el segundo elemento, de la terna 'j', de la variable 'n'
+                    vi = fix_limites[n][j][1]
+                # límite superior
+                if type(fix_limites[n][j][2]) is str:
+                    # cualquier caracter hace que se ponga el valor inicial de la variable en el vector de prueba
+                    vs = vec_opt[i + k]
+                else:
+                    # ...[2] es el tercere elemento, de la terna 'j', de la variable 'n'
+                    vs = fix_limites[n][j][2]
+                bnds[i + k] = ((vi,vs))
+            # <- fin de la terna 'j'
+        # <- fin de la variable 'n'
+
+    if ge_incluye_xp and abs(con_esenciales).sum() != 0:
+        # acotar consumos de los hogares Xp
+        i = ind_pvec_desde['Xp']
+        for j in range(ndem):
+            for k in range(nsec):
+                vi = con_esenciales[j][k]
+                bnds[i] = (vi,bnds[i][1])
+                i += 1
+    # si no hay exportaciones o importaciones en la MCS, el modelo las mantendrá a cero, por
+    # lo tamto, fijamos sus intervalos en el valor cero
+    i = ind_pvec_desde['E']
+    n_Efijas = 0
+    for j in range(nsec):
+        if vec_opt[i] < 0.000001:
+            vec_opt[i] = 0.
+            bnds[i] = (0., 0.)
+            n_Efijas += 1
+        i += 1
+    i = ind_pvec_desde['M']
+    n_Mfijas = 0
+    for j in range(nsec):
+        if vec_opt[i] < 0.000001:
+            vec_opt[i] = 0.
+            bnds[i] = (0., 0.)
+            n_Mfijas += 1
+        i += 1
+    # intervalo mínimo
+    if GE_VAR_CAN_MIN > 0:
+        cuenta = 0
+        for i in range(npre_sol, nvec_opt):
+            ancho = bnds[i][1] - bnds[i][0]
+            if ancho > 0.000001 and ancho < GE_VAR_CAN_MIN:
+                cuenta += 1
+                d = (GE_VAR_CAN_MIN - ancho) / 2.
+                vi = bnds[i][0] - d
+                if vi < 0. and bnds[i][0] > 0:
+                    vi = 0.000001
+                    vs = GE_VAR_CAN_MIN
+                else:
+                    vs = bnds[i][1] + d
+                #imprime('{:6d} {:12.5e} {:12.5e}   {:12.5e} {:12.5e}'.format(i, bnds[i][0], bnds[i][1], vi, vs))
+                bnds[i] = (vi,vs)
+        if cuenta > 0:
+            if __name__ == '__main__':
+                imprime('*--* Se han modificado {} intervalos para ajustarlos al valor mínimo'.format(cuenta))
+                imprime('')
+    #--------------------------------------------------------------------------------------------------------    
+    # resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
+    #--------------------------------------------------------------------------------------------------------    
+    #i = ind_pvec_desde['Apz']
+    #bnds[i] = (-0.000001, 0.000001)
+    #--------------------------------------------------------------------------------------------------------    
+
+    return (bnds, n_Efijas, n_Mfijas)
+
+def cotas_geometicas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
+          ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_can_min, ge_var_min, ge_var_max,
           ind_pvec_desde, ge_fix, ge_fix_limites, ge_incluye_xp, con_esenciales):
     # definir el rango de variación de los precios y variables en LA SOLUCION A PROBAR 'vec_opt'
     bnds = []
@@ -707,6 +1033,17 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
                 vi = con_esenciales[j][k]
                 bnds[i] = (vi,bnds[i][1])
                 i += 1
+    # intervalo mínimo
+    for ii in range(npre_sol, nvec_opt):
+        ancho = bnds[i][1] - bnds[i][0]
+        if ancho < GE_VAR_CAN_MIN:
+            d = (GE_VAR_CAN_MIN - ancho) / 2.
+            vi = bnds[i][0] - d
+            vs = bnds[i][0] + d
+            if vi < 0.:
+                vs += -vi 
+                vi = 0.
+            bnds[i] = (vi,vs)
 
     # resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
     #--------------------------------------------------------------------------------------------------------    
@@ -794,6 +1131,10 @@ def sec_ecuaciones(vec_opt):
     Ei = copy.deepcopy(E)
     Mi = copy.deepcopy(M)
     Di = copy.deepcopy(D)
+    if GE_INCLUYE_XP:
+        # el vector solución incluye los consumos de los hogares, necesario si se quiere acotar el
+        # valor de los mismos, por ejemplo, para usar una función de utilidad con consumos esenciales
+        Xpi = copy.deepcopy(extrae_var(vec_opt, 'Xp', ndem, nsec))
 
     # el precio de los factores tiene un tratamiento especial, en el vector solución solo se incluye
     # un precio: el del capital o el del trabajo, según OR_PRE_EXCLUIDO sea 0 o 1
@@ -804,13 +1145,10 @@ def sec_ecuaciones(vec_opt):
 
     # el precio del otro factor se añade al principio o al final de 'pf'
     pf = completa_pf(pf, F)
+
     # calculamos los precios del comercio internacional en moneda local
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)            # 6.14 y 6.15
     
-    if GE_INCLUYE_XP:
-        # el vector solución incluye los consumos de los hogares, necesario si se quiere acotar el
-        # valor de los mismos, por ejemplo, para usar una función de utilidad con consumos esenciales
-        Xpi = copy.deepcopy(extrae_var(vec_opt, 'Xp', ndem, nsec))
 
     # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes.
     # no hay problema en igualar las variables porque ni 'ax' ni 'ay' se van a modificar y por tanto
@@ -886,9 +1224,9 @@ def sec_ecuaciones(vec_opt):
     Tz = gob.impuestos_produccion_Tz(datos.tauz, pz, Z)                                 # 6. 7
     Tm = gob.aranceles_importacion_Tm(datos.taum, pm, M)                                # 6. 8
     # ayudas (pagos) del gobierno a las empresas, un porcentaje de lo recaudado por impuestos
-    AgE  = gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm)
+    AgE  = gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0)
     # ayudas (pagos) del gobierno a los hogares, un porcentaje de lo recaudado por impuestos
-    AgH  = gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, AYD_ADI_DEM)
+    AgH  = gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM)
 
     # Ahorro (privado -hogares- y del gobierno). Se invertirán íntegramente en los sectores
     # las calculamos antes que 6. 9 y 6.10, porque mo dependen de los resultados de estas y sin
@@ -906,11 +1244,11 @@ def sec_ecuaciones(vec_opt):
     #   de los hogares. (FF) es la prestación de factores de cada hogar (consumidor)
     CssH = gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)
 
-    Sg = ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
+    Sg = ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
 
     # El gobierno compra productos con cargo a sus ingresos disponibles que son lo que recauda por
     # impuestos menos su ahorro (Sg) y las ayudas a empresas (AgE) y hogares (AgH)
-    Xg = gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
+    Xg = gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
 
     # Inversión con cargo a los ahorros: los ahorros privados (Sp), del gobierno (Sg) y del
     # exterior (Sf0), se reparten entre sectores proporcionalmente a la MCS (parametros.landa)
@@ -923,7 +1261,13 @@ def sec_ecuaciones(vec_opt):
         Sc = 0.
     else:
         Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
-    Xv = ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, datos.Sf0)    # 6.10
+    if EQ_BAL_PAGOS:
+        # mantener la balanza de pagos igual a la inicial (MCS)
+        Sf = np.float64(datos.Sf0)    
+    else:
+        # la balanza de pagos no tiene un valor determinado
+        Sf = ainv.ahorro_exterior_Sf(M, E, pm, pe)
+    Xv = ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0)    # 6.10
 
     # Consumo de productos de los hogares. Mediante la función que optimiza la utilidad (pq, parametros.alfa) a
     # partir de los ingresos netos:
@@ -967,7 +1311,12 @@ def sec_ecuaciones(vec_opt):
 
     # restricción a la balanza de pagos, las importaciones deben ser igual a las exportaciones más
     # la balanza de pagos inicial (datos.Sf0), que es exógena, en moneda extranjera
-    ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, datos.Sf0)                                    # 6.16
+    if EQ_BAL_PAGOS:
+        # se calculará el desvio en la balanza de pagos respecto al valor de la MCS
+        ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf)                                       # 6.16
+    else:
+        # el desvio por la balanza de pagos será exclusivamente por la diferencia entre 'Sf' y 'Sfr', no por 'ebp' 
+        ebp = np.float64(0.)
     
     # Leontief para comparar, no tiene otro uso
     Zl = prod.produccion_sector_Z(X, ax, Yd, ay)                                                                                    # 6. 5 original
@@ -985,7 +1334,7 @@ def sec_ecuaciones(vec_opt):
     Ydr   = prod.utilizacion_factor_compuesto_Y(Zr, ay)                                     # 6. 4
 
     if  FF_ENDOGENA:
-        FFr = deho.aportacion_factores_FF(datos.FF0, F)
+        FFr = deho.aportacion_factores_FF(datos.FF0, Fr)
         if ALP_FACTOR > 0:
             exceso = FFr - datos.FF0
             Alpr = exceso * ALP_FACTOR
@@ -1001,17 +1350,22 @@ def sec_ecuaciones(vec_opt):
     Tmr   = gob.aranceles_importacion_Tm(datos.taum, pm, M)                                 # 6. 8
     
     Spr   = ainv.ahorro_hogares_Sp(parametros.ssp, FFr, pf, datos.PssH0)                    # 6.11
-    AgEr  = gob.ayudas_empresas_AgE(parametros.cage, Tdr, Tzr, Tmr)
-    AgHr  = gob.ayudas_hogares_AgH(parametros.cagh, Tdr, Tzr, Tmr, AYD_ADI_DEM)
+    AgEr  = gob.ayudas_empresas_AgE(parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0)
+    AgHr  = gob.ayudas_hogares_AgH(parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM)
     CssEr = gob.seguridad_social_empresas_CssE(parametros.ctzsse, pf, Fr, INDICE_F_TRA)
     CssHr = gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FFr, Alpr, INDICE_F_TRA)
-    Sgr   = ainv.ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)              # 6.12
-    Xgr   = gob.demanda_gobierno_Xg(parametros.mu, pq, Tdr, Tzr, Tmr, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)      # 6. 9
+    Sgr   = ainv.ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr)              # 6.12
+    Xgr   = gob.demanda_gobierno_Xg(parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)      # 6. 9
     if datos.PssH0.sum() == 0:
         Scr = 0.
     else:
         Scr = CssEr.sum() + CssHr.sum() - datos.PssH0.sum()
-    Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, Scr, epsilon, datos.Sf0)   # 6.10
+
+    if EQ_BAL_PAGOS:
+        Sfr = np.float64(datos.Sf0)    
+    else:
+        Sfr = ainv.ahorro_exterior_Sf(M, E, pm, pe)
+    Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, datos.Ti0, datos.Te0)   # 6.10
     if DEM_ESENCIALES:
         Xpr   = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)
     else:
@@ -1021,20 +1375,24 @@ def sec_ecuaciones(vec_opt):
         else:
             # función de demanda CES
             Xpr = deho.demanda_maxima_utilidad_CES_Xp(parametros.eta_ces, parametros.alfa_ces, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)
-
     Qr    = exte.produccion_armington_Q(parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta)                      # 6.17
     Mr    = exte.importacion_maxima_utilidad_armington_M(parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum)       # 6.18
     Dar   = exte.produccion_maxima_utilidad_armington_D(parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta)                    # 6.19
     Er    = exte.produccion_para_exportacion_E(parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, MODO_PSEUDOIMPTOS)   # 6.21
     Dtr   = exte.produccion_para_local_D(parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, MODO_PSEUDOIMPTOS)         # 6.22
-    ebpr  = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, datos.Sf0)                                        # 6.16
+    if EQ_BAL_PAGOS:
+        # se calculará el desvio en la balanza de pagos respecto al valor de la MCS (Sfr = Sf0)
+        ebpr  = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, Sfr)                                        # 6.16
+    else:
+        # el desvio por la balanza de pagos será exclusivamente por la diferencia entre 'Sf' y 'Sfr', no por 'ebp' 
+        ebpr = np.float64(0.)
 
     if GE_INCLUYE_XP == False:
         Xpi = Xp
 
     res_ecuaciones = (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH, ebp,Zl,pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH, ebp,Zl,pz,
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
     )
     return res_ecuaciones
 
@@ -1043,8 +1401,8 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     Calcula los desvíos (penalización) correspondientes a la ejecución de las ecuaciones 'sec_ecuaciones'
     '''
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
 
     # Se trata de forma individualizada la desviación en valor absoluto de cada variable
@@ -1052,8 +1410,14 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     # Apz es como los precios, no es el resultado de ninguna ecuación y por tanto no se puede
     # calcular un desvío para ella
 
-    # 'ebp' y 'ebpr' deben ser ambas cero
-    des_ebp = np.array([abs(ebp) + abs(ebpr)])
+    if EQ_BAL_PAGOS:
+        # 'ebp' y 'ebpr' deben ser ambas cero
+        des_ebp = np.array([abs(ebp) + abs(ebpr)])
+        des_Sf  = np.array([0.])    
+    else:
+        # el desvio por la balanza de pagos será exclusivamente por la diferencia entre 'Sf' y 'Sfr', no por 'ebp' 
+        des_ebp = np.array([0.])
+        des_Sf  = abs(Sfr  - Sf  ).flatten()    
 
     # condiciones de equilibrio del mercado.
     #   Xp.sum(axis=0) = suma de lo que vende un sector a los hogares  = suma de los que compran todos los hogares a ese sector
@@ -1061,7 +1425,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     #   Xv             = suma de lo ingresado por cada sector como inversiones
     #   X.sum(axis=1)  = suma de lo que vende cada sector a los otros sectores (ventas intermedias)
 
-    des_produccion = abs(Q - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))).flatten()      # 6.23
+    des_produccion = abs(Qr - (Xpr.sum(axis=0) + Xgr + Xvr + Xr.sum(axis=1))).flatten()      # 6.23
 
     # la utilización total de cada factor por los sectores 'F.sum(axis=0)' debe ser igual a la
     # aportación de los mismos por los hogares 'FF.sum(axis=0)'
@@ -1075,24 +1439,24 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
         else:
             des_Alp        = np.zeros(ndem, dtype=np.float64)
     else:
-        des_factores   = abs(F.sum(axis=0) - FF.sum(axis=0)).flatten()  # 6.24
+        des_factores   = abs(Fr.sum(axis=0) - FFr.sum(axis=0)).flatten()  # 6.24
         des_Alp        = np.zeros(ndem, dtype=np.float64)
 
-    des_Fi         = abs(F    - Fi  ).flatten()    
-    des_Ei         = abs(E    - Ei  ).flatten()    
-    des_Mi         = abs(M    - Mi  ).flatten()    
+    des_Fi         = abs(Fr   - Fi  ).flatten()    
+    des_Ei         = abs(Er   - Ei  ).flatten()    
+    des_Mi         = abs(Mr   - Mi  ).flatten()
+    des_Di         = abs(Dar  - Di  ).flatten()
     if GE_INCLUYE_XP:
-        des_Xpi = abs(Xp   - Xpi ).flatten()    
+        des_Xpi = abs(Xpr  - Xpi ).flatten()    
     else:
-        des_Xpi = [0]
-
+        des_Xpi = np.array([0], dtype=np.float64)
     des_F          = abs(Fr   - F   ).flatten()
     des_E          = abs(Er   - E   ).flatten()    
     des_M          = abs(Mr   - M   ).flatten()    
 
     des_FF         = abs(FFr  - FF  ).flatten()
-    des_Ydp        = abs(Yd   - Yp  ).flatten()    
-    des_Dat        = abs(Da   - Dt  ).flatten()    
+    des_Ydp        = abs(Ydr  - Ypr ).flatten()    
+    des_Dat        = abs(Dar  - Dtr ).flatten()    
 
     des_Z          = abs(Zr   - Z   ).flatten()
     des_X          = abs(Xr   - X   ).flatten()    
@@ -1110,12 +1474,11 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     des_CssE       = abs(CssEr- CssE).flatten()    
     des_CssH       = abs(CssHr- CssH).flatten()
     if OPT_DESVIOS == 0:
-        # Se incluyen desvíos redundantes, pero puede acelerar la convergencia y producir mejores resultados
-        des_Di         = abs(Dt   - Di  ).flatten()
-        des_Da         = abs(Dar  - Da  ).flatten()    
-        des_Dt         = abs(Dtr  - Dt  ).flatten()    
+        # Se incluyen desvíos redundantes
         des_Yp         = abs(Ypr  - Yp  ).flatten()    
         des_Yd         = abs(Ydr  - Yd  ).flatten()    
+        des_Da         = abs(Dar  - Da  ).flatten()    
+        des_Dt         = abs(Dtr  - Dt  ).flatten()    
         desvios = np.concatenate(
             (   des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
@@ -1125,18 +1488,18 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 des_Yp,des_Yd,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
             )
         )
     else:
         desvios = np.concatenate(
             (   des_produccion,des_factores,des_ebp,
-                des_Fi,des_Mi,des_Ei,des_Xpi,
+                des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
                 des_F ,des_M ,des_E,
                 des_Dat,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
             )
         )
     if METRICA_ERROR == 0:
@@ -1151,14 +1514,13 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
             dist = (abs(desvios) ** POT_DESVIOS).sum()
 
     if muestra_progreso and SALIDA_DESVIOS:
-        if OPT_DESVIOS == 0:
-            des_Di = [0]
-            des_Da = [0]
-            des_Dt = [0]
+        if OPT_DESVIOS == 1:
             des_Yp = [0]
             des_Yd = [0]
-
-        param = (des_produccion,des_factores,des_ebp,
+            des_Da = [0]
+            des_Dt = [0]
+        param = (
+                des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
                 des_F ,des_M ,des_E,
                 des_Da,des_Dt,
@@ -1166,8 +1528,9 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 des_Yp,des_Yd,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
                 )
+
         infor.salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist)
     return dist
 
@@ -1190,34 +1553,89 @@ def imprime_opciones(nvec_opt):
         imprime('MEGA mediante algoritmo genético. Resolución con restricciones ' + ('lineales' if GE_TIPO_RE==0 else 'no lineales'))
     else:
         imprime('MEGA mediante algoritmo genético. Resolución sin restricciones')
+    if len(FI_SOL_LEE) > 0:
+        imprime('Solución inicial leida de              {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_LEE))
+    if len(FI_SOL_SALVA) > 0:
+        imprime('Solución final guardada en             {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_SALVA))
+    imprime('Semilla números aleatorios             {:10}'.format(GE_SEMILLA))
+    imprime('Número máximo de generaciones          {:10,}'.format(GE_MAX_ITER))
+    imprime('Tolerancia en el objetivo              {:10.3e}'.format(GE_TOLERANCIA))
+    imprime('Iteraciones para valorar progreso      {:10,}'.format(GE_PROGRESO))
+    imprime('Mejora mínima para considerar progreso {:10.4f} %'.format(GE_MIN_PROGRESO))
+    imprime('Tolerancia en las verificaciones       {:10.3e}'.format(GE_VERIFICAR))
+    imprime('Iteraciones para historial             {:10,}'.format(GE_HISTORIAL))
+    imprime('Iteraciones para soluciones            {:10,}'.format(GE_SOLUCIONES))
+    imprime('Balanza de pagos                       {}'.format('Mantenerla constante' if EQ_BAL_PAGOS else 'Endógena'))
+    imprime('Función de utilidad de la demanda      {}'.format('Cobb-Douglas' if UTILIDAD_DEMANDA == 0 else 'CES'))
+    imprime('Consumos de los hogares en la solución {}'.format('Si' if GE_INCLUYE_XP else 'No'))
+    if UTILIDAD_DEMANDA == 1:
+        mfun.cabecera('', ind)
+        mfun.cuerpo2D(['sigma_ces',], parametros.sigma_ces)
+        mfun.cierre(ind)
+    imprime('Modo pseudo impuestos (Css y Ag)       {}'.format('Variable' if MODO_PSEUDOIMPTOS == 0 else 'Fijo'))
+    imprime('Demanda con consumos esenciales        {}'.format('Si' if DEM_ESENCIALES else 'No'))
+    imprime('Aportación de factores por los hogares {}'.format('ENDOGENA' if FF_ENDOGENA else 'exógena'))
+    imprime('Factor ahorro a largo plazo            {:10.2f} %'.format(100.0 * ALP_FACTOR))
+    imprime('Cálculo desvios                        {}'.format('Redundante' if OPT_DESVIOS == 0 else 'Simple'))
+    if   METRICA_ERROR == 0:
+        imprime('Métrica del error: Error cuadrático medio')
+    elif METRICA_ERROR == 1:
+        imprime('Métrica del error: Valor absoluto')
+    else:
+        imprime('Métrica del error: Desvios elevados a {}'.format(POT_DESVIOS))
+
     imprime('Usar DLL                               {}'.format('Si' if USAR_DLL else 'No'))
+    if USAR_DLL == True:
+        imprime('    Factor de recombinación                                 [{:5},{:5}]'.format(ALGE_RECOMBINACION[0], ALGE_RECOMBINACION[1]))
+    else:
+        imprime('Recombinación                          {:10.3f}'.format(GE_RECONBINACION))
+        imprime('Estrategia                             {}'.format(GE_ESTRATEGIA))
+        imprime('Tamaño de la población                 {:10} {:10} individuos'.format(GE_DIM_POBLACION, GE_DIM_POBLACION * nvec_opt))
+        imprime('Número de workers                      {:10}'.format(GE_WORKERS))
+        imprime('Periodicidad actualización             {}'.format(GE_ACTUALIZACION))
+
     imprime('Usar genético DLL                      {}'.format('Si' if USAR_ALGE_DLL else 'No'))
     if USAR_ALGE_DLL:
-        imprime('     MAX_INTENTOS   {:10}'.format(ALGE_MAX_INTENTOS))
-        imprime('     N_HILOS        {:10}'.format(ALGE_N_HILOS))
-        imprime('     TOL_ACEPTABLE  {:10}'.format(ALGE_TOL_ACEPTABLE))
-        imprime('     MODO_POB_INI   {:10}'.format(ALGE_MODO_POB_INI))
-        imprime('     F_INICIO_POB   {:10}'.format(ALGE_F_INICIO_POB))
-        imprime('     SIGMA_POB_INI  {:10}'.format(ALGE_SIGMA_POB_INI))
-        imprime('     TRAMOS_LHS     {:10}'.format(ALGE_TRAMOS_LHS))
-        imprime('     NPOB           {:10}'.format(ALGE_NPOB))
-        imprime('     F_MUTACION     {:10}'.format(ALGE_F_MUTACION))
-        imprime('     RECOMBINACION      [{:5},{:5}]'.format(ALGE_RECOMBINACION[0],ALGE_RECOMBINACION[1]))
-        imprime('     CTRL_FACTIBLE  {:10}'.format(ALGE_CTRL_FACTIBLE))
-        imprime('     RES_EXTENSA    {:10}'.format(ALGE_RES_EXTENSA))
+        imprime('    Fichero log de la DLL                               saDLL_{}.log'.format(ALGE_ID_SALIDA))
+        imprime('    Número de hilos multiproceso                        {:10}'.format(ALGE_N_HILOS))
+        imprime('    Número máximo de reinicios por falta de progreso    {:10}'.format(ALGE_MAX_INTENTOS))
+        imprime('    Error máximo para calificar aceptable una solución  {:10}'.format(ALGE_TOL_ACEPTABLE))
+        imprime('    Modo para generar la población inicial              {:10} {}'.format(ALGE_MODO_POB_INI, etq_mpob[ALGE_MODO_POB_INI]))
+        imprime('    Factor de alcance para generar la población inicial {:10}'.format(ALGE_F_INICIO_POB))
+        if ALGE_MODO_POB_INI == 12:
+            imprime('    Igual a la cota inferior en la población inicial si <{:9.3f}'.format(ALGE_SIGMA_POB_INI))
+        else:
+            imprime('    Sigma para generar población inicial normal         {:10}'.format(ALGE_SIGMA_POB_INI))
+        imprime('    Número de tramos para generar población inicial LHS {:10}'.format(ALGE_TRAMOS_LHS))
+        imprime('    Número de individuos de la población inicial        {:10}'.format(ALGE_NPOB))
+        imprime('    Factor de mutación                                  {:10}'.format(ALGE_F_MUTACION))
+        imprime('    Control de factibilidad                             {}'.format('Si' if ALGE_CTRL_FACTIBLE == 1 else 'No'))
+        imprime('    Solución en formato extenso                         {}'.format('Si' if ALGE_RES_EXTENSA == 1 else 'No'))
+        imprime('    El mejor primero                                    {}'.format('Si' if EL_MEJOR_PRIMERO == 1 else 'No'))
+        imprime('    Incluir x0                                          {}'.format('Si' if ALGE_INCLUIR_X0 == 1 else 'No'))
     imprime('')
-    imprime('Rango  de validez de los precios en % -{:9.1f} +{:9.1f}'.format(100. * (GE_PRE_MIN - 1.), 100. * (GE_PRE_MAX - 1.)))
-    imprime('Rango  de validez de las variables  % -{:9.1f} +{:9.1f}'.format(100. * (GE_VAR_MIN - 1.), 100. * (GE_VAR_MAX - 1.)))
-    imprime('Rango  de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
-    if len(GE_FIX) > 0:
+    imprime('Rango de validez de los precios en % -{:9.1f} +{:9.1f}'.format(GE_PRE_MIN, GE_PRE_MAX))
+    imprime('Rango de validez de las variables  % -{:9.1f} +{:9.1f}'.format(GE_VAR_MIN, GE_VAR_MAX))
+    imprime('Rango de validez de las variables  0 -{:9.1f} +{:9.1f}'.format(GE_VAR_CERO, GE_VAR_CERO))
+    if GE_VAR_CAN_MIN > 0:
+        imprime('Rango mínimo de las variables         {:9.1f}'.format(GE_VAR_CAN_MIN))
+    if len(FIX) > 0:
         imprime('------------------------------------------------------------------------------------------')
-        imprime('Rangos de validez explícitos')
+        imprime('Rangos de validez explícitos, indesados')
         imprime('------------------------------------------------------------------------------------------')
-        for i in range(len(GE_FIX)):
-            imprime('{:8}'.format(GE_FIX[i]), False)
-            for j in range(len(GE_FIX_LIMITES[i])):
-                imprime(' [{:10} {:10}]'.format(GE_FIX_LIMITES[i][j][0], GE_FIX_LIMITES[i][j][1]), False)
-            imprime('')
+        for i in range(len(FIX)):
+            imprime('{:8}'.format(FIX[i]), False)
+            for j in range(len(FIX_LIMITES[i])):
+                imprime(' i:{:10} vi:{:10} vs:{:10}'.format(FIX_LIMITES[i][j][0], FIX_LIMITES[i][j][1], FIX_LIMITES[i][j][2]))
+        imprime('------------------------------------------------------------------------------------------')
+    if n_precios_importacion > 0:
+        imprime('Precio de importación')
+        imprime('sector     precio')
+        imprime('------ ------------')
+        for pre_m in precios_importacion:
+            i = pre_m[0]
+            imprime('{:6} {:12.4e}'.format(i, datos.pWm[i]))
+        imprime('------ ------------')
         imprime('------------------------------------------------------------------------------------------')
     imprime('El precio del factor {} es variable exógena con valor igual a {}'.format(h[OR_PRE_EXCLUIDO], PRECIO_F_EXCLUIDO))
     if VALOR_F_TRA == 0:
@@ -1225,37 +1643,13 @@ def imprime_opciones(nvec_opt):
     elif VALOR_F_TRA != -1:
         imprime('El precio del factor {} es fijo con valor igual a {}'.format(h[INDICE_F_TRA], VALOR_F_TRA))
     imprime('')
-    imprime('Función de utilidad de la demanda      {}'.format('Cobb-Douglas' if UTILIDAD_DEMANDA == 0 else 'CES'))
-    if UTILIDAD_DEMANDA == 1:
-        mfun.cabecera('', ind)
-        mfun.cuerpo2D(['sigma_ces',], parametros.sigma_ces)
-        mfun.cierre(ind)
-    imprime('Demanda con consumos esenciales        {}'.format('Si' if DEM_ESENCIALES else 'No'))
-    imprime('Aportación de factores por los hogares {}'.format('ENDOGENA' if FF_ENDOGENA else 'exógena'))
-    imprime('Factor ahorro a largo plazo            {:10.2f} %'.format(100.0 * ALP_FACTOR))
-    imprime('Estrategia                             {}'.format(GE_ESTRATEGIA))
-    imprime('Periodicidad actualización             {}'.format(GE_ACTUALIZACION))
-    imprime('Recombinación                          {:10.3f}'.format(GE_RECONBINACION))
-    imprime('Tamaño de la población                 {:10}'.format(GE_DIM_POBLACION))
-    imprime('Número de workers                      {:10}'.format(GE_WORKERS))
-    imprime('Tolerancia en el objetivo              {:10.3e}'.format(GE_TOLERANCIA))
-    imprime('Tolerancia en las verificaciones       {:10.3e}'.format(GE_VERIFICAR))
-    imprime('Número máximo de iteraciones           {:10,}'.format(GE_MAX_ITER))
-    imprime('Iteraciones para valorar progreso      {:10,}'.format(GE_PROGRESO))
-    imprime('Iteraciones para historial             {:10,}'.format(GE_HISTORIAL))
-    imprime('Iteraciones para soluciones            {:10,}'.format(GE_SOLUCIONES))
-    imprime('Semilla números aleatorios             {:10}'.format(GE_SEMILLA))
-    imprime('Consumos de los hogares en la solución {}'.format('Si' if GE_INCLUYE_XP else 'No'))
-    imprime('Dimensión del vector de prueba         {:10}'.format(nvec_opt))
-    imprime('Cálculo desvios                        {}'.format('Redundante' if OPT_DESVIOS==0 else 'Simple'))
-    if   METRICA_ERROR == 0:
-        imprime('Métrica del error: Error cuadrático medio')
-    elif METRICA_ERROR == 1:
-        imprime('Métrica del error: Valor absoluto')
-    else:
-        imprime('Métrica del error: Desvios elevados a {}'.format(POT_DESVIOS))
-    imprime('-------------------------------------------------------------------')
-    imprime('-------------------------------------------------------------------')
+    nfijas = 0
+    for i in range(nvec_opt):
+        if bnds[i][1] - bnds[i][0] < 0.000001:
+            nfijas += 1
+    imprime('Dimensión del vector de prueba: {:6} variables; con valor fijo: {:5} (E:{:4} M:{:4})'.format(nvec_opt, nfijas, n_Efijas, n_Mfijas))
+    imprime('------------------------------------------------------------------------------------------')
+    imprime('------------------------------------------------------------------------------------------')
     imprime('')
 
 # rótulos para los resultados de verificar la factibilidad de las ecuaciones
@@ -1281,9 +1675,9 @@ etq_veri = [
         '19.E   6.21',
         '20.Dtr 6.22',
         '21.Css E',
-        '22.Css D',
+        '22.Css H',
         '23.AgE E',
-        '24.AgH D',
+        '24.AgH H',
         '25.Qeq 6.23',
         '26.Feq 6.24',
 ]
@@ -1346,7 +1740,43 @@ if __name__ == '__main__':
     imprime('Fichero Matriz Contabilidad Social (MCS) {}'.format(FICHERO_SAM))
 
 # leemos la Matriz de Contabilidad Social (MCS o SAM) de esta economía
-sam        = pandas.read_excel(FICHERO_SAM, index_col=0, header=0)
+xls = pandas.ExcelFile(FICHERO_SAM)
+if NSAM == 5:
+    '''
+    dsam = nsec + nfac + ndem + 6 + 1
+    lsam = np.arange(dsam + 2).tolist()
+    sam = pandas.read_excel(xls, sheet_name=SAM_HOJA, index_col=SAM_COL, header=SAM_FIL, nrows=dsam, usecols=lsam)
+    '''
+    # 'dsam' las filas a procesar a partir de la fila con las cabeceras de las columnas 
+    # el 8 = 7 cuentas + la suma (recursos)
+    dsam = nsec + nfac + ndem + 8
+    # 'lsam' columnas a procesar, como la primera es la coluna de los rótulos de las filas (SAM_COL), index_col debe ser 0
+    lsam = np.arange(SAM_COL, SAM_COL + dsam).tolist()
+    sam = pandas.read_excel(xls, sheet_name=SAM_HOJA, usecols=lsam, index_col=0, header=SAM_FIL, nrows=dsam)
+    '''
+    nombre filas    : sam.index
+    nombre columnas : sam.columns
+    primera columna : sam.iloc[:, 1]        TIO.iloc[:, 0] tiene los nombres de las filas 
+    primera fila    : sam.iloc[0,  0:]      TIO.iloc[:, 0] tiene nan
+    datos           : sam.iloc[0:, 0:]
+    '''
+elif NSAM == 6:
+    # 'dsam' las filas a procesar a partir de la fila con las cabeceras de las columnas 
+    # el 8 = 7 cuentas + la suma (recursos)
+    dsam = nsec + nfac + ndem + 8
+    # 'lsam' columnas a procesar, como la primera es la coluna de los rótulos de las filas (SAM_COL), index_col debe ser 0
+    lsam = np.arange(SAM_COL, SAM_COL + dsam).tolist()
+    sam = pandas.read_excel(xls, sheet_name=SAM_HOJA, usecols=lsam, index_col=0, header=SAM_FIL, nrows=dsam)
+    '''
+    nombre filas    : sam.index
+    nombre columnas : sam.columns
+    primera columna : sam.iloc[:, 1]        TIO.iloc[:, 0] tiene los nombres de las filas 
+    primera fila    : sam.iloc[0,  0:]      TIO.iloc[:, 0] tiene nan
+    datos           : sam.iloc[0:, 0:]
+    '''
+else:
+    sam = pandas.read_excel(xls, index_col=0, header=0)
+xls.close()
 '''
 el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan el procedimiento
 'def __init__' cuando se crea una variable de la clase:
@@ -1356,8 +1786,138 @@ el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan 
                 del modelo y les calcula unos valores de acuerdo a las ecuaciones correspondientes
                 y los valores asignados en la clase 'datos'.
 '''
-datos      = calibrado.datos(sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL)
+datos = calibrado.datos(sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL)
 parametros = calibrado.parametros(datos, ndem, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA)
+if __name__ == '__main__':
+    linea_blanca = True
+    if np.any(datos.F0    < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Factor de producción (F0) negativo')
+    if np.any(datos.Z0    < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Producción bruta (Z0) negativa')
+    if np.any(datos.D0    < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Demanda local (D0) negativa')
+    if np.any(datos.M0    < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Importaciones (M0) negativas')
+    if np.any(datos.E0    < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Exportaciones (E0) negativas')
+    if np.any(datos.X0    < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Consumo intermedio (X) negativo')
+    if np.any(datos.Xp0   < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Consumo hogar (Xp) negativo')
+    if np.any(datos.Xg0   < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Consumo gobierno (Xg) negativo')
+    if np.any(datos.Xv0   < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Inversión (Xv) negativa')
+    if np.any(datos.CssH0 < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Cotización seguridad social (CssH) hogares negativa')
+    if np.any(datos.CssE0 < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Cotización seguridad social (CssE) empresas negativa')
+    if np.any(datos.AgH0  < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Ayuda del gobierno a hogares (AgH) negativa')
+    if np.any(datos.AgE0  < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Ayuda del gobierno a empresas (AgE) negativa')
+    if np.any(datos.Td0   < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Impuesto a la hogares (Td0) negativo')
+    if np.any(datos.Tz0   < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Impuesto a la producción (Tz0) negativo')
+    if np.any(datos.Tm0   < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Aviso. Aranceles (Tm0) negativos')
+    if datos.Te0 != 0:
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. El modelo no está preparado para el pago (positivo o negativo) de impuestos por la exportación (Te0)')
+    if abs(parametros.landa.sum() - 1.)                       > 0.000001:
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Los coeficientes de reparto de la inversión (landa) no suman 1.')
+    if np.any(parametros.deltam < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Al menos un coeficiente deltam (importación) de reparto en la CESes negativo')
+    if np.any(parametros.deltad < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Al menos un coeficiente deltdm (demanda local) de reparto en la CESes negativo')
+    if np.any(abs(parametros.deltam + parametros.deltad - 1.) > 0.000001):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Los coeficientes de reparto en la CES, deltam (importación) y deltad (demanda local) no suman 1.')
+    if np.any(parametros.xid < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Al menos un coeficiente de reparto xid (demanda local) en la CET, es negativo.')
+    if np.any(parametros.xie < 0.):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Al menos un coeficiente de reparto xie (exportación) en la CET, es negativo.')
+    if np.any(abs(parametros.xid + parametros.xie - 1.)       > 0.000001):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Los coeficientes de reparto en la CET, xie (exportación) y xid (demanda local) no suman 1.')
+    if np.any(abs(parametros.beta.sum(axis=1) - 1.)           > 0.000001):
+        if linea_blanca:
+            imprime('')
+            linea_blanca = False
+        imprime('*--* Error. Los coeficientes de uso de los factores (beta) no suman 1., para algún sector')
+    if linea_blanca == False:
+        imprime('')
+
 # punteros para extraer variables del vector solución
 (etq_vec_opt,ind_pvec_desde,ind_pvec_hasta) = punteros()
 if __name__ == '__main__':
@@ -1382,6 +1942,12 @@ ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, d
                PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
                SIGMA_ESCENARIO, ARANCELES
                )
+
+if n_precios_importacion > 0:
+    for pre_m in precios_importacion:
+        i = pre_m[0]
+        v = pre_m[1]
+        datos.pWm[i] = v
 
 if USAR_DLL:
     # conectar con la DLL y enviarle las opciones, datos y parámetros que necesita la DLL para calcular la función objetivo.
@@ -1414,59 +1980,136 @@ if __name__ == '__main__':
     if GE_INCLUYE_XP:
         vec_opt = np.concatenate((vec_opt, datos.Xp0.flatten()))
     nvec_opt = len(vec_opt)
-    imprime_opciones(nvec_opt)
-    if SAL_MCS:
-        (rot, mcs0) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
-                                              INDICE_F_TRA,datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
-                                              datos.Y0,datos.X0,datos.F0,datos.Z0,datos.CssE0,datos.Tz0,datos.M0,datos.AgE0,
-                                              datos.FF0,datos.Alp0,datos.Xp0,datos.Sp0,datos.CssH0,datos.AgH0,datos.Td0,datos.Xv0,datos.PssH0,
-                                              datos.Xg0,datos.Sg0,datos.Tg0,datos.Tm0,
-                                              datos.E0,datos.Sf0,
-                                              TOLERA_MCS,'MCS base. Importes',True
-                                             )
 
-        infor.imprime_MCS(rot, mcs0, DECIMALES, TOLERA_MCS, 'MCS base. Importes',True)
-    #valores_iniciales(vec_opt)
-    infor.valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, vec_opt, npre_sol, etq_precios, ebp_ini)
-    # se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
-    ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, datos.pWm, datos.M0, datos.Sf0)
-    vec_veri_sol = (
-                datos.pF0,
-                datos.pY0,
-                datos.pZ0,
-                datos.pQ0,
-                datos.pD0,
-                datos.epsilon0,
-                datos.Apz0,
-                datos.F0,
-                datos.Z0,
-                datos.E0,
-                datos.M0,
-                datos.D0,
-                datos.FF0,
-                datos.Y0,
-                datos.X0,
-                datos.Xp0,
-                datos.Xg0,
-                datos.Xv0,
-                datos.Q0,
-                ebp,
-                datos.Sp0,
-                datos.Sg0,
-                datos.Td0,
-                datos.Tz0,
-                datos.Tm0,
-                datos.CssE0,
-                datos.CssH0,
-                datos.AgE0,
-                datos.AgH0,
-                datos.Alp0,
-    )
-    # verifica solución
-    infor.veri_solucion(datos, parametros, ind, dem, h,
-                        vec_veri_sol, etq_veri, UTILIDAD_DEMANDA, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, ALP_FACTOR, CON_ESENCIALES,
-                        'Verifica con los valores iniciales', GE_VERIFICAR
-                        )
+    if len(FI_SOL_LEE) > 0:
+        # sustituir el vector de orueba inicial
+        vec_opt = []
+        with open(SENDA_SOLUCIONES + '/' + FI_SOL_LEE, "r", encoding="utf-8") as log:
+            for i in range(nvec_opt):
+                v = np.float64(log.readline())
+                vec_opt.append(v)
+        vec_opt = np.array(vec_opt, dtype=np.float64)
+    pzi = copy.deepcopy(datos.pZ0)
+    vec_opt_ini = copy.deepcopy(vec_opt)
+
+    historial   = []
+    soluciones  = []
+    mensaje_fin = []
+    vfa         = 1.0e+18
+    # función que 'differential_evolution' llamará después de probar cada posible solución 
+    def vigila(intermediate_result):
+        nit = intermediate_result.nit   # número de generaciones
+        vf  = intermediate_result.fun   # valor de la función objetivo
+        if vf < GE_TOLERANCIA:
+            # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
+            mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
+            imprime('')
+            imprime('')
+            raise StopIteration
+        if nit % GE_PROGRESO == 0:
+            global vfa
+            if (vfa - vf) < GE_MIN_PROGRESO / 100. * vfa:
+                # no progresa significativamente, por lo que se da por terminada la minimización.
+                # es importante que GE_TOLERANCIA sea lo suficientemente grande par que no se camcele antes de tiempo
+                mensaje_fin.append('nit:{:9} mejora:{:12.5e} no progresa más'.format(nit, vfa - vf))
+                raise StopIteration
+            vfa = vf
+        if GE_HISTORIAL > 0 and (nit == 1 or (nit % GE_HISTORIAL == 0)):
+            if SAL_AUXILIARES:
+                # guardar el valor del error (función objetivo) que, al final, se escribirá en un fichero CSV
+                historial.append([nit,vf])
+            imprime('{:9} {:12.5e}'.format(nit, vf))
+        if SAL_AUXILIARES and GE_SOLUCIONES > 0 and (nit == 1 or (nit % GE_SOLUCIONES == 0)):
+            # guardar el vector solución que, al final, se escribirá en un fichero CSV
+            soluciones.append([nit,intermediate_result.x])
+    
+    # definir el rango de variación de los precios y variables
+    (bnds, n_Efijas, n_Mfijas) = cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, OR_PRE_EXCLUIDO, INDICE_F_TRA, VALOR_F_TRA,
+                 GE_TOLERANCIA, GE_PRE_MIN, GE_PRE_MAX, GE_VAR_CERO, GE_VAR_CAN_MIN, GE_VAR_MIN, GE_VAR_MAX,
+                 ind_pvec_desde, FIX, FIX_LIMITES, GE_INCLUYE_XP, CON_ESENCIALES)
+    # hacer compatible el vector de prueba inicial con los límites de variación de las variables
+    imprime_opciones(nvec_opt)
+    # ajustar los entornos de validez al valor mínimo
+    cuenta = 0
+    for i in range(len(vec_opt)):
+        if (bnds[i][1] - bnds[i][0]) > 0.000001:
+            if vec_opt[i]  < bnds[i][0]:
+                cuenta += 1
+                imprime('{:6} {:12.5e} {:12.5e}'.format(i, vec_opt[i], bnds[i][0]))
+                vec_opt[i] = bnds[i][0]
+            if vec_opt[i]  > bnds[i][1]:
+                cuenta += 1
+                imprime('{:6} {:12.5e} {:12.5e}'.format(i, vec_opt[i], bnds[i][1]))
+                vec_opt[i] = bnds[i][1]
+    if cuenta > 0:
+        imprime('')
+        imprime('*--* Se han modificado {} valores del vector inicial de prueba para ajustarlos a sus entornos de validez'.format(cuenta))
+        imprime('')
+
+    if SALIDA_VAL_INI:
+        if n_precios_importacion > 0:
+            for pre_m in precios_importacion:
+                i = pre_m[0]
+                v = 1.
+                datos.pWm[i] = v
+        if SAL_MCS:
+            (rot, mcs0) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
+                                                  INDICE_F_TRA,datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
+                                                  datos.Y0,datos.X0,datos.F0,datos.Z0,datos.CssE0,datos.Tz0,datos.M0,datos.AgE0,
+                                                  datos.FF0,datos.Alp0,datos.Xp0,datos.Sp0,datos.CssH0,datos.AgH0,datos.Td0,datos.Xv0,datos.PssH0,
+                                                  datos.Xg0,datos.Sg0,datos.Tg0,datos.Ti0, datos.Te0,datos.Tm0,
+                                                  datos.E0,datos.Sf0,
+                                                  TOLERA_MCS,'MCS base. Importes', True
+                                                 )
+            infor.imprime_MCS(rot, mcs0, DECIMALES, TOLERA_MCS, 'MCS base. Importes', True)
+        infor.valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, vec_opt, npre_sol, etq_precios, ebp_ini)
+        # se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
+        ebp = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, datos.pWm, datos.M0, datos.Sf0)
+        vec_veri_sol = (
+                    datos.pF0,
+                    datos.pY0,
+                    datos.pZ0,
+                    datos.pQ0,
+                    datos.pD0,
+                    datos.epsilon0,
+                    datos.Apz0,
+                    datos.F0,
+                    datos.Z0,
+                    datos.E0,
+                    datos.M0,
+                    datos.D0,
+                    datos.FF0,
+                    datos.Y0,
+                    datos.X0,
+                    datos.Xp0,
+                    datos.Xg0,
+                    datos.Xv0,
+                    datos.Q0,
+                    ebp,
+                    datos.Sp0,
+                    datos.Sg0,
+                    datos.Sf0,
+                    datos.Td0,
+                    datos.Tz0,
+                    datos.Tm0,
+                    datos.CssE0,
+                    datos.CssH0,
+                    datos.AgE0,
+                    datos.AgH0,
+                    datos.Alp0,
+        )
+        # verifica solución
+        infor.veri_solucion(datos, parametros, ind, dem, h,
+                            vec_veri_sol, etq_veri, UTILIDAD_DEMANDA, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, ALP_FACTOR, CON_ESENCIALES,
+                            'Verifica con los valores iniciales', GE_VERIFICAR
+                            )
+        imprime('')
+        if n_precios_importacion > 0:
+            for pre_m in precios_importacion:
+                i = pre_m[0]
+                v = pre_m[1]
+                datos.pWm[i] = v
+
     if PRIMERA_VALORACION:
         imprime('Una primera valoración del modelo')
         imprime('---------------------------------')
@@ -1476,8 +2119,8 @@ if __name__ == '__main__':
         calcula_desvios(res_ecuaciones, True)
         # verificar la solución
         (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
         ) = res_ecuaciones
         pf      = extrae_var(vec_opt,'pF', 0, nfac - 1)
         pf      = completa_pf(pf, F)
@@ -1508,6 +2151,7 @@ if __name__ == '__main__':
                     ebp,
                     Sp,
                     Sg,
+                    Sf,
                     Td,
                     Tz,
                     Tm,
@@ -1531,56 +2175,11 @@ if __name__ == '__main__':
                                                 INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                                 Yp,X,F,Z,CssE,Tz,M,AgE,
                                                 FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                                Xg,Sg,datos.Tg0,Tm,
-                                                E,datos.Sf0,TOLERA_MCS,
-                                                'MCS primera valoración. Importes',True
+                                                Xg,Sg,datos.Tg0,datos.Ti0,datos.Te0,Tm,
+                                                E,Sf,TOLERA_MCS,
+                                                'MCS primera valoración. Importes', True
                                               )
-            infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS primera valoración. Importes',True)
-    
-    historial   = []
-    soluciones  = []
-    mensaje_fin = []
-    vfa         = 1.0e+18
-
-    # función que 'differential_evolution' llamará después de probar cada posible solución 
-    def vigila(intermediate_result):
-        vf  = intermediate_result.fun   # valor de la función objetivo
-        nit = intermediate_result.nit   # número de iteraciones
-        if vf < GE_TOLERANCIA:
-            # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
-            mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
-            imprime('')
-            imprime('')
-            raise StopIteration
-        if nit % GE_PROGRESO == 0:
-            global vfa
-            if (vfa - vf) < GE_TOLERANCIA:
-                # no progresa significativamente, por lo que se da por terminada la minimización.
-                # es importante que GE_TOLERANCIA sea lo suficientemente grande par que no se camcele antes de tiempo
-                mensaje_fin.append('nit:{:9} mejora:{:12.5e} no progresa más'.format(nit, vfa - vf))
-                raise StopIteration
-            vfa = vf
-            print('{:9} {:12.5e}'.format(nit, vf))
-        if SAL_AUXILIARES:
-            if GE_HISTORIAL > 0 and (nit == 1 or (nit % GE_HISTORIAL == 0)):
-                # guardar el valor del error (función objetivo) que, al final, se escribirá en un fichero CSV
-                historial.append([nit,vf])
-            if GE_SOLUCIONES > 0 and (nit == 1 or (nit % GE_SOLUCIONES == 0)):
-                # guardar el vector solución que, al final, se escribirá en un fichero CSV
-                soluciones.append([nit,intermediate_result.x])
-    
-    # definir el rango de variación de los precios y variables
-    bnds = cotas(ndem,nsec, vec_opt, nvec_opt, npre_sol, OR_PRE_EXCLUIDO, INDICE_F_TRA, VALOR_F_TRA,
-                 GE_TOLERANCIA, GE_PRE_MIN, GE_PRE_MAX, GE_VAR_CERO, GE_VAR_MIN, GE_VAR_MAX,
-                 ind_pvec_desde, GE_FIX, GE_FIX_LIMITES, GE_INCLUYE_XP, CON_ESENCIALES)
-    # hacer compatible el vector de prueba inicial con los límites de variación de las variables
-    for i in range(len(vec_opt)):
-        if vec_opt[i]  < bnds[i][0]:
-            vec_opt[i] = bnds[i][0]
-        if vec_opt[i]  > bnds[i][1]:
-            vec_opt[i] = bnds[i][1]
-    pzi = copy.deepcopy(datos.pZ0)
-    vec_opt_ini = copy.deepcopy(vec_opt)
+            infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS primera valoración. Importes', True)
     if SALIDA_VEC_OPT:
         imprime('    L.INF         V0          L.SUP')
         imprime('------------ ------------ ------------')
@@ -1599,11 +2198,22 @@ if __name__ == '__main__':
         restricciones = restri.restricciones_M_E(nvec_opt, ind_pvec_desde, datos,GE_TIPO_RE)
     else:
         restricciones = []
-    print('Evolución de la minimización')
-    print('')
+    if USAR_ALGE_DLL:
+        imprime('No se muestra en pantalla la evolución de la minimización. Ver el fichero saDLL_{}.log'.format(ALGE_ID_SALIDA))
+    else:
+        imprime('Evolución de la minimización')
+    imprime('')
     res_ecuaciones = sec_ecuaciones(vec_opt)
     dist = calcula_desvios(res_ecuaciones, False)
-    print('{:>9} {:12.5e}'.format('inicio', dist))
+    imprime('{:>9} {:12.5e}'.format('Python ', dist))
+    if USAR_DLL:
+        dist_dll = fo(vec_opt);
+        imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
+        
+        dist_dll = dll.merito_sol(libc, vec_opt);
+        imprime('{:>9} {:12.5e}'.format('DLL sol', dist_dll))
+        
+    imprime('')
 
     t_inicio = timer()
 
@@ -1617,6 +2227,7 @@ if __name__ == '__main__':
                 #mutation=1., 
                 tol=GE_TOLERANCIA,
                 disp=False,
+                polish = False,
                 callback=vigila,
                 maxiter=GE_MAX_ITER,
                 updating=GE_ACTUALIZACION,
@@ -1639,7 +2250,9 @@ if __name__ == '__main__':
             par.append(np.float64(GE_TOLERANCIA))
             par.append(np.float64(ALGE_TOL_ACEPTABLE))
             par.append(np.float64(GE_PROGRESO))
-            par.append(np.float64(GE_TOLERANCIA))
+            par.append(np.float64(GE_MIN_PROGRESO / 100.))
+            par.append(np.float64(GE_HISTORIAL))
+            par.append(np.float64(GE_SOLUCIONES))
             par.append(np.float64(ALGE_MODO_POB_INI))
             par.append(np.float64(ALGE_F_INICIO_POB))
             par.append(np.float64(ALGE_SIGMA_POB_INI))
@@ -1650,7 +2263,10 @@ if __name__ == '__main__':
             par.append(np.float64(ALGE_RECOMBINACION[1]))
             par.append(np.float64(ALGE_CTRL_FACTIBLE))
             par.append(np.float64(GE_SEMILLA))
+            par.append(np.float64(EL_MEJOR_PRIMERO))
+            par.append(np.float64(ALGE_INCLUIR_X0))
             par.append(np.float64(nvec_opt));
+            par.append(np.float64(ALGE_ID_SALIDA));
             
             cotas_inf =[]
             cotas_sup =[]
@@ -1664,28 +2280,49 @@ if __name__ == '__main__':
                 2. el número de intentos utilizados para encontrar la solución, si el algoritmo no progresa se hace
                     un nuevo intento a partir de una poblacion inicial nueva, así hasta los 'ALGE_MAX_INTENTOS'
                     especificados en los parámetros
-                3. el número de generaciones calculadas por el último intento
+                3. el número de generaciones calculadas
                 4. el valor de la función objetivo 
             '''
             cabecera = 5
             r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA)
-            r_res = r_sol[0]
+            r_res   = int(r_sol[0])
             r_datos = int(r_sol[1])
+            imprime('')
+            imprime('*****************************************************************')
+            imprime('-------------------------- DLL genético -------------------------')
+            if r_res < 0:
+                imprime('error ({:15}) {}'.format(r_res, rot_res_dll_error[- (r_res + 1)]))
+                imprime('aplicación terminada')
+                imprime('')
+                sys.exit()
+            else:
+                imprime('respuesta ({:3}) {}'.format(r_res, rot_res_dll_ok[r_res]))
+                imprime('número de datos         :{:15}'.format(r_datos))
+                imprime('intentos                :{:15}'.format(int(r_sol[2] + 1)))
+                imprime('generaciones            :{:15}'.format(int(r_sol[3])))
+                imprime('merito                  :{:15.5e}'.format(r_sol[4]))
+            imprime('*****************************************************************')
             if ALGE_RES_EXTENSA == 1:
                 # devuelve el valor de todas las variables concatenadas en un vector de valores double
                 pf   = np.zeros(nfac)
                 py   = np.zeros(nsec)
                 pq   = np.zeros(nsec)
                 pd   = np.zeros(nsec)
-                F    = np.zeros((nsec,nfac))
-                E    = np.zeros(nsec)
-                M    = np.zeros(nsec)
-                D    = np.zeros(nsec)
-            
+                Fi   = np.zeros((nsec,nfac))
+                Ei   = np.zeros(nsec)
+                Mi   = np.zeros(nsec)
+                Di   = np.zeros(nsec)
+                Xpi  = np.zeros((ndem,nsec))
                 pz   = np.zeros(nsec)
                 pe   = np.zeros(nsec)
                 pm   = np.zeros(nsec)
+                F    = np.zeros((nsec,nfac))
+                E    = np.zeros(nsec)
+                M    = np.zeros(nsec)
                 Yp   = np.zeros(nsec)
+                Yd   = np.zeros(nsec)
+                Da   = np.zeros(nsec)
+                Dt   = np.zeros(nsec)
                 Z    = np.zeros(nsec)
                 Xg   = np.zeros(nsec)
                 Xv   = np.zeros(nsec)
@@ -1702,6 +2339,32 @@ if __name__ == '__main__':
                 FF   = np.zeros((ndem,nfac))
                 Alp  = np.zeros((ndem,nfac))
                 X    = np.zeros((nsec,nsec))
+
+                Fr    = np.zeros((nsec,nfac))
+                Er    = np.zeros(nsec)
+                Mr    = np.zeros(nsec)
+                Ypr   = np.zeros(nsec)
+                Ydr   = np.zeros(nsec)
+                Dar   = np.zeros(nsec)
+                Dtr   = np.zeros(nsec)
+                Zr    = np.zeros(nsec)
+                Xgr   = np.zeros(nsec)
+                Xvr   = np.zeros(nsec)
+                Qr    = np.zeros(nsec)
+                Tdr   = np.zeros(ndem)
+                Tzr   = np.zeros(nsec)
+                Tmr   = np.zeros(nsec)
+                Spr   = np.zeros(ndem)
+                AgEr  = np.zeros(nsec)
+                AgHr  = np.zeros(ndem)
+                CssEr = np.zeros(nsec)
+                CssHr = np.zeros(ndem)
+                Xpr   = np.zeros((ndem,nsec))
+                FFr   = np.zeros((ndem,nfac))
+                Alpr  = np.zeros((ndem,nfac))
+                Xr    = np.zeros((nsec,nsec))
+
+                # vector solución
                 n = cabecera;
                 for i in range(nfac):	pf[i]   = r_sol[n];n += 1
                 for i in range(nsec):	py[i]   = r_sol[n];n += 1
@@ -1711,15 +2374,32 @@ if __name__ == '__main__':
                 Apz = r_sol[n];n += 1
                 for i in range(nsec):
                     for j in range(nfac):
-                        F[i,j] = r_sol[n];n += 1
-                for i in range(nsec):	E[i]    = r_sol[n];n += 1
-                for i in range(nsec):	M[i]    = r_sol[n];n += 1
-                for i in range(nsec):	D[i]    = r_sol[n];n += 1
+                        Fi[i,j] = r_sol[n];n += 1
+                for i in range(nsec):	Ei[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Mi[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Di[i]   = r_sol[n];n += 1
+                if GE_INCLUYE_XP:
+                    for i in range(ndem): 
+                        for j in range(nsec):
+                            Xpi[i,j] = r_sol[n];n += 1
+                else:
+                    for i in range(ndem): 
+                        for j in range(nsec):
+                            Xpi[i,j] = Xp[i,j]
 
+                # resto variables
                 for i in range(nsec):	pz[i]   = r_sol[n];n += 1
                 for i in range(nsec):	pe[i]   = r_sol[n];n += 1
                 for i in range(nsec):	pm[i]   = r_sol[n];n += 1
+                for i in range(nsec):
+                    for j in range(nfac):
+                        F[i,j] = r_sol[n];n += 1
+                for i in range(nsec):	E[i]    = r_sol[n];n += 1
+                for i in range(nsec):	M[i]    = r_sol[n];n += 1
                 for i in range(nsec):	Yp[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Yd[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Da[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Dt[i]   = r_sol[n];n += 1
                 for i in range(nsec):	Z[i]    = r_sol[n];n += 1
                 for i in range(nsec):	Xg[i]   = r_sol[n];n += 1
                 for i in range(nsec):	Xv[i]   = r_sol[n];n += 1
@@ -1732,9 +2412,10 @@ if __name__ == '__main__':
                 for i in range(ndem):	AgH[i]  = r_sol[n];n += 1
                 for i in range(nsec):	CssE[i] = r_sol[n];n += 1
                 for i in range(ndem):	CssH[i] = r_sol[n];n += 1
-                Sg = r_sol[n];n += 1
-                Sc = r_sol[n];n += 1
-                ebp = r_sol[n];n += 1
+                Sg = np.array(r_sol[n],dtype=np.float64);n += 1
+                Sc = np.array(r_sol[n],dtype=np.float64);n += 1
+                Sf = np.array(r_sol[n],dtype=np.float64);n += 1
+                ebp = np.array(r_sol[n],dtype=np.float64);n += 1
                 for i in range(ndem): 
                     for j in range(nsec):
                         Xp[i,j] = r_sol[n];n += 1
@@ -1747,6 +2428,49 @@ if __name__ == '__main__':
                 for i in range(nsec):
                     for j in range(nsec):
                         X[i,j] = r_sol[n];n += 1
+                # recálculos
+                for i in range(nsec):
+                    for j in range(nfac):
+                        Fr[i,j] = r_sol[n];n += 1
+                for i in range(nsec):	Er[i]    = r_sol[n];n += 1
+                for i in range(nsec):	Mr[i]    = r_sol[n];n += 1
+                for i in range(nsec):	Ypr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Ydr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Dar[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Dtr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Zr[i]    = r_sol[n];n += 1
+                for i in range(nsec):	Xgr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Xvr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Qr[i]    = r_sol[n];n += 1
+                for i in range(ndem):	Tdr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Tzr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	Tmr[i]   = r_sol[n];n += 1
+                for i in range(ndem):	Spr[i]   = r_sol[n];n += 1
+                for i in range(nsec):	AgEr[i]  = r_sol[n];n += 1
+                for i in range(ndem):	AgHr[i]  = r_sol[n];n += 1
+                for i in range(nsec):	CssEr[i] = r_sol[n];n += 1
+                for i in range(ndem):	CssHr[i] = r_sol[n];n += 1
+                Sgr = np.array(r_sol[n],dtype=np.float64);n += 1
+                Scr = np.array(r_sol[n],dtype=np.float64);n += 1
+                Sfr = np.array(r_sol[n],dtype=np.float64);n += 1
+                ebpr = np.array(r_sol[n],dtype=np.float64);n += 1
+                for i in range(ndem): 
+                    for j in range(nsec):
+                        Xpr[i,j] = r_sol[n];n += 1
+                for i in range(ndem): 
+                    for j in range(nfac):
+                        FFr[i,j] = r_sol[n];n += 1
+                for i in range(ndem):
+                    for j in range(nfac):
+                        Alpr[i,j] = r_sol[n];n += 1
+                for i in range(nsec):
+                    for j in range(nsec):
+                        Xr[i,j] = r_sol[n];n += 1
+                
+                # la DLL las devuelve transpuestas
+                X  = X.T
+                Xr = Xr.T
+
                 if OR_PRE_EXCLUIDO == 0:
                     spf = np.array([pf[1]])
                 else:
@@ -1758,35 +2482,127 @@ if __name__ == '__main__':
                                     pd.flatten(),
                                     np.array([epsilon]),
                                     np.array([Apz]),
-                                    F.flatten(),
-                                    E.flatten(),
-                                    M.flatten(),
-                                    D.flatten(),
+                                    Fi.flatten(),
+                                    Ei.flatten(),
+                                    Mi.flatten(),
+                                    Di.flatten(),
                 ))
             else:
+                rot_des = [
+                        'ebp/Sf',
+                        'Qeq',
+                        'Feq',
+                        'Alp',
+                        'Sg',
+                        'Sp',
+                        'Sf',
+                        'AgH',
+                        'CssH',
+                        'Td',
+                        'FF',
+                        'Xpi',
+                        'Xp',
+                        'Ei',
+                        'Mi',
+                        'Dai',
+                        'E',
+                        'M',
+                        'Ydp',
+                        'Dat',
+                        'Z',
+                        'Xg',
+                        'Xv',
+                        'Q',
+                        'Tz',
+                        'Tm',
+                        'AgE',
+                        'CssE',
+                        'Fi',
+                        'F',
+                        'X',
+                        '???'
+                    ]
+                ind_des = [
+                        1,
+                        2,
+                        28,
+                        13,
+                        14,
+                        15,
+                        6,
+                        11,
+                        3,
+                        29,
+                        10,
+                        18,
+                        20,
+                        30,
+                        12,
+                        21,
+                        22,
+                        23,
+                        17,
+                        19,
+                        16,
+                        9,
+                        24,
+                        25,
+                        5,
+                        4,
+                        26,
+                        7,
+                        27,
+                        8,
+                        0,
+                        31
+                    ]
+                ids = copy.deepcopy(ind_des)
+                ids.sort()
+                if ids[0] != 0:
+                    imprime('*--* Error en el índice 0 de las desviaciones')
+                for i in range(1, len(ids)):
+                    if ids[i] != ids[i-1] + 1:
+                        imprime('*--* Error en el índice {} de las desviaciones'.format(i))
                 # devuelve el vector solución
                 if OR_PRE_EXCLUIDO == 1:
                     # ajustar la ubicación del precio de los factores, porque se devuelven los dos 
                     r_sol[cabecera + 1] = r_sol[cabecera]
                 sol = np.array([r_sol[i] for i in range(cabecera + 1, r_datos)], dtype=np.float64)
+                ne = r_datos
+                nd = int(r_sol[ne])
+                ne += 1
 
-            imprime('')
-            imprime('*****************************************************************')
-            imprime('-------------------------- DLL genético -------------------------')
-            if r_res < 0:
-                imprime('error ({:15}) {}'.format(int(r_sol[0]), rot_res_dll_error[-int(r_sol[0])]))
-                imprime('aplicación cancelada')
+                val_des = []
+                val_des.append(r_sol[ne])
+                suma = r_sol[ne]
+                ne += 1
+                for i in range(1, nd):
+                    val_des.append(r_sol[ne] - r_sol[ne - 1])
+                    suma += r_sol[ne] - r_sol[ne - 1]
+                    ne += 1
                 imprime('')
-                sys.exit()
-            else:
-                imprime('respuesta ({:3}) {}'.format(int(r_sol[0]),rot_res_dll_ok[int(r_sol[0])]))
-                imprime('número de datos         :{:15}'.format(r_datos))
-                imprime('intentos                :{:15}'.format(int(r_sol[2] + 1)))
-                imprime('generaciones            :{:15}'.format(int(r_sol[3])))
-                imprime('merito                  :{:15.5e}'.format(r_sol[4]))
-            imprime('*****************************************************************')
-            imprime('')
+                imprime('bloque    desvio')
+                imprime('------ ------------')
+                for i in range(nd):
+                    imprime('{:6} {:12.6e}'.format(rot_des[ind_des[i]], val_des[ind_des[i]]))
+                imprime('------ ------------')
+                imprime('{:6} {:12.6e}'.format('total', suma))
+                if GE_HISTORIAL > 0:
+                    if r_sol[ne] != HISTO_MAX:
+                        imprime('Error el número de datos de evolución {} no es coherente {}'.format(r_sol[r_datos + i], HISTO_MAX))
+                        sys.exit()
+                    ne += 1
+                    imprime('')
+                    imprime('generac.    merito')
+                    imprime('-------- ------------')
+                    for i in range(HISTO_MAX):
+                        if i > 0 and r_sol[ne] == 0:
+                            break;
+                        imprime('{:8.0f} {:12.6e}'.format(r_sol[ne], r_sol[ne + 1]))
+                        ne += 2
+                    imprime('-------- ------------')
             rmin = rmin_dll(sol, int(sol[3]))
+            imprime('')
         else:
             rmin = differential_evolution(func=fo,
                     x0=vec_opt,
@@ -1796,6 +2612,7 @@ if __name__ == '__main__':
                     #mutation=1., 
                     tol=GE_TOLERANCIA,
                     disp=False,
+                    polish = False,
                     callback=vigila,
                     maxiter=GE_MAX_ITER,
                     updating=GE_ACTUALIZACION,
@@ -1810,12 +2627,23 @@ if __name__ == '__main__':
     imprime('Valores finales de las variables')
     imprime('')
     sol = rmin.x
-    res_ecuaciones = sec_ecuaciones(sol)
+    if len(FI_SOL_SALVA) > 0:
+        with open(SENDA_SOLUCIONES + '/' + FI_SOL_SALVA, "w", encoding="utf-8") as log:
+            for i in range(len(sol)):
+                log.write('{}\n'.format(sol[i]))
+
+    if USAR_ALGE_DLL and ALGE_RES_EXTENSA == 1:
+        res_ecuaciones = (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
+            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Z,pz,
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+        )
+    else:
+        res_ecuaciones = sec_ecuaciones(sol)
     dist = calcula_desvios(res_ecuaciones, True)
     infor.salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, sol, npre_sol, etq_precios, res_ecuaciones)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Srf,AgEr,AgHr,CssEr,CssHr,ebpr
     ) = res_ecuaciones
     if SAL_MCS:
         pf = extrae_var(sol,'pF', 0, nfac - 1)
@@ -1829,8 +2657,8 @@ if __name__ == '__main__':
                                             INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                             Yp,X,F,Z,CssE,Tz,M,AgE,
                                             FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                            Xg,Sg,datos.Tg0,Tm,
-                                            E,datos.Sf0,
+                                            Xg,Sg,datos.Tg0,datos.Ti0,datos.Te0,Tm,
+                                            E,Sf,
                                             TOLERA_MCS,'MCS final. Importes',True
                                           )
         infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS final. Importes',True)
@@ -1839,13 +2667,13 @@ if __name__ == '__main__':
                                             INDICE_F_TRA,datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
                                             Yp,X,F,Z,CssE,Tz,M,AgE,
                                             FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                            Xg,Sg,datos.Tg0,Tm,
-                                            E,datos.Sf0,
+                                            Xg,Sg,datos.Tg0,datos.Ti0,datos.Te0,Tm,
+                                            E,Sf,
                                             TOLERA_MCS,'MCS final. Cantidades',False
                                           )
         infor.imprime_MCS(rot_t, mcs_t, DECIMALES, TOLERA_MCS, 'MCS final. Cantidades', False)
 
-        if SAL_VAR_MCS:
+        if SAL_VAR_MCS and SALIDA_VAL_INI:
             infor.imprime_MCS(rot, mcs-mcs0, DECIMALES, 2.0 * TOLERA_MCS, 'Diferencias entre los valores finales y los iniciales de la MCS', True)
 
     if GE_HISTORIAL > 0:
@@ -1871,10 +2699,10 @@ if __name__ == '__main__':
                 sal.write('\n')
 
     imprime('-----------------------------------------------------------')
-    imprime('La distancia (error de la función objetivo) es {:9.3e}'.format(dist))
+    imprime('La distancia (error de la función objetivo) es {:11.5e}'.format(dist))
     if USAR_DLL:
         dist_dll = fo(sol);
-        imprime('                                           DLL {:9.3e}'.format(dist_dll))
+        imprime('                                           DLL {:11.5e}'.format(dist_dll))
     imprime('-----------------------------------------------------------')
     imprime('')
     # verificar la solución, se prepara el vector que se pasará como parámetro a la función 'veri_solucion'
@@ -1884,7 +2712,7 @@ if __name__ == '__main__':
                 pz,
                 extrae_var(sol,'pQ', 0, nsec),
                 extrae_var(sol,'pD', 0, nsec),
-                epsilon,
+                extrae_var(sol,'epsilon', 0, 0),
                 Apz,
                 F,
                 Z,
@@ -1901,6 +2729,7 @@ if __name__ == '__main__':
                 ebp,
                 Sp,
                 Sg,
+                Sf,
                 Td,
                 Tz,
                 Tm,
@@ -1925,6 +2754,41 @@ if __name__ == '__main__':
     imprime('')
     imprime("Tiempo de cálculo de la aplicación:{:11,.0f} s".format(t_fin - t_inicio))
     imprime('')
+    
+    # comprobar que los valores de las variables no tienen el valor mínimo, o máximo, de su rango de existencia
+
+    topes = []
+    for i in range(nvec_opt):
+        if bnds[i][1] - bnds[i][0] > 0.001:
+            j = -1
+            if abs(sol[i] - bnds[i][0]) < 0.001:
+                j = 0
+            if abs(bnds[i][1] - sol[i]) < 0.001:
+                j = 1
+            if j != -1:
+                nbe_var = 'Error'
+                des_var = -1
+                for k in range(len(etq_vec_opt)):
+                    clave = etq_vec_opt[k]
+                    if i >= ind_pvec_desde[clave] and i < ind_pvec_hasta[clave]:
+                        nbe_var = clave
+                        des_var = i - ind_pvec_desde[clave]
+                        break;
+                topes.append([j, sol[i], i, nbe_var, des_var])
+    if len(topes) > 0:
+        imprime('')
+        imprime('*--* {} variables tienen el valor mínimo, o máximo, de su rango de existencia'.format(len(topes)))
+        imprime('igual al        valor      n      bloque    indice')
+        imprime('-------- --------------- ----- ------------ ------')
+        for v in topes:
+            if v[0] == 0:
+                imprime('mínimo  ', False)
+            else:
+                imprime('máximo  ', False)
+            imprime('{:15.5e} {:5} {:12} {:6}'.format(v[1], v[2], v[3], v[4]))
+        imprime('-------- --------------- ----- ------------ ------')
+        imprime('')
+
     if not USAR_ALGE_DLL:
         clave = 'message'
         mensaje = rmin[clave]
@@ -1933,7 +2797,7 @@ if __name__ == '__main__':
             clave = 'success'
             imprime('exito :{}'.format('Si' if rmin[clave]==True else 'No'))
         clave = 'nit'
-        imprime('Número de iteraciones {}'.format(rmin[clave]))
+        imprime('Número de generaciones {}'.format(rmin[clave]))
     imprime('')
     imprime('Precios    iniciales equilibrio')
     imprime('--------- ---------- ----------')
