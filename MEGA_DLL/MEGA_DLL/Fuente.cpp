@@ -12,8 +12,7 @@
 #include <ctime>
 #include <share.h>
 #include <csignal>
-//#include <stdio.h>
-//#include <sys\timeb.h> 
+#include <sys\timeb.h> 
 using namespace std;
 /*
 para poder usar matrices de tamaño fijo, que es lo más eficiente y cómodo, NFAC, MDEM y NSEC deben ser constantes
@@ -33,6 +32,28 @@ PARAMETROS parametros;
 int ndc_ax;
 int dc_ax[NSEC * NSEC][2]{};	// índices i,j de los elementos de ax distintos de cero
 */
+/*
+longitud de las variables y punteros a estas, en el vector solución
+  0    1    2    3      4        5    6   7   8   9   10
+['pF','pY','pQ','pD','epsilon','Apz','F','E','M','D','Xp']
+*/
+const int N_BLO_VEC = 11;
+const int len_var[N_BLO_VEC] = { 1, NSEC, NSEC, NSEC, 1, 1, NSEC * NFAC, NSEC, NSEC, NSEC, NDEM * NSEC };
+int pvec[N_BLO_VEC + 1]{};
+const char* rot_blo_vec[N_BLO_VEC + 1] = {
+"pF",
+"pY",
+"pQ",
+"pD",
+"epsilon",
+"Apz",
+"F",
+"E",
+"M",
+"D",
+"Xp",
+"fin"
+};
 
 const int HISTO_MAX = 201;
 int histogenera[HISTO_MAX]{};
@@ -85,6 +106,8 @@ NDEM*NFAC Alp
 NSEC*NSEC X
 */
 const int LVAR =
+1 +
+1 +
 1 +
 1 +
 1 +
@@ -177,6 +200,8 @@ const int LVSOL =
 1 +
 1 +
 1 +
+1 +
+1 +
 NFAC +
 NSEC +
 NSEC +
@@ -197,12 +222,53 @@ double VEC_OPT_E[LVSOL]{};
 const int MAX_DESVIOS = 256;
 double desvios[MAX_DESVIOS];
 
+const int MAX_BLOQUES_DESVIOS = 32;
+const char* rot_desvios[MAX_BLOQUES_DESVIOS] = {
+"ebp",
+"Qeq",
+"F-FF",
+"Alp",
+"Sg",
+"Sp",
+"vacante",
+"Agh",
+"CssH",
+"Td",
+"FF",
+"Xpi",
+"Xp",
+"Ei",
+"Mi",
+"Dai",
+"E",
+"M",
+"Ydp",
+"Dat",
+"Z",
+"Xg",
+"Xv",
+"Q",
+"Tz",
+"Tm",
+"AgE",
+"CssE",
+"Fi",
+"F",
+"X",
+"fin"
+};
+int puntero_bloque_desviacion = 0;
+int desplazamiento_desviacion = 0;
+#ifdef COMPROBAR_MAX_DESVIACION
+int ind_bloque_desviacion[MAX_BLOQUES_DESVIOS];
+#endif
+
 #pragma region Genetico
 
 /*
 convertimos en matrices (vectores) las variables que cada hilo debe
 utilizar de forma independiente de los otros hilos para evitar que colisionen.
-para usar matrices fijas definimos la constante MAX_HILOS en 128 y aunque desperdiciemos
+para poder usar matrices fijas, definimos la constante MAX_HILOS en 128 y aunque desperdiciemos
 memoria, es insignificante
 */
 int n_hilos;
@@ -210,7 +276,7 @@ const int MAX_HILOS = 128;
 HANDLE hilos[MAX_HILOS]{};
 HANDLE semaforo_hilo[MAX_HILOS]{};
 HANDLE semaforo_itera;
-mt19937 hgen[MAX_HILOS]{};
+mt19937 hgen[3][MAX_HILOS]{};
 uniform_int_distribution<int> hdis_entero[MAX_HILOS]{};
 uniform_int_distribution<int> hdis_entero_ivec[MAX_HILOS]{};
 uniform_real_distribution<double> hdis_double[MAX_HILOS]{};
@@ -219,13 +285,23 @@ CRITICAL_SECTION seccion_fin_hilos;
 int hilos_terminados;
 bool CANCELADO;
 
+#ifdef DEPURAR
+long long num_cruces_si[MAX_HILOS]{};
+long long num_cruces_ok[MAX_HILOS]{};
+long long num_cruces_no[MAX_HILOS]{};
+long long num_cruces_fj[MAX_HILOS]{};
+#endif
+long long num_var_hijo[MAX_HILOS]{};
+
 double** cotas = NULL;
 int* fijo = NULL;
+int nvar_fijas;
 double** poblacion = NULL;
 double* merito_individuo = NULL;
 double* factible = NULL;
 double** descendiente = NULL;
 
+// el número máximo de variables en el vector solución lo establecemos en 1000, con nuestras MCS el máximo es 507, 696 si se incluye XP
 const int MAX_VEC = 1000;
 double vec_ini[MAX_VEC];
 
@@ -261,8 +337,13 @@ bool poner_el_mejor_primero;
 bool incluir_x0;
 int NVEC;
 int id_salida;
+int desviaciones_relativas;
 FILE* salida;
 FILE* sal_sol;
+
+struct timeb tiempo_ini, tiempo_ant, tiempo_act;
+int dif_tpo_par;
+double dif_tpo_tot;
 
 mt19937 gen;
 uniform_real_distribution<double> dis_double(0.0, 1.0);
@@ -295,7 +376,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	// ABOVE_NORMAL_PRIORITY_CLASS es menos crítica
 	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 	*/
-
 	int res = parametros_alge(par);
 	if (res != 0) {
 		// Error en los parametros recibidos
@@ -313,7 +393,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	char fichero[128];
-	sprintf_s(fichero, 127, "C:/MEGA/Salidas/saDLL_%d_%d_%d.log", id_salida, modo_poblacion_inicial, semilla);
+	sprintf_s(fichero, 127, "C:/MEGA/Salidas/saDLL_%d_%d_%d_%d.log", id_salida, NPOB, modo_poblacion_inicial, semilla);
 	salida = _fsopen(fichero, "w", _SH_DENYWR);
 	if (salida == 0) {
 		if (extendida == 1) {
@@ -334,11 +414,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	char tmBuff[30];
 	ctime_s(tmBuff, sizeof(tmBuff), &inicio);
 	fprintf(salida, "inicio: %s\n\n", tmBuff);
-	fprintf(salida, "Modo población: %6d\n", modo_poblacion_inicial);
-	fprintf(salida, "Población     : %6d\n", NPOB);
-	fprintf(salida, "Variables     : %6d\n", NVEC);
-	fprintf(salida, "Intentos      : %6d\n", intentos);
-	fprintf(salida, "Semilla       : %6d\n", semilla);
 	fflush(salida);
 	/*
 	// la comprobación de si esto ahorra tiempo de cálculo, o todo lo contrario, resulta incoherente
@@ -346,10 +421,10 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "pares de 'ax'                  %d\n", NSEC * NSEC);
 	fprintf(salida, "pares de 'ax' distinto de cero %d\n\n", ndc_ax);
 	fflush(salida);
-	struct timeb start, end;
+	struct timeb tiempo_ini, tiempo_fin;
 	int diff;
 	double Z[NSEC]{ 10000 };
-	ftime(&start);
+	ftime(&tiempo_ini);
 	for (long long i = 0LL; i < 100LL; i++) {
 		for (long long j = 0LL; j < 1000000LL; j++) {
 			double X[NSEC][NSEC]{};
@@ -367,11 +442,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			}
 		}
 	}
-	ftime(&end);
-	diff = (int)(1000.0 * (end.time - start.time) + (end.millitm - start.millitm));
+	ftime(&tiempo_fin);
+	diff = (int)(1000.0 * (tiempo_fin.time - tiempo_ini.time) + (tiempo_fin.millitm - tiempo_ini.millitm));
 	fprintf(salida, "tiempo Optimizado mili s : %d\n", diff);
 	fflush(salida);
-	ftime(&start);
+	ftime(&tiempo_ini);
 	for (long long i = 0LL; i < 100LL; i++) {
 		for (long long j = 0LL; j < 1000000LL; j++) {
 			double X[NSEC][NSEC];
@@ -388,11 +463,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			}
 		}
 	}
-	ftime(&end);
-	diff = (int)(1000.0 * (end.time - start.time) + (end.millitm - start.millitm));
+	ftime(&tiempo_fin);
+	diff = (int)(1000.0 * (tiempo_fin.time - tiempo_ini.time) + (tiempo_fin.millitm - tiempo_ini.millitm));
 	fprintf(salida, "tiempo            mili s : %d\n", diff);
 	fflush(salida);
-	ftime(&start);
+	ftime(&tiempo_ini);
 	for (long long i = 0LL; i < 100LL; i++) {
 		for (long long j = 0LL; j < 1000000LL; j++) {
 			double X[NSEC][NSEC]{};
@@ -408,15 +483,18 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			}
 		}
 	}
-	ftime(&end);
-	diff = (int)(1000.0 * (end.time - start.time) + (end.millitm - start.millitm));
+	ftime(&tiempo_fin);
+	diff = (int)(1000.0 * (tiempo_fin.time - tiempo_ini.time) + (tiempo_fin.millitm - tiempo_ini.millitm));
 	fprintf(salida, "tiempo referencia mili s : %d\n\n", diff);
 	fflush(salida);
 	*/
-
 	if (inicia_cotas() == false) {
 		// Error al generar la poblacion
+#ifdef DESVIACONES_RELATIVAS
+		merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 		merito_sol(poblacion[ind_mejor_merito]);
+#endif
 		if (extendida == 1) {
 			me_sol[0] = -2.;
 			me_sol[2] = intentos;
@@ -449,6 +527,57 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
+	fprintf(salida, "Intentos       : %12d\n", max_intentos);
+	fprintf(salida, "Número procesos: %12d\n", n_hilos);
+	fprintf(salida, "Población      : %12d\n", NPOB);
+	fprintf(salida, "Modo población : %12d\n", modo_poblacion_inicial);
+	fprintf(salida, "Factor dispers : %12.5e\n", factor_inicio);
+	fprintf(salida, "Variables      : %12d\n", NVEC);
+	fprintf(salida, "Variables fijas: %12d\n", nvar_fijas);
+#ifdef DESVIACONES_RELATIVAS
+	fprintf(salida, "Desv.Relativas : %12d\n", desviaciones_relativas);
+#endif
+	fprintf(salida, "Factor mutación: %12.5e\n", factor_mutacion);
+	fprintf(salida, "Recombinación  : %12.5e %12.5e\n", recombinacion[0], recombinacion[1]);
+	fprintf(salida, "Semilla        : %12d\n\n", semilla);
+	if (nvar_fijas > 0) {
+		fprintf(salida, "Variables con valores fijos\n\n");
+		int p;
+		int d;
+		for (int i = 0; i < NVEC; i++) {
+			if (fijo[i] == 1) {
+				p = 0;
+				d = 0;
+				for (int j = 0; j < N_BLO_VEC; j++) {
+					if (i >= pvec[j] && i < pvec[j + 1]) {
+						p = j;
+						d = i - pvec[j];
+						break;
+					}
+				}
+				fprintf(salida, "%6d %-8s %5d %12.6e\n", i, rot_blo_vec[p], d, cotasInf[i]);
+			}
+		}
+		fprintf(salida, "\n");
+	}
+	fflush(salida);
+#ifdef COMPROBAR_MAX_DESVIACION
+	// 'indice_desviaciones' es totalmente prescindible, solo se usa para comprobar la variable con la máxima desviación
+	indice_desviaciones();
+	for (int i = 0; i < MAX_BLOQUES_DESVIOS; i++) {
+		fprintf(salida, "Bloque %3d :  %-8s %6d\n", i, rot_desvios[i], ind_bloque_desviacion[i]);
+	}
+	fprintf(salida, "\n");
+	fflush(salida);
+#endif
+#ifdef DEPURAR
+	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl tpo.p  tpo.tot.  n.cruce si n.cruce ok n.cruce no n.cruce fj\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ----------\n");
+#else
+	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl tpo.p  tpo.tot.  n.cruc.hij\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------\n");
+#endif
+
 	if (inicia_poblacion(factor_inicio) == false) {
 		// Error al reservar memoria para la poblacion
 		if (extendida == 1) {
@@ -574,7 +703,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 
 	if (max_generaciones == 0) {
 		// para una valoración inicial del modelo
+#ifdef DESVIACONES_RELATIVAS
+		merito_sol_relativa(vec);
+#else
 		merito_sol(vec);
+#endif
 		if (extendida == 1) {
 			me_sol[0] = 0;
 			me_sol[2] = 0;
@@ -590,11 +723,14 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
+
 	histo_n = 0;
 	mejor_merito_anterior = 1.0e+99;
 	generacion = 0;
 	intentos = 0;
-	hgen[0] = mt19937(semilla);
+	hgen[0][0] = mt19937(semilla);
+	hgen[1][0] = mt19937(semilla);
+	hgen[2][0] = mt19937(semilla);
 	if (poner_el_mejor_primero) {
 		hdis_entero[0] = uniform_int_distribution<int>{ 1, ((int)NPOB - 1) };
 	}
@@ -624,9 +760,18 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	else {
 		res_Simulacion = avanza();
 	}
+#ifdef DEPURAR
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ----------\n");
+#else
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------\n");
+#endif
 	if (res_Simulacion == -1) {
 		// Cancelado
+#ifdef DESVIACONES_RELATIVAS
+		merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 		merito_sol(poblacion[ind_mejor_merito]);
+#endif
 		if (extendida == 1) {
 			me_sol[0] = 5.;
 			me_sol[2] = intentos;
@@ -644,7 +789,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 	else if (res_Simulacion == -2) {
 		// Encontrada solucion
+#ifdef DESVIACONES_RELATIVAS
+		merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 		merito_sol(poblacion[ind_mejor_merito]);
+#endif
 		if (extendida == 1) {
 			me_sol[0] = 0.;
 			me_sol[2] = intentos;
@@ -663,7 +812,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	else if (res_Simulacion == -3) {
 		if (mejor_merito > tol_aceptable) {
 			// No progresa, solucion no aceptable
+#ifdef DESVIACONES_RELATIVAS
+			merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 			merito_sol(poblacion[ind_mejor_merito]);
+#endif
 			if (extendida == 1) {
 				me_sol[0] = 1.;
 				me_sol[2] = intentos;
@@ -681,7 +834,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 		else {
 			// No progresa, pero la solucion puede ser aceptable
+#ifdef DESVIACONES_RELATIVAS
+			merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 			merito_sol(poblacion[ind_mejor_merito]);
+#endif
 			if (extendida == 1) {
 				me_sol[0] = 2.;
 				me_sol[2] = intentos;
@@ -701,7 +858,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	else if (res_Simulacion == -5) {
 		if (mejor_merito > 0.0001) {
 			// Superado el maximo de generaciones, solucion no aceptable
+#ifdef DESVIACONES_RELATIVAS
+			merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 			merito_sol(poblacion[ind_mejor_merito]);
+#endif
 			if (extendida == 1) {
 				me_sol[0] = 3.;
 				me_sol[2] = intentos;
@@ -719,7 +880,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 		else {
 			// Superado el maximo de generaciones, pero la solucion puede ser aceptable
+#ifdef DESVIACONES_RELATIVAS
+			merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 			merito_sol(poblacion[ind_mejor_merito]);
+#endif
 			if (extendida == 1) {
 				me_sol[0] = 4.;
 				me_sol[2] = intentos;
@@ -738,7 +903,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 	else {
 		// Error, terminacion inesperada
+#ifdef DESVIACONES_RELATIVAS
+		merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
 		merito_sol(poblacion[ind_mejor_merito]);
+#endif
 		if (extendida == 1) {
 			me_sol[0] = -10.;
 			me_sol[2] = intentos;
@@ -757,8 +926,8 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 }
 void fin_soluciona(auto t_inicio) {
 	/*
-	chrono::duration<double> elapsed_seconds = end - start;
-	time_t end_time = chrono::system_clock::to_time_t(end);
+	chrono::duration<double> elapsed_seconds = tiempo_fin - tiempo_ini;
+	time_t end_time = chrono::system_clock::to_time_t(tiempo_fin);
 	*/
 
 	auto t_fin = chrono::system_clock::now();
@@ -766,7 +935,16 @@ void fin_soluciona(auto t_inicio) {
 	char tmBuff[30];
 	ctime_s(tmBuff, sizeof(tmBuff), &fin);
 	double dist = distancia_clonacion();
-	fprintf(salida, "%9d %12.5e %12.5e\n", generacion, dist, mejor_merito);
+#ifdef DESVIACONES_RELATIVAS
+	merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
+	merito_sol(poblacion[ind_mejor_merito]);
+#endif
+	ftime(&tiempo_act);
+	dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+	ftime(&tiempo_ant);
+	dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 	fprintf(salida, "\nfin   : %s\n", tmBuff);
 	fclose(salida);
 	if (histo_sol > 0) {
@@ -806,6 +984,7 @@ int parametros_alge(double* par) {
 	incluir_x0 = (int)par[ipar++] == 1;
 	NVEC = (int)par[ipar++];
 	id_salida = (int)par[ipar++];
+	desviaciones_relativas = (int)par[ipar++];
 	if (NVEC >= MAX_VEC) {
 		return -1;
 	}
@@ -845,11 +1024,13 @@ bool inicia_poblacion(double factor_inicio) {
 	return true;
 }
 bool fija_cotas(double* cotasInf, double* cotasSup) {
+	nvar_fijas = 0;
 	for (int i = 0; i < NVEC; i++) {
 		cotas[0][i] = cotasInf[i];
 		cotas[1][i] = cotasSup[i];
 		if (abs(cotas[1][i] - cotas[0][i]) < 0.000001) {
 			fijo[i] = 1;
+			nvar_fijas++;
 		}
 		else {
 			fijo[i] = 0;
@@ -1679,7 +1860,11 @@ bool genera_poblacion() {
 	mejor_merito = 1.0e+99;
 	ind_mejor_merito = NPOB + 1;
 	for (int i = 0; i < NPOB; i++) {
+#ifdef DESVIACONES_RELATIVAS
+		v = merito_s_relativa(poblacion[i]);
+#else
 		v = merito_s(poblacion[i]);
+#endif
 		/*
 		fprintf(salida, "%14.6e\n", v);
 		*/
@@ -1733,12 +1918,18 @@ void mutacion_cruze(int desde, int hasta, int hilo) {
 	double v;
 	bool es_factible;
 	for (int i = desde; i < hasta; i++) {
-		i1 = hdis_entero[hilo](hgen[hilo]);
-		i2 = hdis_entero[hilo](hgen[hilo]);
-		i3 = hdis_entero_ivec[hilo](hgen[hilo]);
+		i1 = hdis_entero[hilo](hgen[0][hilo]);
+		i2 = hdis_entero[hilo](hgen[0][hilo]);
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hdis_entero_ivec[hilo](hgen[1][hilo]);
 		es_factible = true;
+		// vamos a cruzar los individuos 'poblacion[i]' de la población con los mutantes 'v'
 		for (int j = 0; j < NVEC; j++) {
-			if (fijo[j] == 0 && (hdis_double[hilo](hgen[hilo]) <= cte_recombinacion || j == i3)) {
+			if (fijo[j] == 0 && (hdis_double[hilo](hgen[2][hilo]) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si setrata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
 				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
 				if (control_factibilidad) {
 					if (v < cotas[0][j] || v > cotas[1][j]) {
@@ -1749,6 +1940,9 @@ void mutacion_cruze(int desde, int hasta, int hilo) {
 				descendiente[i][j] = v;
 			}
 			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo y todos los
+				// individuos tienen el mismo valor, o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
 				descendiente[i][j] = poblacion[i][j];
 			}
 		}
@@ -1763,13 +1957,22 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 	int i3;
 	double v;
 	bool es_factible;
+	// vamos a cruzar los individuos 'poblacion[i]' de la población con los mutantes 'v'
 	for (int i = desde; i < hasta; i++) {
-		i1 = hdis_entero[hilo](hgen[hilo]);
-		i2 = hdis_entero[hilo](hgen[hilo]);
-		i3 = hdis_entero_ivec[hilo](hgen[hilo]);
+		i1 = hdis_entero[hilo](hgen[0][hilo]);
+		i2 = hdis_entero[hilo](hgen[0][hilo]);
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hdis_entero_ivec[hilo](hgen[1][hilo]);
 		es_factible = true;
 		for (int j = 0; j < NVEC; j++) {
-			if (fijo[j] == 0 && (hdis_double[hilo](hgen[hilo]) <= cte_recombinacion || j == i3)) {
+			if (fijo[j] == 0 && (hdis_double[hilo](hgen[2][hilo]) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+#ifdef DEPURAR
+				num_cruces_si[hilo]++;
+#endif
 				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
 				if (control_factibilidad) {
 					if (v < cotas[0][j] || v > cotas[1][j]) {
@@ -1778,9 +1981,25 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 					}
 				}
 				descendiente[i][j] = v;
+#ifdef DEPURAR
+				num_cruces_ok[hilo]++;
+#endif
 			}
 			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo (todos los
+				// individuos tienen el mismo valor), o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
 				descendiente[i][j] = poblacion[i][j];
+#ifdef DEPURAR
+				num_cruces_no[hilo]++;
+				if (fijo[j] == 1) {
+					num_cruces_fj[hilo]++;
+				}
+#else
+				if (fijo[j] == 0) {
+					num_var_hijo[hilo]++;
+				}
+#endif
 			}
 		}
 		if (control_factibilidad) {
@@ -1792,7 +2011,11 @@ void seleccion(int desde) {
 	double me_descendiente;
 	for (int i = desde; i < NPOB; i++) {
 		if (!control_factibilidad || factible[i]) {
+#ifdef DESVIACONES_RELATIVAS
+			me_descendiente = merito_s_relativa(descendiente[i]);
+#else
 			me_descendiente = merito_s(descendiente[i]);
+#endif
 			if (me_descendiente < merito_individuo[i]) {
 				for (int j = 0; j < NVEC; j++) {
 					poblacion[i][j] = descendiente[i][j];
@@ -1810,11 +2033,19 @@ void seleccionH(int desde, int hasta) {
 	double me_descendiente;
 	for (int i = desde; i < hasta; i++) {
 		if (!control_factibilidad || factible[i]) {
+#ifdef DESVIACONES_RELATIVAS
+			me_descendiente = merito_s_relativa(descendiente[i]);
+#else
 			me_descendiente = merito_s(descendiente[i]);
+#endif
 			if (me_descendiente < merito_individuo[i]) {
+#ifdef COPIAR_CON_COPY
+				std::copy(descendiente[i], descendiente[i] + NVEC, poblacion[i]);
+#else
 				for (int j = 0; j < NVEC; j++) {
 					poblacion[i][j] = descendiente[i][j];
 				}
+#endif
 				merito_individuo[i] = me_descendiente;
 			}
 		}
@@ -1838,11 +2069,47 @@ int comprobar_final() {
 	}
 	if (histo_int > 0 && (generacion % histo_int) == 0) {
 		double dist = distancia_clonacion();
+#ifdef DESVIACONES_RELATIVAS
+		merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
+		merito_sol(poblacion[ind_mejor_merito]);
+#endif
 		if (generacion == 0) {
-			fprintf(salida, "%9d %12.5e %12.5e %6d\n", generacion, dist, mejor_merito, ind_mejor_merito);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, ind_mejor_merito);
+			ftime(&tiempo_ini);
+			ftime(&tiempo_ant);
 		}
 		else {
-			fprintf(salida, "%9d %12.5e %12.5e\n", generacion, dist, mejor_merito);
+			ftime(&tiempo_act);
+			// 'time' da el número de segundos transcurridos desde el 1 de enero de 1970, y 'millitm' da los milisegundos transcurridos desde el último segundo completo
+			dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+			ftime(&tiempo_ant);
+			// tiempo total desde el inicio del proceso en minutos
+			dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
+#ifdef DEPURAR
+			long long n_c_s = 0;
+			long long n_c_o = 0;
+			long long n_c_n = 0;
+			long long n_c_f = 0;
+			for (int i = 0; i < n_hilos; i++) {
+				n_c_s += num_cruces_si[i];
+				n_c_o += num_cruces_ok[i];
+				n_c_n += num_cruces_no[i];
+				n_c_f += num_cruces_fj[i];
+				num_cruces_si[i] = 0;
+				num_cruces_ok[i] = 0;
+				num_cruces_no[i] = 0;
+				num_cruces_fj[i] = 0;
+			}
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f);
+#else
+			long long n_v_h = 0;
+			for (int i = 0; i < n_hilos; i++) {
+				n_v_h += num_var_hijo[i];
+				num_var_hijo[i] = 0;
+			}
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_v_h);
+#endif
 		}
 		fflush(salida);
 		histogenera[histo_n] = generacion;
@@ -1877,7 +2144,16 @@ int comprobar_final() {
 				fprintf(salida, "\n");
 				genera_poblacion();
 				double dist = distancia_clonacion();
-				fprintf(salida, "%9d %12.5e %12.5e %6d\n", generacion, dist, mejor_merito, ind_mejor_merito);
+#ifdef DESVIACONES_RELATIVAS
+				merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
+				merito_sol(poblacion[ind_mejor_merito]);
+#endif
+				ftime(&tiempo_act);
+				dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+				ftime(&tiempo_ant);
+				dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 				max_generaciones += generacion;
 				mejor_merito_anterior = 1.0e+99;
 				histogenera[histo_n] = generacion;
@@ -1911,7 +2187,16 @@ int comprobar_final() {
 						fprintf(salida, "\n");
 						genera_poblacion();
 						double dist = distancia_clonacion();
-						fprintf(salida, "%9d %12.5e %12.5e %6d\n", generacion, dist, mejor_merito, ind_mejor_merito);
+#ifdef DESVIACONES_RELATIVAS
+						merito_sol_relativa(poblacion[ind_mejor_merito]);
+#else
+						merito_sol(poblacion[ind_mejor_merito]);
+#endif
+						ftime(&tiempo_act);
+						dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+						ftime(&tiempo_ant);
+						dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 						max_generaciones += generacion;
 						mejor_merito_anterior = 1.0e+99;
 						histogenera[histo_n] = generacion;
@@ -1963,7 +2248,9 @@ Multi proceso con hilos cerrados. Cada hilo calcula un tramo de la población y 
 */
 bool Arranque() {
 	for (int i = 1; i < n_hilos; i++) {
-		hgen[i] = mt19937(semilla + i);
+		hgen[0][i] = mt19937(semilla + i);
+		hgen[1][i] = mt19937(semilla + i);
+		hgen[2][i] = mt19937(semilla + i);
 		if (poner_el_mejor_primero) {
 			hdis_entero[i] = uniform_int_distribution<int>{ 1, ((int)NPOB - 1) };
 		}
@@ -1972,6 +2259,14 @@ bool Arranque() {
 		}
 		hdis_entero_ivec[i] = uniform_int_distribution<int>{ 0, ((int)NVEC - 1) };
 		hdis_double[i] = uniform_real_distribution<double>{ 0.0, 1.0 };
+#ifdef DEPURAR
+		num_cruces_si[i] = 0;
+		num_cruces_ok[i] = 0;
+		num_cruces_no[i] = 0;
+		num_cruces_fj[i] = 0;
+#else
+		num_var_hijo[i] = 0;
+#endif
 	}
 	cte_recombinacion = (recombinacion[0] + recombinacion[1]) / 2.;
 	CANCELADO = false;
@@ -2182,22 +2477,13 @@ void ProcesarTramo(int hilo, int desde, int hasta) {
 #pragma endregion
 
 #pragma region Merito
-/*
-longitud de las variables y punteros a estas, en el vector solución
-  0    1    2    3      4        5    6   7   8   9   10
-['pF','pY','pQ','pD','epsilon','Apz','F','E','M','D','Xp']
-  1    6    6    6      1        1   12   6   6   6   12
-*/
-const int len_var[11] = { 1, NSEC, NSEC, NSEC, 1, 1, NSEC * NFAC, NSEC, NSEC, NSEC, NDEM * NSEC };
-int pvec[12]{};
 
 double AYD_ADI_DEM[NDEM]{};
 
 OPCIONES recibe_opciones(OPCIONES vopt) {
 	op = vopt;
-	int n = sizeof(len_var) / sizeof(*len_var) + 1;
 	pvec[0] = 0;
-	for (int i = 1; i < n; i++) {
+	for (int i = 1; i < N_BLO_VEC + 1; i++) {
 		pvec[i] = pvec[i - 1] + len_var[i - 1];
 	}
 	for (int i = 0; i < NDEM; i++) {
@@ -2559,6 +2845,7 @@ double merito_s(double* vec_opt) {
 	double dd;
 	double dist = 0.;
 	if (op.EQ_BAL_PAGOS) {
+		// trata de que 'ebpr' sea igual a 'ebp' y a cero
 		dd = abs(ebp) + abs(ebpr);
 	}
 	else {
@@ -2669,7 +2956,6 @@ double merito_s(double* vec_opt) {
 		}
 	}
 
-
 	return dist;
 }
 /*
@@ -2677,7 +2963,7 @@ prepara los vectores 'me_sol' y 'VEC_OPT_E' con todas las variables del modelo, 
 ser estas variables globales quedan en memoria a disposición de cualquier otra función, como 'soluciona', para
 devolverlas a quien llame a la DLL.
 no es multiproceso, porque 'me_sol' y 'VEC_OPT_E' son variables globales, pero es segura porque está pensada para ser llamada
-una vez que el algoritmo genético ha terminado.
+una vez que los hilos del algoritmo genético han terminado.
 */
 double* merito_sol(double* vec_opt) {
 	double pf[NFAC];
@@ -2994,21 +3280,35 @@ double* merito_sol(double* vec_opt) {
 	else {
 		ebpr = 0.;
 	}
-	// no se necesitan los 'abs' porque 'dd' se eleva al cuadrado, salvo en 'dd = abs(ebp) + abs(ebpr)'
-	// pero esta función se llama una sola vez por lo que el incremento del tiempo de cálculo es insignificante
+
+	// calculo de desvios
 	double dd;
 	double dist = 0.;
+	double dist_max = -1.;
 	int ndv = 0;
+	int ndm = 0;
+	int idm = -1;
+	int pdm = -1;
+	int ddm = -1;
+
+	// ebp
 	if (op.EQ_BAL_PAGOS) {
+		// trata de que 'ebpr' sea igual a 'ebp' y a cero
 		dd = abs(ebp) + abs(ebpr);
 	}
 	else {
 		dd = abs(Sfr - Sf);
 	}
+	if (dd > dist_max) {
+		dist_max = dd;
+		idm = ndm;
+		pdm = 0;
+		ddm = 0;
+	};
+	ndm++;
 	dist += dd * dd;
-	// ebp / Sf
 	desvios[ndv++] = dist;
-
+	// Q eq
 	for (int i = 0; i < NSEC; i++) {
 		sum_Xpr = 0.;
 		for (int j = 0; j < NDEM; j++) {
@@ -3019,22 +3319,38 @@ double* merito_sol(double* vec_opt) {
 			sum_Xr += Xr[j][i];
 		}
 		dd = abs(Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr));
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 1;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Q eq
 	desvios[ndv++] = dist;
 	if (op.FF_ENDOGENA) {
 		// desvio en factores
+		ndm += NFAC;
 		desvios[ndv++] = dist;
-
 		// desvios Alp
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
 					dd = abs(Alpr[i][j] - Alp[i][j]);
+					if (dd > dist_max) {
+						dist_max = dd;
+						idm = ndm;
+						pdm = 3;
+						ddm = i * NFAC + j;
+					};
+					ndm++;
 					dist += dd * dd;
 				}
 			}
+		}
+		else {
+			ndm += NDEM * NFAC;
 		}
 		desvios[ndv++] = dist;
 	}
@@ -3050,193 +3366,415 @@ double* merito_sol(double* vec_opt) {
 				suma_FF += abs(FFr[j][i]);
 			}
 			dd = abs(suma_F - suma_FF);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 2;
+				ddm = i;
+			};
+			ndm++;
 			dist += dd * dd;
 		}
 		desvios[ndv++] = dist;
 
 		// desvios Alp
+		ndm += NDEM * NFAC;
 		desvios[ndv++] = dist;
 	}
-	dd = abs(Sgr - Sg);
-	dist += dd * dd;
 	// Sg
+	dd = abs(Sgr - Sg);
+	if (dd > dist_max) {
+		dist_max = dd;
+		idm = ndm;
+		pdm = 4;
+		ddm = 0;
+	};
+	ndm++;
+	dist += dd * dd;
 	desvios[ndv++] = dist;
+	// Sp
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(Spr[i] - Sp[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 5;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Sp
 	desvios[ndv++] = dist;
 	// vacante
+	ndm++;
 	desvios[ndv++] = dist;
+	// Agh
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(AgHr[i] - AgH[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 7;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Agh
 	desvios[ndv++] = dist;
+	// CssH
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(CssHr[i] - CssH[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 8;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// CssH
 	desvios[ndv++] = dist;
+	// Td
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(Tdr[i] - Td[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 9;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Td
 	desvios[ndv++] = dist;
+	// FF
 	for (int i = 0; i < NDEM; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			dd = abs(FFr[i][j] - FF[i][j]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 10;
+				ddm = i * NFAC + j;
+			};
+			ndm++;
 			dist += dd * dd;
 		}
 	}
-	// FF
 	desvios[ndv++] = dist;
+	// Xpi
 	if (op.GE_INCLUYE_XP) {
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				dd = abs(Xpr[i][j] - Xpi[i][j]);
+				if (dd > dist_max) {
+					dist_max = dd;
+					idm = ndm;
+					pdm = 11;
+					ddm = i * NSEC + j;
+				};
+				ndm++;
 				dist += dd * dd;
 			}
 		}
 	}
-	// Xpi
+	else {
+		ndm += NDEM * NSEC;
+	}
 	desvios[ndv++] = dist;
+	// Xp
 	for (int i = 0; i < NDEM; i++) {
 		for (int j = 0; j < NSEC; j++) {
 			dd = abs(Xpr[i][j] - Xp[i][j]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 12;
+				ddm = i * NSEC + j;
+			};
+			ndm++;
 			dist += dd * dd;
 		}
 	}
-	// Xp
 	desvios[ndv++] = dist;
+	// Ei
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Er[i] - Ei[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 13;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Ei
 	desvios[ndv++] = dist;
+	// Mi
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Mr[i] - Mi[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 14;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Mi
 	desvios[ndv++] = dist;
+	// Dai
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Dar[i] - Di[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 15;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Dai
 	desvios[ndv++] = dist;
+	// E
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Er[i] - E[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 16;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// E
 	desvios[ndv++] = dist;
+	// M
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Mr[i] - M[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 17;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// M
 	desvios[ndv++] = dist;
+	// Ydp
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Ydr[i] - Ypr[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 18;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Ydp
 	desvios[ndv++] = dist;
+	// Dat
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Dar[i] - Dtr[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 19;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Dat
 	desvios[ndv++] = dist;
+	// Z
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Zr[i] - Z[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 20;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Z
 	desvios[ndv++] = dist;
+	// Xg
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Xgr[i] - Xg[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 21;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Xg
 	desvios[ndv++] = dist;
+	// Xv
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Xvr[i] - Xv[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 22;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Xv
 	desvios[ndv++] = dist;
+	// Q
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Qr[i] - Q[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 23;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Q
 	desvios[ndv++] = dist;
+	// Tz
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Tzr[i] - Tz[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 24;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Tz
 	desvios[ndv++] = dist;
+	// Tm
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Tmr[i] - Tm[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 25;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Tm
 	desvios[ndv++] = dist;
+	// Age
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(AgEr[i] - AgE[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 26;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// Age
 	desvios[ndv++] = dist;
+	// CssE
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(CssEr[i] - CssE[i]);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 27;
+			ddm = i;
+		};
+		ndm++;
 		dist += dd * dd;
 	}
-	// CssE
 	desvios[ndv++] = dist;
+	// Fi
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			dd = abs(Fr[i][j] - Fi[i][j]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 28;
+				ddm = i * NFAC + j;
+			};
+			ndm++;
 			dist += dd * dd;
 		}
 	}
-	// Fi
 	desvios[ndv++] = dist;
+	// F
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			dd = abs(Fr[i][j] - F[i][j]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 29;
+				ddm = i * NFAC + j;
+			};
+			ndm++;
 			dist += dd * dd;
 		}
 	}
-	// F
 	desvios[ndv++] = dist;
+	// X
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NSEC; j++) {
 			dd = abs(Xr[i][j] - X[i][j]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 30;
+				ddm = i * NSEC + j;
+			};
+			ndm++;
 			dist += dd * dd;
 		}
 	}
-	// X
 	desvios[ndv++] = dist;
 
-	// cabecera + vectoe solución + valores para todas las demás variables
+	puntero_bloque_desviacion = pdm;
+	desplazamiento_desviacion = ddm;
+#ifdef COMPROBAR_MAX_DESVIACION
+	// buscar el rótulo del bloque de máxima desviación
+	puntero_bloque_desviacion = -1;
+	desplazamiento_desviacion = -1;
+	for (int i = 0; i < MAX_BLOQUES_DESVIOS - 1; i++) {
+		if (idm >= ind_bloque_desviacion[i] && idm < ind_bloque_desviacion[i + 1]) {
+			puntero_bloque_desviacion = i;
+			desplazamiento_desviacion = idm - ind_bloque_desviacion[i];
+			break;
+		}
+	}
+	if (puntero_bloque_desviacion != pdm || puntero_bloque_desviacion == -1 || pdm == -1) {
+		fprintf(salida, "Error: el bloque de desviación identificado %d no coincide con el bloque esperado %d.\n", puntero_bloque_desviacion, pdm);
+		fflush(salida);
+		puntero_bloque_desviacion = 0;
+		desplazamiento_desviacion = 0;
+	}
+	if (desplazamiento_desviacion != ddm || desplazamiento_desviacion == -1 || ddm == -1) {
+		fprintf(salida, "Error: el desplazamiento de desviación identificado %d no coincide con el desplazamiento esperado %d.\n", desplazamiento_desviacion, ddm);
+		fflush(salida);
+		puntero_bloque_desviacion = 0;
+		desplazamiento_desviacion = 0;
+	}
+#endif
+	// cabecera + vector solución + valores para todas las demás variables
 
 	// cabecera
 	int nsol = 0;
-	me_sol[nsol++] = 0;		// resultado
-	me_sol[nsol++] = 0;		// número de datos
-	me_sol[nsol++] = 0;		// intentos
-	me_sol[nsol++] = 0;		// generaciones
-	me_sol[nsol++] = dist;	// mérito
+	me_sol[nsol++] = 0;			// resultado
+	me_sol[nsol++] = 0;			// número de datos
+	me_sol[nsol++] = 0;			// intentos
+	me_sol[nsol++] = 0;			// generaciones
+	me_sol[nsol++] = dist;		// mérito
+	me_sol[nsol++] = dist_max;	// desviación máxima
+	me_sol[nsol++] = idm;		// índice de desviación máxima
 
 	// el vector solución inmediatamente después de la cabecera
 	for (int i = 0; i < NFAC; i++)	me_sol[nsol++] = pf[i];
@@ -3367,11 +3905,14 @@ double* merito_sol(double* vec_opt) {
 
 	// cabecera	+ vector solucion + detalle desvios + evolución error
 	nsol = 0;
-	VEC_OPT_E[nsol++] = 0;		// resultado
-	VEC_OPT_E[nsol++] = 0;		// número de datos
-	VEC_OPT_E[nsol++] = 0;		// intentos
-	VEC_OPT_E[nsol++] = 0;		// generaciones
-	VEC_OPT_E[nsol++] = dist;	// mérito
+	VEC_OPT_E[nsol++] = 0;			// resultado
+	VEC_OPT_E[nsol++] = 0;			// número de datos
+	VEC_OPT_E[nsol++] = 0;			// intentos
+	VEC_OPT_E[nsol++] = 0;			// generaciones
+	VEC_OPT_E[nsol++] = dist;		// mérito
+	VEC_OPT_E[nsol++] = dist_max;	// desviación máxima
+	VEC_OPT_E[nsol++] = idm;		// índice de desviación máxima
+
 	VEC_OPT_E[nsol++] = pf[0];
 	VEC_OPT_E[nsol++] = pf[1];
 
@@ -3397,6 +3938,1519 @@ double* merito_sol(double* vec_opt) {
 	}
 	return me_sol;
 }
+
+#ifdef DESVIACONES_RELATIVAS
+double merito_s_relativa(double* vec_opt) {
+	/*
+	No se pueden poner restricciones a variables que no formen parte de 'vec_opt'
+	una cosa es que no haya gradientes y otra que la función objetivo dependa de cosas distintas a sus variables
+	el proceso de cruce va reduciendo, para cada variable, las diferencias, de su valor, entre los distintos individuos de la población
+	*/
+	double pf[NFAC];
+	double py[NSEC];
+	double pq[NSEC];
+	double pd[NSEC];
+	double F[NSEC][NFAC];
+	double E[NSEC];
+	double M[NSEC];
+	double D[NSEC];
+
+	double Fi[NSEC][NFAC];
+	double Ei[NSEC];
+	double Mi[NSEC];
+	double Di[NSEC];
+	double Xpi[NDEM][NSEC];
+
+	double pe[NSEC];
+	double pm[NSEC];
+	double Yp[NSEC];
+	double Z[NSEC];
+	double X[NSEC][NSEC]{};
+	double Yd[NSEC];
+	double Ypd[NSEC];
+	double pz[NSEC];
+	double FF[NDEM][NFAC];
+	double exceso[NDEM][NFAC];
+	double Alp[NDEM][NFAC];
+	double Td[NDEM];
+	double Tz[NSEC];
+	double Tm[NSEC];
+	double Sp[NDEM];
+	double AgE[NSEC];
+	double AgH[NDEM];
+	double CssE[NSEC];
+	double CssH[NDEM];
+	double Xg[NSEC];
+	double Xv[NSEC];
+	double Xp[NDEM][NSEC];
+	double Q[NSEC];
+	double Da[NSEC];
+	double Dt[NSEC];
+
+	double Fr[NSEC][NFAC];
+	double Er[NSEC];
+	double Mr[NSEC];
+	double Ypr[NSEC];
+	double Zr[NSEC];
+	double Xr[NSEC][NSEC]{};
+	double Ydr[NSEC];
+	double FFr[NDEM][NFAC];
+	double Alpr[NDEM][NFAC];
+	double Tdr[NDEM];
+	double Tzr[NSEC];
+	double Tmr[NSEC];
+	double Spr[NDEM];
+	double AgEr[NSEC];
+	double AgHr[NDEM];
+	double CssEr[NSEC];
+	double CssHr[NDEM];
+	double Xgr[NSEC];
+	double Xvr[NSEC];
+	double Xpr[NDEM][NSEC];
+	double Qr[NSEC];
+	double Dar[NSEC];
+	double Dtr[NSEC];
+
+	double epsilon;
+	double Apz;
+
+	double Sg;
+	double Sc;
+	double Sf;
+	double ebp;
+
+	double Sgr;
+	double Scr;
+	double Sfr;
+	double ebpr;
+
+	double suma_F;
+	double suma_FF;
+	double sum_Xpr;
+	double sum_Xr;
+
+	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
+	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
+	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
+	epsilon = vec_opt[pvec[4]];
+	Apz = vec_opt[pvec[5]];
+	int n = pvec[6];
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			Fi[i][j] = F[i][j] = vec_opt[n++];
+		}
+	}
+	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
+	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
+	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], D);
+	if (op.GE_INCLUYE_XP) {
+		int n = pvec[10];
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NSEC; j++) {
+				Xpi[i][j] = vec_opt[n++];
+			}
+		}
+	}
+	std::copy(E, E + NSEC, Ei);
+	std::copy(M, M + NSEC, Mi);
+	std::copy(D, D + NSEC, Di);
+	for (int i = 0; i < NSEC; i++) {
+		pe[i] = datos.pWe[i] * epsilon;
+		pm[i] = datos.pWm[i] * epsilon;
+	}
+	if (op.OR_PRE_EXCLUIDO == 1) {
+		pf[0] = vec_opt[pvec[0]];
+		if (op.VALOR_F_TRA == 0) {
+			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
+		}
+		else {
+			pf[1] = op.PRECIO_F_EXCLUIDO;
+		}
+	}
+	else {
+		pf[0] = op.PRECIO_F_EXCLUIDO;
+		if (op.VALOR_F_TRA < 0) {
+			pf[1] = vec_opt[pvec[0]];
+		}
+		else if (op.VALOR_F_TRA > 0) {
+			pf[1] = op.VALOR_F_TRA;
+		}
+		else {
+			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
+		}
+	}
+	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
+	restriccion_produccion_bruta_Z(Z, parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi);
+	consumo_intermedio_X(X, Z, parametros.ax);
+	utilizacion_factor_compuesto_Y(Yd, Z, parametros.ay);
+	for (int i = 0; i < NSEC; i++) {
+		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
+	}
+	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	if (op.FF_ENDOGENA) {
+		aportacion_factores_FF(FF, datos.FF0, F);
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					FF[i][j] -= Alp[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					Alp[i][j] = datos.Alp0[i][j];
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NFAC; j++) {
+				FF[i][j] = datos.FF0[i][j];
+				Alp[i][j] = datos.Alp0[i][j];
+			}
+		}
+	}
+	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
+	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
+	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
+	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	//ayudas_empresas_AgE(AgE, parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0);
+	//ayudas_hogares_AgH(AgH, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
+	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
+	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
+	//Sg = ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
+	//demanda_gobierno_Xg(Xg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE);
+	double PssH0_sum = 0.;
+	for (int i = 0; i < NDEM; i++) {
+		PssH0_sum += datos.PssH0[i];
+	}
+	if (abs(PssH0_sum) < 0.000001) {
+		Sc = 0.;
+	}
+	else {
+		Sc = -PssH0_sum;
+		for (int i = 0; i < NDEM; i++) {
+			Sc += CssH[i];
+		}
+		for (int i = 0; i < NSEC; i++) {
+			Sc += CssE[i];
+		}
+	}
+	if (op.EQ_BAL_PAGOS) {
+		Sf = datos.Sf0;
+	}
+	else {
+		Sf = ahorro_exterior_Sf(M, E, pm, pe);
+	}
+	demanda_inversion_Xv(Xv, parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0);
+	if (op.DEM_ESENCIALES) {
+		demanda_maxima_utilidad_StoneGeary_Xp(Xp, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+	}
+	else {
+		if (op.UTILIDAD_DEMANDA == 0) {
+			demanda_maxima_utilidad_CobbDouglas_Xp(Xp, parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+		else {
+			demanda_maxima_utilidad_CES_Xp(Xp, parametros.eta_ces, parametros.alfa_ces, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+	}
+	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, D, parametros.eta);
+	importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
+	produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
+	produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	if (op.EQ_BAL_PAGOS) {
+		ebp = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf);
+	}
+	else {
+		ebp = 0.;
+	}
+
+	// -----------------------
+	// segundo pase
+	// -----------------------
+	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
+	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
+	uso_optimo_factores_F(Fr, parametros.beta, pf, py, Ypr);
+	consumo_intermedio_X(Xr, Zr, parametros.ax);
+	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
+	if (op.FF_ENDOGENA) {
+		aportacion_factores_FF(FFr, datos.FF0, Fr);
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					FFr[i][j] -= Alp[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					Alpr[i][j] = datos.Alp0[i][j];
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NFAC; j++) {
+				FFr[i][j] = datos.FF0[i][j];
+				Alpr[i][j] = datos.Alp0[i][j];
+			}
+		}
+	}
+	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
+	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
+	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
+	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	//ayudas_empresas_AgE(AgEr, parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0);
+	//ayudas_hogares_AgH(AgHr, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
+	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
+	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	//Sgr = ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	//demanda_gobierno_Xg(Xgr, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	if (abs(PssH0_sum) < 0.000001) {
+		Scr = 0.;
+	}
+	else {
+		Scr = -PssH0_sum;
+		for (int i = 0; i < NDEM; i++) {
+			Scr += CssHr[i];
+		}
+		for (int i = 0; i < NSEC; i++) {
+			Scr += CssEr[i];
+		}
+	}
+	if (op.EQ_BAL_PAGOS) {
+		Sfr = datos.Sf0;
+	}
+	else {
+		Sfr = ahorro_exterior_Sf(M, E, pm, pe);
+	}
+	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, datos.Ti0, datos.Te0);
+	if (op.DEM_ESENCIALES) {
+		demanda_maxima_utilidad_StoneGeary_Xp(Xpr, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+	}
+	else {
+		if (op.UTILIDAD_DEMANDA == 0) {
+			demanda_maxima_utilidad_CobbDouglas_Xp(Xpr, parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+		else {
+			demanda_maxima_utilidad_CES_Xp(Xpr, parametros.eta_ces, parametros.alfa_ces, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+	}
+	produccion_armington_Q(Qr, parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta);
+	importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
+	produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
+	produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	if (op.EQ_BAL_PAGOS) {
+		ebpr = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, Sfr);
+	}
+	else {
+		ebpr = 0.;
+	}
+	double dd;
+	double dist = 0.;
+	if (op.EQ_BAL_PAGOS) {
+		// trata de que 'ebpr' sea igual a 'ebp' y a cero
+		dd = abs(ebp) + abs(ebpr);
+		dd = dd / (abs(ebp) + 0.000001);
+	}
+	else {
+		dd = Sfr - Sf;
+		dd = dd / (abs(Sfr) + 0.000001);
+	}
+	dist += dd * dd;
+
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xpr = 0.;
+		for (int j = 0; j < NDEM; j++) {
+			sum_Xpr += Xpr[j][i];
+		}
+		sum_Xr = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_Xr += Xr[j][i];
+		}
+		dd = Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr);
+		dd = dd / (abs(Qr[i]) + 0.000001);
+		dist += dd * dd;
+	}
+	if (op.FF_ENDOGENA) {
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					dd = Alpr[i][j] - Alp[i][j];
+					dd = dd / (abs(Alp[i][j]) + 0.000001);
+					dist += dd * dd;
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NFAC; i++) {
+			suma_F = 0.;
+			for (int j = 0; j < NSEC; j++) {
+				suma_F += abs(Fr[j][i]);
+			}
+			suma_FF = 0.;
+			for (int j = 0; j < NDEM; j++) {
+				suma_FF += abs(FFr[j][i]);
+			}
+			dd = suma_F - suma_FF;
+			dd = dd / (abs(suma_F) + 0.000001);
+			dist += dd * dd;
+		}
+	}
+	dd = Sgr - Sg;
+	dd = dd / (abs(Sgr) + 0.000001);
+	dist += dd * dd;
+	for (int i = 0; i < NDEM; i++) {
+		dd = Spr[i] - Sp[i];
+		dd = dd / (abs(Spr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = AgHr[i] - AgH[i];
+		dd = dd / (abs(AgHr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = CssHr[i] - CssH[i];
+		dd = dd / (abs(CssHr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Tdr[i] - Td[i];
+		dd = dd / (abs(Tdr[i]) + 0.000001);
+		dist += dd * dd;
+		for (int j = 0; j < NFAC; j++) {
+			dd = FFr[i][j] - FF[i][j];
+			dd = dd / (abs(FF[i][j]) + 0.000001);
+			dist += dd * dd;
+		}
+		for (int j = 0; j < NSEC; j++) {
+			if (op.GE_INCLUYE_XP) {
+				dd = Xp[i][j] - Xpi[i][j];
+				dd = dd / (abs(Xp[i][j]) + 0.000001);
+				dist += dd * dd;
+			}
+			dd = Xpr[i][j] - Xp[i][j];
+			dd = dd / (abs(Xp[i][j]) + 0.000001);
+			dist += dd * dd;
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		dd = Er[i] - Ei[i];
+		dd = dd / (abs(Er[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Mr[i] - Mi[i];
+		dd = dd / (abs(Mr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Dar[i] - Di[i];
+		dd = dd / (abs(Dar[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Er[i] - E[i];
+		dd = dd / (abs(Er[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Mr[i] - M[i];
+		dd = dd / (abs(Mr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Ydr[i] - Ypr[i];
+		dd = dd / (abs(Ydr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Dar[i] - Dtr[i];
+		dd = dd / (abs(Dar[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Zr[i] - Z[i];
+		dd = dd / (abs(Zr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Xgr[i] - Xg[i];
+		dd = dd / (abs(Xgr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Xvr[i] - Xv[i];
+		dd = dd / (abs(Xvr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Qr[i] - Q[i];
+		dd = dd / (abs(Qr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Tzr[i] - Tz[i];
+		dd = dd / (abs(Tzr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = Tmr[i] - Tm[i];
+		dd = dd / (abs(Tmr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = AgEr[i] - AgE[i];
+		dd = dd / (abs(AgEr[i]) + 0.000001);
+		dist += dd * dd;
+		dd = CssEr[i] - CssE[i];
+		dd = dd / (abs(CssEr[i]) + 0.000001);
+		dist += dd * dd;
+		for (int j = 0; j < NFAC; j++) {
+			dd = Fr[i][j] - Fi[i][j];
+			dd = dd / (abs(Fr[i][j]) + 0.000001);
+			dist += dd * dd;
+			dd = Fr[i][j] - F[i][j];
+			dd = dd / (abs(Fr[i][j]) + 0.000001);
+			dist += dd * dd;
+		}
+		for (int j = 0; j < NSEC; j++) {
+			dd = Xr[i][j] - X[i][j];
+			dd = dd / (abs(Xr[i][j]) + 0.000001);
+			dist += dd * dd;
+		}
+	}
+	return dist;
+}
+
+double* merito_sol_relativa(double* vec_opt) {
+	double pf[NFAC];
+	double py[NSEC];
+	double pq[NSEC];
+	double pd[NSEC];
+	double pe[NSEC];
+	double pm[NSEC];
+	double Fi[NSEC][NFAC];
+	double Ei[NSEC];
+	double Mi[NSEC];
+	double Di[NSEC];
+	double Xpi[NDEM][NSEC];
+
+	double pz[NSEC];
+	double exceso[NDEM][NFAC];
+	double Ypd[NSEC];
+
+	double F[NSEC][NFAC];
+	double E[NSEC];
+	double M[NSEC];
+	double Da[NSEC];
+	double Dt[NSEC];
+	double Yp[NSEC];
+	double Yd[NSEC];
+	double Z[NSEC];
+	double X[NSEC][NSEC]{};
+	double FF[NDEM][NFAC];
+	double Alp[NDEM][NFAC];
+	double Td[NDEM];
+	double Tz[NSEC];
+	double Tm[NSEC];
+	double Sp[NDEM];
+	double AgE[NSEC];
+	double AgH[NDEM];
+	double CssE[NSEC];
+	double CssH[NDEM];
+	double Xg[NSEC];
+	double Xv[NSEC];
+	double Xp[NDEM][NSEC];
+	double Q[NSEC];
+
+	double Fr[NSEC][NFAC];
+	double Er[NSEC];
+	double Mr[NSEC];
+	double Dar[NSEC];
+	double Dtr[NSEC];
+	double Ypr[NSEC];
+	double Ydr[NSEC];
+	double Zr[NSEC];
+	double Xr[NSEC][NSEC]{};
+	double FFr[NDEM][NFAC];
+	double Alpr[NDEM][NFAC];
+	double Tdr[NDEM];
+	double Tzr[NSEC];
+	double Tmr[NSEC];
+	double Spr[NDEM];
+	double AgEr[NSEC];
+	double AgHr[NDEM];
+	double CssEr[NSEC];
+	double CssHr[NDEM];
+	double Xgr[NSEC];
+	double Xvr[NSEC];
+	double Xpr[NDEM][NSEC];
+	double Qr[NSEC];
+
+	double epsilon;
+	double Apz;
+
+	double Sg;
+	double Sc;
+	double Sf;
+	double ebp;
+
+	double Sgr;
+	double Scr;
+	double Sfr;
+	double ebpr;
+
+	double suma_F;
+	double suma_FF;
+	double sum_Xpr;
+	double sum_Xr;
+
+	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
+	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
+	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
+	epsilon = vec_opt[pvec[4]];
+	Apz = vec_opt[pvec[5]];
+	int n = pvec[6];
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			Fi[i][j] = vec_opt[n];
+			F[i][j] = vec_opt[n++];
+		}
+	}
+	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
+	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
+	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
+	if (op.GE_INCLUYE_XP) {
+		int n = pvec[10];
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NSEC; j++) {
+				Xpi[i][j] = vec_opt[n++];
+			}
+		}
+	}
+	std::copy(E, E + NSEC, Ei);
+	std::copy(M, M + NSEC, Mi);
+	for (int i = 0; i < NSEC; i++) {
+		pe[i] = datos.pWe[i] * epsilon;
+		pm[i] = datos.pWm[i] * epsilon;
+	}
+	if (op.OR_PRE_EXCLUIDO == 1) {
+		pf[0] = vec_opt[pvec[0]];
+		if (op.VALOR_F_TRA == 0) {
+			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
+		}
+		else {
+			pf[1] = op.PRECIO_F_EXCLUIDO;
+		}
+	}
+	else {
+		pf[0] = op.PRECIO_F_EXCLUIDO;
+		if (op.VALOR_F_TRA < 0) {
+			pf[1] = vec_opt[pvec[0]];
+		}
+		else if (op.VALOR_F_TRA > 0) {
+			pf[1] = op.VALOR_F_TRA;
+		}
+		else {
+			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
+		}
+	}
+	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
+	restriccion_produccion_bruta_Z(Z, parametros.teta, parametros.xie, parametros.xid, E, Di, parametros.phi);
+	consumo_intermedio_X(X, Z, parametros.ax);
+	utilizacion_factor_compuesto_Y(Yd, Z, parametros.ay);
+	for (int i = 0; i < NSEC; i++) {
+		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
+	}
+	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	if (op.FF_ENDOGENA) {
+		aportacion_factores_FF(FF, datos.FF0, F);
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					FF[i][j] -= Alp[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					Alp[i][j] = datos.Alp0[i][j];
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NFAC; j++) {
+				FF[i][j] = datos.FF0[i][j];
+				Alp[i][j] = datos.Alp0[i][j];
+			}
+		}
+	}
+	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
+	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
+	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
+	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	//ayudas_empresas_AgE(AgE, parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0);
+	//ayudas_hogares_AgH(AgH, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
+	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
+	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
+	//Sg = ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
+	//demanda_gobierno_Xg(Xg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE);
+	double PssH0_sum = 0.;
+	for (int i = 0; i < NDEM; i++) {
+		PssH0_sum += datos.PssH0[i];
+	}
+	if (abs(PssH0_sum) < 0.000001) {
+		Sc = 0.;
+	}
+	else {
+		Sc = -PssH0_sum;
+		for (int i = 0; i < NDEM; i++) {
+			Sc += CssH[i];
+		}
+		for (int i = 0; i < NSEC; i++) {
+			Sc += CssE[i];
+		}
+	}
+	if (op.EQ_BAL_PAGOS) {
+		Sf = datos.Sf0;
+	}
+	else {
+		Sf = ahorro_exterior_Sf(M, E, pm, pe);
+	}
+	demanda_inversion_Xv(Xv, parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0);
+	if (op.DEM_ESENCIALES) {
+		demanda_maxima_utilidad_StoneGeary_Xp(Xp, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+	}
+	else {
+		if (op.UTILIDAD_DEMANDA == 0) {
+			demanda_maxima_utilidad_CobbDouglas_Xp(Xp, parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+		else {
+			demanda_maxima_utilidad_CES_Xp(Xp, parametros.eta_ces, parametros.alfa_ces, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+	}
+	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, Di, parametros.eta);
+	importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
+	produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
+	produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	if (op.EQ_BAL_PAGOS) {
+		ebp = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf);
+	}
+	else {
+		ebp = 0.;
+	}
+
+	// -----------------------
+	// segundo pase
+	// -----------------------
+	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
+	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
+	uso_optimo_factores_F(Fr, parametros.beta, pf, py, Ypr);
+	consumo_intermedio_X(Xr, Zr, parametros.ax);
+	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
+	if (op.FF_ENDOGENA) {
+		aportacion_factores_FF(FFr, datos.FF0, Fr);
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					FFr[i][j] -= Alp[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					Alpr[i][j] = datos.Alp0[i][j];
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NFAC; j++) {
+				FFr[i][j] = datos.FF0[i][j];
+				Alpr[i][j] = datos.Alp0[i][j];
+			}
+		}
+	}
+	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
+	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
+	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
+	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	//ayudas_empresas_AgE(AgEr, parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0);
+	//ayudas_hogares_AgH(AgHr, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
+	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
+	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	//Sgr = ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	//demanda_gobierno_Xg(Xgr, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	if (abs(PssH0_sum) < 0.000001) {
+		Scr = 0.;
+	}
+	else {
+		Scr = -PssH0_sum;
+		for (int i = 0; i < NDEM; i++) {
+			Scr += CssHr[i];
+		}
+		for (int i = 0; i < NSEC; i++) {
+			Scr += CssEr[i];
+		}
+	}
+	if (op.EQ_BAL_PAGOS) {
+		Sfr = datos.Sf0;
+	}
+	else {
+		Sfr = ahorro_exterior_Sf(M, E, pm, pe);
+	}
+	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, datos.Ti0, datos.Te0);
+	if (op.DEM_ESENCIALES) {
+		demanda_maxima_utilidad_StoneGeary_Xp(Xpr, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+	}
+	else {
+		if (op.UTILIDAD_DEMANDA == 0) {
+			demanda_maxima_utilidad_CobbDouglas_Xp(Xpr, parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+		else {
+			demanda_maxima_utilidad_CES_Xp(Xpr, parametros.eta_ces, parametros.alfa_ces, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+	}
+	produccion_armington_Q(Qr, parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta);
+	importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
+	produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
+	produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	if (op.EQ_BAL_PAGOS) {
+		ebpr = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, Sfr);
+	}
+	else {
+		ebpr = 0.;
+	}
+
+	// cálculo de desviaciones
+	double dd;
+	double dist = 0.;
+	double dist_max = -1.;
+	int ndv = 0;
+	int ndm = 0;
+	int idm = -1;
+	int pdm = -1;
+	int ddm = -1;
+
+	// ebp
+	if (op.EQ_BAL_PAGOS) {
+		// trata de que 'ebpr' sea igual a 'ebp' y a cero
+		dd = abs(ebp) + abs(ebpr);
+		dd = dd / (abs(ebp) + 0.000001);
+	}
+	else {
+		dd = abs(Sfr - Sf);
+		dd = dd / (abs(Sfr) + 0.000001);
+	}
+	if (dd > dist_max) {
+		dist_max = dd;
+		idm = ndm;
+		pdm = 0;
+		ddm = 0;
+	};
+	ndm++;
+	dist += dd * dd;
+	desvios[ndv++] = dist;
+	// Q eq
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xpr = 0.;
+		for (int j = 0; j < NDEM; j++) {
+			sum_Xpr += Xpr[j][i];
+		}
+		sum_Xr = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_Xr += Xr[j][i];
+		}
+		dd = abs(Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr));
+		dd = dd / (abs(Qr[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 1;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	if (op.FF_ENDOGENA) {
+		// desvio en factores
+		ndm += NFAC;
+		desvios[ndv++] = dist;
+
+		// desvios Alp
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					dd = abs(Alpr[i][j] - Alp[i][j]);
+					dd = dd / (abs(Alp[i][j]) + 0.000001);
+					if (dd > dist_max) {
+						dist_max = dd;
+						idm = ndm;
+						pdm = 3;
+						ddm = i * NFAC + j;
+					};
+					ndm++;
+					dist += dd * dd;
+				}
+			}
+		}
+		else {
+			ndm += NDEM * NFAC;
+		}
+		desvios[ndv++] = dist;
+	}
+	else {
+		// desvio en factores
+		for (int i = 0; i < NFAC; i++) {
+			suma_F = 0.;
+			for (int j = 0; j < NSEC; j++) {
+				suma_F += abs(Fr[j][i]);
+			}
+			suma_FF = 0.;
+			for (int j = 0; j < NDEM; j++) {
+				suma_FF += abs(FFr[j][i]);
+			}
+			dd = abs(suma_F - suma_FF);
+			dd = dd / (abs(suma_F) + 0.000001);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 2;
+				ddm = i;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+		desvios[ndv++] = dist;
+
+		// desvios Alp
+		ndm += NDEM * NFAC;
+		desvios[ndv++] = dist;
+	}
+	// Sg
+	dd = abs(Sgr - Sg);
+	dd = dd / (abs(Sg) + 0.000001);
+	if (dd > dist_max) {
+		dist_max = dd;
+		idm = ndm;
+		pdm = 4;
+		ddm = 0;
+	};
+	ndm++;
+	dist += dd * dd;
+	desvios[ndv++] = dist;
+	// Sp
+	for (int i = 0; i < NDEM; i++) {
+		dd = abs(Spr[i] - Sp[i]);
+		dd = dd / (abs(Sp[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 5;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// vacante
+	ndm++;
+	desvios[ndv++] = dist;
+	// Agh
+	for (int i = 0; i < NDEM; i++) {
+		dd = abs(AgHr[i] - AgH[i]);
+		dd = dd / (abs(AgH[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 7;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// CssH
+	for (int i = 0; i < NDEM; i++) {
+		dd = abs(CssHr[i] - CssH[i]);
+		dd = dd / (abs(CssH[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 8;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Td
+	for (int i = 0; i < NDEM; i++) {
+		dd = abs(Tdr[i] - Td[i]);
+		dd = dd / (abs(Td[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 9;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// FF
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			dd = abs(FFr[i][j] - FF[i][j]);
+			dd = dd / (abs(FF[i][j]) + 0.000001);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 10;
+				ddm = i * NFAC + j;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+	}
+	desvios[ndv++] = dist;
+	// Xpi
+	if (op.GE_INCLUYE_XP) {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NSEC; j++) {
+				dd = abs(Xpr[i][j] - Xpi[i][j]);
+				dd = dd / (abs(Xpi[i][j]) + 0.000001);
+				if (dd > dist_max) {
+					dist_max = dd;
+					idm = ndm;
+					pdm = 11;
+					ddm = i * NSEC + j;
+				};
+				ndm++;
+				dist += dd * dd;
+			}
+		}
+	}
+	else {
+		ndm += NDEM * NSEC;
+	}
+	desvios[ndv++] = dist;
+	// Xp
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			dd = abs(Xpr[i][j] - Xp[i][j]);
+			dd = dd / (abs(Xp[i][j]) + 0.000001);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 12;
+				ddm = i * NSEC + j;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+	}
+	desvios[ndv++] = dist;
+	// Ei
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Er[i] - Ei[i]);
+		dd = dd / (abs(Ei[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 13;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Mi
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Mr[i] - Mi[i]);
+		dd = dd / (abs(Mi[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 14;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Dai
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Dar[i] - Di[i]);
+		dd = dd / (abs(Di[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 15;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// E
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Er[i] - E[i]);
+		dd = dd / (abs(E[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 16;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// M
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Mr[i] - M[i]);
+		dd = dd / (abs(M[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 17;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Ydp
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Ydr[i] - Ypr[i]);
+		dd = dd / (abs(Ypr[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 18;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Dat
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Dar[i] - Dtr[i]);
+		dd = dd / (abs(Dtr[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 19;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Z
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Zr[i] - Z[i]);
+		dd = dd / (abs(Z[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 20;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Xg
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Xgr[i] - Xg[i]);
+		dd = dd / (abs(Xg[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 21;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Xv
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Xvr[i] - Xv[i]);
+		dd = dd / (abs(Xv[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 22;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Q
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Qr[i] - Q[i]);
+		dd = dd / (abs(Q[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 23;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Tz
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Tzr[i] - Tz[i]);
+		dd = dd / (abs(Tz[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 24;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Tm
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(Tmr[i] - Tm[i]);
+		dd = dd / (abs(Tm[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 25;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Age
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(AgEr[i] - AgE[i]);
+		dd = dd / (abs(AgE[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 26;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// CssE
+	for (int i = 0; i < NSEC; i++) {
+		dd = abs(CssEr[i] - CssE[i]);
+		dd = dd / (abs(CssE[i]) + 0.000001);
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 27;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+	desvios[ndv++] = dist;
+	// Fi
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			dd = abs(Fr[i][j] - Fi[i][j]);
+			dd = dd / (abs(Fi[i][j]) + 0.000001);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 28;
+				ddm = i * NFAC + j;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+	}
+	desvios[ndv++] = dist;
+	// F
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			dd = abs(Fr[i][j] - F[i][j]);
+			dd = dd / (abs(F[i][j]) + 0.000001);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 29;
+				ddm = i * NFAC + j;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+	}
+	desvios[ndv++] = dist;
+	// X
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			dd = abs(Xr[i][j] - X[i][j]);
+			dd = dd / (abs(X[i][j]) + 0.000001);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 30;
+				ddm = i * NSEC + j;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+	}
+	desvios[ndv++] = dist;
+
+	puntero_bloque_desviacion = pdm;
+	desplazamiento_desviacion = ddm;
+#ifdef COMPROBAR_DESVIACION
+	// buscar el rótulo del bloque de máxima desviación
+	puntero_bloque_desviacion = -1;
+	desplazamiento_desviacion = -1;
+	for (int i = 0; i < MAX_BLOQUES_DESVIOS - 1; i++) {
+		if (idm >= ind_bloque_desviacion[i] && idm < ind_bloque_desviacion[i + 1]) {
+			puntero_bloque_desviacion = i;
+			desplazamiento_desviacion = idm - ind_bloque_desviacion[i];
+			break;
+		}
+	}
+	if (puntero_bloque_desviacion != pdm || puntero_bloque_desviacion == -1 || pdm == -1) {
+		fprintf(salida, "Error: el bloque de desviación identificado %d no coincide con el bloque esperado %d.\n", puntero_bloque_desviacion, pdm);
+		fflush(salida);
+		puntero_bloque_desviacion = 0;
+		desplazamiento_desviacion = 0;
+	}
+	if (desplazamiento_desviacion != ddm || desplazamiento_desviacion == -1 || ddm == -1) {
+		fprintf(salida, "Error: el desplazamiento de desviación identificado %d no coincide con el desplazamiento esperado %d.\n", desplazamiento_desviacion, ddm);
+		fflush(salida);
+		puntero_bloque_desviacion = 0;
+		desplazamiento_desviacion = 0;
+	}
+#endif
+	// cabecera + vector solución + valores para todas las demás variables
+
+	// cabecera
+	int nsol = 0;
+	me_sol[nsol++] = 0;			// resultado
+	me_sol[nsol++] = 0;			// número de datos
+	me_sol[nsol++] = 0;			// intentos
+	me_sol[nsol++] = 0;			// generaciones
+	me_sol[nsol++] = dist;		// mérito
+	me_sol[nsol++] = dist_max;	// desviación máxima
+	me_sol[nsol++] = idm;		// índice de desviación máxima
+
+	// el vector solución inmediatamente después de la cabecera
+	for (int i = 0; i < NFAC; i++)	me_sol[nsol++] = pf[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = py[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = pq[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = pd[i];
+	me_sol[nsol++] = epsilon;
+	me_sol[nsol++] = Apz;
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = Fi[i][j];
+		}
+	}
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Ei[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Mi[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Di[i];
+	if (op.GE_INCLUYE_XP) {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NSEC; j++) {
+				me_sol[nsol++] = Xpi[i][j];
+			}
+		}
+	}
+	// hasta aquí el vector solución
+
+	// resto de variables
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = pz[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = pe[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = pm[i];
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = F[i][j];
+		}
+	}
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = E[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = M[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Yp[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Yd[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Da[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Dt[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Z[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Xg[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Xv[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Q[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = Td[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Tz[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Tm[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = Sp[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = AgE[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = AgH[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = CssE[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = CssH[i];
+	me_sol[nsol++] = Sg;
+	me_sol[nsol++] = Sc;
+	me_sol[nsol++] = Sf;
+	me_sol[nsol++] = ebp;
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			me_sol[nsol++] = Xp[i][j];
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = FF[i][j];
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = Alp[i][j];
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			me_sol[nsol++] = X[i][j];
+		}
+	}
+
+	// los recálculos (segundo pase)
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = Fr[i][j];
+		}
+	}
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Er[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Mr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Ypr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Ydr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Dar[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Dtr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Zr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Xgr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Xvr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Qr[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = Tdr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Tzr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = Tmr[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = Spr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = AgEr[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = AgHr[i];
+	for (int i = 0; i < NSEC; i++)	me_sol[nsol++] = CssEr[i];
+	for (int i = 0; i < NDEM; i++)	me_sol[nsol++] = CssHr[i];
+	me_sol[nsol++] = Sgr;
+	me_sol[nsol++] = Scr;
+	me_sol[nsol++] = Sfr;
+	me_sol[nsol++] = ebpr;
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			me_sol[nsol++] = Xpr[i][j];
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = FFr[i][j];
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			me_sol[nsol++] = Alpr[i][j];
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			me_sol[nsol++] = Xr[i][j];
+		}
+	}
+	me_sol[1] = nsol;
+
+	// cabecera	+ vector solucion + detalle desvios + evolución error
+	nsol = 0;
+	VEC_OPT_E[nsol++] = 0;			// resultado
+	VEC_OPT_E[nsol++] = 0;			// número de datos
+	VEC_OPT_E[nsol++] = 0;			// intentos
+	VEC_OPT_E[nsol++] = 0;			// generaciones
+	VEC_OPT_E[nsol++] = dist;		// mérito
+	VEC_OPT_E[nsol++] = dist_max;	// desviación máxima
+	VEC_OPT_E[nsol++] = idm;		// índice de desviación máxima
+
+	VEC_OPT_E[nsol++] = pf[0];
+	VEC_OPT_E[nsol++] = pf[1];
+
+	// vector solución
+	for (int i = 1; i < NVEC; i++) {
+		VEC_OPT_E[nsol++] = vec_opt[i];
+	}
+	VEC_OPT_E[1] = nsol;
+
+	// desglose de las desviaciones
+	VEC_OPT_E[nsol++] = ndv;
+	for (int i = 0; i < ndv; i++) {
+		VEC_OPT_E[nsol++] = desvios[i];
+	}
+
+	// evolución del error
+	if (histo_int > 0) {
+		VEC_OPT_E[nsol++] = HISTO_MAX;
+		for (int i = 0; i < HISTO_MAX; i++) {
+			VEC_OPT_E[nsol++] = histogenera[i];
+			VEC_OPT_E[nsol++] = histograma[i];
+		}
+	}
+	return me_sol;
+}
+#endif
+
+#ifdef COMPROBAR_MAX_DESVIACION
+void indice_desviaciones() {
+	int idm = 0;
+	ind_bloque_desviacion[idm++] = 0;												// ebp
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + 1;				// Q eq
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// F - FF
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NFAC;			// Alp
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM * NFAC;	// Sg
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + 1;				// Sp
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM;			// vacante
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + 1;				// Agh
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM;			// CssH
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM;			// Td
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM;			// FF
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM * NFAC;	// Xpi
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM * NSEC;	// Xp
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NDEM * NSEC;	// Ei
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Mi
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Dai
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// E
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// M
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Ydp
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Dat
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Z
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Xg
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Xv
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Q
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Tz
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Tm
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// AgE
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// CssE
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Fi
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NFAC;	// F
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NFAC;	// X
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NSEC;	// fin
+}
+#endif
 /*
 a continuación y hasta el final todas las ecuaciones del modelo.
 */
