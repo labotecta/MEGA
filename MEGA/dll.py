@@ -294,16 +294,26 @@ def envia_parametros(libc, p):
     '''
 
 def merito_s(libc, vec_opt):
-    libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
-    libc.merito_s.restype = ct.c_double
     vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
-    return libc.merito_s(vo)
+    if prin.DESV_RELATIVA == 1:
+        libc.merito_s_relativa.argtypes = [ct.POINTER(ct.c_double)]
+        libc.merito_s_relativa.restype = ct.c_double
+        return libc.merito_s_relativa(vo)
+    else:
+        libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
+        libc.merito_s.restype = ct.c_double
+        return libc.merito_s(vo)
 
 def merito_sol(libc, vec_opt):
-    libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
-    libc.merito_sol.restype = ct.POINTER(ct.c_double)
     vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
-    r_sol = libc.merito_sol(vo)
+    if prin.DESV_RELATIVA == 1:
+        libc.merito_sol_relativa.argtypes = [ct.POINTER(ct.c_double)]
+        libc.merito_sol_relativa.restype = ct.POINTER(ct.c_double)
+        r_sol = libc.merito_sol_relativa(vo)
+    else:
+        libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
+        libc.merito_sol.restype = ct.POINTER(ct.c_double)
+        r_sol = libc.merito_sol(vo)
     return r_sol[4]
     '''
     NFAC = nfac

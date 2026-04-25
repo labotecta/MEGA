@@ -6,8 +6,7 @@ que está íntegramente en Python.
 
 Otro asunto sobre el que reflexionar, es la conveniencia de normalizar las desviaciones de las variables en el
 resultado de la función objetivo. La aplicación no los normaliza, se trata de desviaciones en importes y todos
-tienen el mismo peso, sea cual sea el importe absoluto de la variable. Casi seguro no serviría de nada.
-
+tienen el mismo peso, sea cual sea el importe absoluto de la variable. Casi seguro no serviría de nada
 scipy.differential_evolution si normaliza las variables para que todos los intervalos de existencia sean el mismo.
 
 Los pagos de impuestos directos del gobierno no se usan para nada (Tg0).
@@ -19,7 +18,7 @@ mismos resultados, lo cual es lógico porque los parámetros se determinan en to
 reproduzcan los valores Xp0 de la MCS y las variaciones que experimentan los Xp en otros esenarios son suficientemente
 pequeñas para que todas las funciones de utilidad repartan los ingresos netos en prácticamente las mismas cantidades.
 
-Resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
+Resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución.
 
 El tratamiento del precio de los factores es enrevesado y fuente de multitud de errores, se diseño pensando
 que siempre se fijaría el precio del factor trabajo y que por lo tanto no debía formar parte de las soluciones a
@@ -28,7 +27,7 @@ incomprensible la gestión de estos precios en las soluciones de prueba.
 '''
 '''
 Mejoras:
-    1. Relacionar los pagos de impestos por: el gobierno, el ahorro+inversión y el sector exterior con sus
+    1. Relacionar los pagos de impuestos por: el gobierno, el ahorro+inversión y el sector exterior con sus
     correspondientes catidades
 
     2. Establecer una relación entre el reparto de las inversiones por sectores y el uso que hace cada uno de ellos del
@@ -135,6 +134,7 @@ nsec = args.NSEC    # número de sectores
 # para que al importarlo ya estén definidas 'nfac, ndem y nsec'
 #----------------------------------------------------------------------------
 import dll           as dll
+#----------------------------------------------------------------------------
 
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
@@ -144,6 +144,7 @@ FI_SOL_SALVA        = args.FI_SOL_SALVA
 USAR_DLL            = args.USAR_DLL
 SENDA_DLL           = args.SENDA_DLL
 USAR_ALGE_DLL       = args.USAR_ALGE_DLL
+DESV_RELATIVA       = args.DESV_RELATIVA
 if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 4 and NSAM != 5 and NSAM != 6:
     if __name__ == 'MEGA':
         errores_diferidos.append('La DLL solo se puede usar con las MCS 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
@@ -398,6 +399,19 @@ GE_ACTUALIZACION    = args.GE_ACTUALIZACION
 GE_RECONBINACION    = args.GE_RECONBINACION
 GE_DIM_POBLACION    = args.GE_DIM_POBLACION
 GE_WORKERS          = args.GE_WORKERS
+if GE_WORKERS != 1:
+    if USAR_ALGE_DLL:
+        if __name__ == 'MEGA':
+            errores_diferidos.append('Para usar el algoritmo genético desde la DLL en número de Workers ({}) debe ser 1'.format(GE_WORKERS))
+        else:
+            errores_diferidos.append('')
+    # aunque 'scipy' lo modifica automáticamente, no está de más especificarlo por transparencia
+    GE_ACTUALIZACION = 'deferred'
+    # comprobar el número de GE_WORKERS según la máquina
+    n_cores = psutil.cpu_count(logical = False)
+    if n_cores <= GE_WORKERS:
+        if __name__ == 'MEGA':
+            avisos_diferidos.append('Esta máquina tiene {} cores físicos y se han especificado {} workers.'.format(n_cores, GE_WORKERS))
 GE_SEMILLA          = args.GE_SEMILLA
 GE_IMG_FIL          = args.GE_IMG_FIL
 GE_IMG_COL          = args.GE_IMG_COL
@@ -453,25 +467,11 @@ if (13 in NCASO) and DEM_ESENCIALES:
         errores_diferidos.append('Consumos esenciales iguales a Xp0 es incompatible con Stone-Geary (rentas 0)')
     else:
         errores_diferidos.append('')
-if USAR_ALGE_DLL and GE_WORKERS != 1:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('Para usar el algoritmo genético desde la DLL en número de Workers ({}) debe ser 1'.format(GE_WORKERS))
-    else:
-        errores_diferidos.append('')
 
 if len(errores_diferidos) == 0:
     # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
     # valores desagregados por producto, porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
     AYD_ADI_DEM = AYD_ADICIONAL.sum(axis=1)
-aviso_workers = False
-if GE_WORKERS != 1:
-    # aunque se modifica automáticamente, no está de más especificarlo por transparencia
-    GE_ACTUALIZACION = 'deferred'
-    # comprobar el número de GE_WORKERS según la máquina
-    n_cores = psutil.cpu_count(logical = False)
-    if n_cores <= GE_WORKERS:
-        aviso_workers = True
-
 os.makedirs(SENDA_SALIDAS   , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_GRAFICOS  , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_SOLUCIONES, exist_ok=True)  # crear el directorio si no existe
@@ -795,96 +795,120 @@ def extrae_var(vp, clave, nfil, ncol):
         # es un vector
         return vendo
 
-def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
-          ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_can_min, ge_var_min, ge_var_max,
-          ind_pvec_desde, fix, fix_limites, ge_incluye_xp, con_esenciales):
+def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
     # definir el rango de variación de los precios y variables en LA SOLUCION A PROBAR 'vec_opt'
-
     # primero rellenamos 'bnds' con 0 y luego lo iremos modificando
     bnds = []
     for i in range(nvec_opt):
         bnds.append((0.,0.))
 
     # limites con criterio general para todas las variables en el vector solución
-    for i in range(nvec_opt):
-        if i == 0 and or_pre_referencia != indice_f_tra and valor_f_tra > 0:
-            # el precio del factor OR_PRE_EXCLUIDO no forma parte del vector solución
-            # el que forma parte es el otro, luego si OR_PRE_EXCLUIDO es el capital (!= INDICE_F_TRA),
-            # el incluido en la solución es el trabajo y lo hacemos igual a VALOR_F_TRA, salvo que sea 0 o -1
-            vi = valor_f_tra
-            vs = valor_f_tra
+
+    # en el vector solución sólo se incluye el precio de un factor y sus cotas están en la posición 0 de 'bnds' con
+    # indepemdencia de que sea el del capital, o el del trabajo
+    if OR_PRE_EXCLUIDO == 1:
+        # if 'OR_PRE_EXCLUIDO' es 1 (trabajo), en el vector solución debe estar el de capital como variable endogena,
+        # sin valor fijo, con el rango establecido para los precios
+        v = vec_opt[0]
+        vi = v * (1. - GE_PRE_MIN / 100.)
+        vs = v * (1. + GE_PRE_MAX / 100.)
+    elif OR_PRE_EXCLUIDO == 0:
+        # if 'OR_PRE_EXCLUIDO' es 0 (capital), en el vector solución está el precio del trabajo
+        if VALOR_F_TRA > 0:
+            # si VALOR_F_TRA es > 0 el precio del trabajo es el valor fijo VALOR_F_TRA
+            vi = VALOR_F_TRA
+            vs = VALOR_F_TRA
+        elif VALOR_F_TRA == 0:
+            #aunque en el vector solución se incluye el precio del tabajo su valor no se usará porque se calcula con la fórmula Phillips, por
+            # lo tanto le pondremos un valor fijo (1.) para que el algoritmo genético no "pruebe" valores para él
+            vi = 1.
+            vs = 1.
+        elif VALOR_F_TRA == -1:
+            # Si VALOR_F_TRA = -1 el precio del factor trabajo es endógeno, sin valor fijo, con el rango establecido para los precios
+            v = vec_opt[0]
+            vi = v * (1. - GE_PRE_MIN / 100.)
+            vs = v * (1. + GE_PRE_MAX / 100.)
         else:
-            v = vec_opt[i]
-            if abs(v) < 0.001:
-                # para evitar que las variables inicialmente a 0, queden acotados a (0,0)
-                if i < npre_sol:
-                    # aunque no tiene mucho sentido un precio inicialmente a 0, le ponemos un rango razonable: positivo a partir de 0
-                    vi = 0.
-                    vs = 3.
-                else:
-                    vi = np.float64(-ge_var_cero)
-                    vs = np.float64(+ge_var_cero)
+            imprime('El valor de VALOR_F_TRA {} no es válido. Debe ser -1, 0 o un valor positivo.\n'.format(VALOR_F_TRA))
+            sys.exit()
+    bnds[0] = ((vi,vs))
+    for i in range(1, nvec_opt):
+        v = vec_opt[i]
+        if abs(v) < 0.001:
+            # para evitar que las variables inicialmente a 0, queden acotados a (0,0)
+            if i < npre_sol:
+                # aunque no tiene mucho sentido un precio inicialmente a 0, le ponemos un rango razonable: positivo a partir de 0
+                vi = 0.
+                vs = 3.
             else:
-                vi = v * (1. - ge_var_min / 100.)
-                vs = v * (1. + ge_var_max / 100.)
+                vi = np.float64(-GE_VAR_CERO)
+                vs = np.float64(+GE_VAR_CERO)
+        else:
+            if i < npre_sol:
+                vi = v * (1. - GE_PRE_MIN / 100.)
+                vs = v * (1. + GE_PRE_MAX / 100.)
+            else:
+                vi = v * (1. - GE_VAR_MIN / 100.)
+                vs = v * (1. + GE_VAR_MAX / 100.)
         bnds[i] = ((vi,vs))
 
     # procesamos las especificaciones explicitas de límites (especificadas manualmente)
-    if len(fix) > 0:
-        for n in range(len(fix)):
+    if len(FIX) > 0:
+        for n in range(len(FIX)):
             # 'n' es la fila de 'FIX_LIMITES' que corresponde a la variable
-            clave = fix[n]
+            clave = FIX[n]
             # puntero al inicio de la variable
             i = ind_pvec_desde[clave]
             # para cada terna 'j' de limites de la variable 'n'
-            for j in range(len(fix_limites[n])):
+            for j in range(len(FIX_LIMITES[n])):
                 # 'k' es el primer elemento de la terna y es el índice dentro de la variable (desplazamiento desde su origen)
-                k = fix_limites[n][j][0]
+                k = FIX_LIMITES[n][j][0]
                 # límite inferior
-                if type(fix_limites[n][j][1]) is str:
+                if type(FIX_LIMITES[n][j][1]) is str:
                     # cualquier caracter hace que se ponga el valor inicial de la variable en el vector de prueba
                     vi = vec_opt[i + k]
                 else:
                     # ...[1] es el segundo elemento, de la terna 'j', de la variable 'n'
-                    vi = fix_limites[n][j][1]
+                    vi = FIX_LIMITES[n][j][1]
                 # límite superior
-                if type(fix_limites[n][j][2]) is str:
+                if type(FIX_LIMITES[n][j][2]) is str:
                     # cualquier caracter hace que se ponga el valor inicial de la variable en el vector de prueba
                     vs = vec_opt[i + k]
                 else:
                     # ...[2] es el tercere elemento, de la terna 'j', de la variable 'n'
-                    vs = fix_limites[n][j][2]
+                    vs = FIX_LIMITES[n][j][2]
                 bnds[i + k] = ((vi,vs))
             # <- fin de la terna 'j'
         # <- fin de la variable 'n'
 
-    if ge_incluye_xp and abs(con_esenciales).sum() != 0:
+    if GE_INCLUYE_XP and abs(CON_ESENCIALES).sum() != 0:
         # acotar consumos de los hogares Xp
         i = ind_pvec_desde['Xp']
         for j in range(ndem):
             for k in range(nsec):
-                vi = con_esenciales[j][k]
+                vi = CON_ESENCIALES[j][k]
                 bnds[i] = (vi,bnds[i][1])
                 i += 1
     # si no hay exportaciones o importaciones en la MCS, el modelo las mantendrá a cero, por
     # lo tamto, fijamos sus intervalos en el valor cero
-    i = ind_pvec_desde['E']
     n_Efijas = 0
+    i = ind_pvec_desde['E']
     for j in range(nsec):
-        if vec_opt[i] < 0.000001:
+        if abs(vec_opt[i]) < 0.000001:
             vec_opt[i] = 0.
             bnds[i] = (0., 0.)
             n_Efijas += 1
         i += 1
-    i = ind_pvec_desde['M']
     n_Mfijas = 0
+    i = ind_pvec_desde['M']
     for j in range(nsec):
-        if vec_opt[i] < 0.000001:
+        if abs(vec_opt[i]) < 0.000001:
             vec_opt[i] = 0.
             bnds[i] = (0., 0.)
             n_Mfijas += 1
         i += 1
-    # intervalo mínimo
+
+    # ajustar los entornos de validez al valor mínimo
     if GE_VAR_CAN_MIN > 0:
         cuenta = 0
         for i in range(npre_sol, nvec_opt):
@@ -907,151 +931,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_t
     #--------------------------------------------------------------------------------------------------------    
     # resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
     #--------------------------------------------------------------------------------------------------------    
-    #i = ind_pvec_desde['Apz']
-    #bnds[i] = (-0.000001, 0.000001)
-    #--------------------------------------------------------------------------------------------------------    
-
     return (bnds, n_Efijas, n_Mfijas)
-
-def cotas_geometicas(ndem, nsec, vec_opt, nvec_opt, npre_sol, or_pre_referencia, indice_f_tra, valor_f_tra,
-          ge_tolerancia, ge_pre_min, ge_pre_max, ge_var_cero, ge_var_can_min, ge_var_min, ge_var_max,
-          ind_pvec_desde, ge_fix, ge_fix_limites, ge_incluye_xp, con_esenciales):
-    # definir el rango de variación de los precios y variables en LA SOLUCION A PROBAR 'vec_opt'
-    bnds = []
-    # primero rellenamos 'bnds' y luego lo iremos modificando
-    for i in range(nvec_opt):
-        bnds.append((0.,0.))
-
-    # precios
-    for i in range(npre_sol):
-        if i == 0 and or_pre_referencia != indice_f_tra and valor_f_tra > 0:
-            # el precio del factor OR_PRE_EXCLUIDO no forma parte del vector solución
-            # el que forma parte es el otro, luego si OR_PRE_EXCLUIDO es el capital (!= INDICE_F_TRA),
-            # el incluido en la solución es el trabajo y lo hacemos igual a VALOR_F_TRA, salvo que sea 0 o -1
-            vi = valor_f_tra
-            vs = valor_f_tra
-        else:
-            v = vec_opt[i]
-            if abs(v) < ge_tolerancia:
-                # para evitar que los precios inicialmente a 0 queden acotados a (0,0)
-                vi = 0.
-                vs = 3.
-            else:
-                vi = v / ge_pre_min
-                vs = v * ge_pre_max
-        bnds[i] = ((vi,vs))
-
-    # variables
-
-    # preparamos las especificaciones explicitas (manuales) de límites
-    if len(ge_fix) > 0:
-        # se va a guardar la fila de 'GE_FIX_LIMITES' y el puntero que le corresponde, porque luego necesitamos ordenar
-        # 'pt' por punteros de menor a mayor
-        pt = np.zeros((len(ge_fix), 2), dtype=int)
-        n = 0
-        for clave in ge_fix:
-            # fila de 'GE_FIX_LIMITES'
-            pt[n,0] = n  
-            # puntero al inicio de la variable
-            pt[n,1] = ind_pvec_desde[clave]
-            n += 1
-        # ordenar 'pt'
-        filas = np.argsort(pt[:,1]);
-        pt = pt[filas]
-    else:
-        pt = np.zeros((1, 2), dtype=int)
-        pt[0,1] = -1
-
-    # desde el principio por si se han establecido límites explicitos (manualmente) para algún precio
-    i = 0
-    for ii in range(0, nvec_opt):
-        n = 0
-        esta = False
-        if i <= pt[-1, 1]:
-            # 'i' aún no ha superado el último puntero
-            for nf in range(len(ge_fix)):
-                if i == pt[nf,1]:
-                    # se han especificado límites (en la fila n) para esta variable
-                    n = pt[nf,0]
-                    esta = True
-                    for j in range(len(ge_fix_limites[n])):
-                        # para cada pareja 'j' de limites del vector 'n'
-                        
-                        # límite inferior
-                        if type(ge_fix_limites[n][j][0]) is str:
-                            if ge_fix_limites[n][j][0] == '*':
-                                # no se ha fijado valor, se usa el criterio general
-                                v = vec_opt[i]
-                                if abs(v) < 0.001:
-                                    vi = np.float64(-ge_var_cero)
-                                else:
-                                    vi = v / ge_var_min
-                            else:
-                                vi = vec_opt[i]
-                        else:
-                            vi = ge_fix_limites[n][j][0]
-
-                        # límite superior
-                        if type(ge_fix_limites[n][j][1]) is str:
-                            if ge_fix_limites[n][j][1] == '*':
-                                # no se ha fijado valor, se usa el criterio general
-                                v = vec_opt[i]
-                                if abs(v) < 0.001:
-                                    vs = np.float64(+ge_var_cero)
-                                else:
-                                    vs = v * ge_var_max
-                            else:
-                                vs = vec_opt[i]
-                        else:
-                            vs = ge_fix_limites[n][j][1]
-                        bnds[i] = ((vi,vs))
-                        i += 1
-                    break
-        if i < npre_sol:
-            # ignorar si no se han establecido límites manualmente para algún precio
-            i += 1
-        else:
-            if esta == False:
-                # criterio general
-                v = vec_opt[i]
-                # para evitar que las variables inicialmente a 0 queden acotadas a (0,0)
-                if abs(v) < 0.001:
-                    vi = np.float64(-ge_var_cero)
-                    vs = np.float64(+ge_var_cero)
-                else:
-                    vi = v / ge_var_min
-                    vs = v * ge_var_max
-                bnds[i] = ((vi,vs))
-                i += 1
-        if i == nvec_opt:
-            break
-    if ge_incluye_xp and abs(con_esenciales).sum() != 0:
-        # acotar consumos de los hogares Xp
-        i = ind_pvec_desde['Xp']
-        for j in range(ndem):
-            for k in range(nsec):
-                vi = con_esenciales[j][k]
-                bnds[i] = (vi,bnds[i][1])
-                i += 1
-    # intervalo mínimo
-    for ii in range(npre_sol, nvec_opt):
-        ancho = bnds[i][1] - bnds[i][0]
-        if ancho < GE_VAR_CAN_MIN:
-            d = (GE_VAR_CAN_MIN - ancho) / 2.
-            vi = bnds[i][0] - d
-            vs = bnds[i][0] + d
-            if vi < 0.:
-                vs += -vi 
-                vi = 0.
-            bnds[i] = (vi,vs)
-
-    # resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
-    #--------------------------------------------------------------------------------------------------------    
-    #i = ind_pvec_desde['Apz']
-    #bnds[i] = (-0.000001, 0.000001)
-    #--------------------------------------------------------------------------------------------------------    
-
-    return bnds
 
 def completa_pf(pf, F):
     if OR_PRE_EXCLUIDO == 1:
@@ -1078,7 +958,6 @@ def completa_pf(pf, F):
             # si VALOR_F_TRA == 1 el precio del factor trabajo está fijado en VALOR_F_TRA, tampoco se usará el
             # incluido en el factor de prueba  
             pf[INDICE_F_TRA] = VALOR_F_TRA 
-
         # Si VALOR_F_TRA = -1 el precio del factor trabajo es endógeno, es decir, es el incluido en el vector de prueba
 
     return pf
@@ -1537,7 +1416,10 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
 def fo(vec_opt):
     if USAR_DLL:
         vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
-        res = libc.merito_s(vo)
+        if DESV_RELATIVA == 1:
+            res = libc.merito_s_relativa(vo)
+        else:
+            res = libc.merito_s(vo)
     else:
         res = fun_objetivo(vec_opt)
     return res
@@ -1557,6 +1439,7 @@ def imprime_opciones(nvec_opt):
         imprime('Solución inicial leida de              {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_LEE))
     if len(FI_SOL_SALVA) > 0:
         imprime('Solución final guardada en             {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_SALVA))
+    imprime('Desviaciones relativas en tanto por 1  {}'.format('Si' if DESV_RELATIVA == 1 else 'No'))
     imprime('Semilla números aleatorios             {:10}'.format(GE_SEMILLA))
     imprime('Número máximo de generaciones          {:10,}'.format(GE_MAX_ITER))
     imprime('Tolerancia en el objetivo              {:10.3e}'.format(GE_TOLERANCIA))
@@ -1721,9 +1604,6 @@ if __name__ == '__main__':
     repetirla en todos los workers por eso deben quedar fuera de este contol.
     encontraremos este control en númerosos puntos de la aplicación
     '''
-    if aviso_workers:
-        imprime('Esta máquina tiene {} cores físicos y se han especificado {} workers.'.format(n_cores, GE_WORKERS))
-        imprime('')
     imprime('python           {}'.format(sys.version))
     imprime('numpy            {}'.format(np.__version__))
     imprime('scipy            {}'.format(scipy.__version__))
@@ -1952,12 +1832,24 @@ if n_precios_importacion > 0:
 if USAR_DLL:
     # conectar con la DLL y enviarle las opciones, datos y parámetros que necesita la DLL para calcular la función objetivo.
     # si además se usa el algoritmo genético de la DLL, se enviarán los parámetros de este más adelante
+    # la aplicación no conoce la dirección de las funciones hasta que no se las llama, lo cual no es problema para llamarlas
     libc = dll.abre_dll(SENDA_DLL)
     dll.envia_opciones  (libc)
     dll.envia_datos     (libc, datos)
     dll.envia_parametros(libc, parametros)
+    # si la DLL está compilada para comprobar desviaciones, necesitamos llamar explicitamente a 'indice_desviaciones' porque llamaremos a las
+    # funciones de merito antes de llamar a 'soluciona'
+    #libc.indice_desviaciones()
+
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_s.restype = ct.c_double
+    if DESV_RELATIVA == 1:
+        libc.merito_s_relativa.argtypes = [ct.POINTER(ct.c_double)]
+        libc.merito_s_relativa.restype = ct.c_double
+        libc.merito_sol_relativa.argtypes = [ct.POINTER(ct.c_double)]
+        libc.merito_sol_relativa.restype = ct.POINTER(ct.c_double)
+    libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
+    libc.merito_sol.restype = ct.POINTER(ct.c_double)
 
 if __name__ == '__main__':
     # sin el precio del último factor ya que su valor se fija de forma exógena, esto es realmente incorrecto
@@ -1992,11 +1884,11 @@ if __name__ == '__main__':
     pzi = copy.deepcopy(datos.pZ0)
     vec_opt_ini = copy.deepcopy(vec_opt)
 
+    # 'vigila' función que 'differential_evolution' llamará después de probar cada posible solución 
     historial   = []
     soluciones  = []
     mensaje_fin = []
     vfa         = 1.0e+18
-    # función que 'differential_evolution' llamará después de probar cada posible solución 
     def vigila(intermediate_result):
         nit = intermediate_result.nit   # número de generaciones
         vf  = intermediate_result.fun   # valor de la función objetivo
@@ -2024,12 +1916,8 @@ if __name__ == '__main__':
             soluciones.append([nit,intermediate_result.x])
     
     # definir el rango de variación de los precios y variables
-    (bnds, n_Efijas, n_Mfijas) = cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, OR_PRE_EXCLUIDO, INDICE_F_TRA, VALOR_F_TRA,
-                 GE_TOLERANCIA, GE_PRE_MIN, GE_PRE_MAX, GE_VAR_CERO, GE_VAR_CAN_MIN, GE_VAR_MIN, GE_VAR_MAX,
-                 ind_pvec_desde, FIX, FIX_LIMITES, GE_INCLUYE_XP, CON_ESENCIALES)
+    (bnds, n_Efijas, n_Mfijas) = cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde)
     # hacer compatible el vector de prueba inicial con los límites de variación de las variables
-    imprime_opciones(nvec_opt)
-    # ajustar los entornos de validez al valor mínimo
     cuenta = 0
     for i in range(len(vec_opt)):
         if (bnds[i][1] - bnds[i][0]) > 0.000001:
@@ -2045,6 +1933,7 @@ if __name__ == '__main__':
         imprime('')
         imprime('*--* Se han modificado {} valores del vector inicial de prueba para ajustarlos a sus entornos de validez'.format(cuenta))
         imprime('')
+    imprime_opciones(nvec_opt)
 
     if SALIDA_VAL_INI:
         if n_precios_importacion > 0:
@@ -2199,7 +2088,7 @@ if __name__ == '__main__':
     else:
         restricciones = []
     if USAR_ALGE_DLL:
-        imprime('No se muestra en pantalla la evolución de la minimización. Ver el fichero saDLL_{}.log'.format(ALGE_ID_SALIDA))
+        imprime('No se muestra en pantalla la evolución de la minimización. Ver el fichero saDLL_{}_{}_{}_{}.log'.format(ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
     else:
         imprime('Evolución de la minimización')
     imprime('')
@@ -2209,7 +2098,6 @@ if __name__ == '__main__':
     if USAR_DLL:
         dist_dll = fo(vec_opt);
         imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
-        
         dist_dll = dll.merito_sol(libc, vec_opt);
         imprime('{:>9} {:12.5e}'.format('DLL sol', dist_dll))
         
@@ -2267,6 +2155,7 @@ if __name__ == '__main__':
             par.append(np.float64(ALGE_INCLUIR_X0))
             par.append(np.float64(nvec_opt));
             par.append(np.float64(ALGE_ID_SALIDA));
+            par.append(np.float64(DESV_RELATIVA))
             
             cotas_inf =[]
             cotas_sup =[]
@@ -2276,14 +2165,16 @@ if __name__ == '__main__':
             '''
             'dll.soluciona' devuelve un vector double donde los primeros 5 datos del vector son:
                 0. el código de terminación (si es menor que 0 es finalización con error)
-                1. el número de datos de la solución (aicionales a los 5 de cabecera)
+                1. el número de datos de la solución (aicionales a los 7 de cabecera)
                 2. el número de intentos utilizados para encontrar la solución, si el algoritmo no progresa se hace
                     un nuevo intento a partir de una poblacion inicial nueva, así hasta los 'ALGE_MAX_INTENTOS'
                     especificados en los parámetros
                 3. el número de generaciones calculadas
-                4. el valor de la función objetivo 
+                4. el valor de la función objetivo
+                5. el valo5 de la máxima desviación
+                6. el índice de la variable con la máxima desviación
             '''
-            cabecera = 5
+            cabecera = 7
             r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA)
             r_res   = int(r_sol[0])
             r_datos = int(r_sol[1])
@@ -2301,6 +2192,8 @@ if __name__ == '__main__':
                 imprime('intentos                :{:15}'.format(int(r_sol[2] + 1)))
                 imprime('generaciones            :{:15}'.format(int(r_sol[3])))
                 imprime('merito                  :{:15.5e}'.format(r_sol[4]))
+                imprime('máxima desviación       :{:15.5e}'.format(r_sol[5]))
+                imprime('variable max desviación :{:15}'.format(int(r_sol[6])))
             imprime('*****************************************************************')
             if ALGE_RES_EXTENSA == 1:
                 # devuelve el valor de todas las variables concatenadas en un vector de valores double

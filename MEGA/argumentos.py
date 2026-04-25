@@ -845,7 +845,7 @@ def valores_opciones4():
     args = parser.parse_args()
     return args
 
-def valores_opciones5():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     '''
     NCASO
@@ -871,6 +871,7 @@ def valores_opciones5():
     parser.add_argument('--PREFIJO'            , type=str  , default='=12_12000_333' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre")
 
     parser.add_argument('--GE_WORKERS'         , type=int  , default=1      , help="número de procesadores a utilizar (en esta máquina el máximo es 61 y el óptimo 32)")
+    parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=12000  , help="")
@@ -983,6 +984,7 @@ def valores_opciones5():
     # GE_PROGRESO tiene su importancia porque la minimización puede terminar si tras GE_PROGRESO generaciones no mejora al menos GE_TOLERANCIA
     # Si GE_PROGRESO es demasiado pequeño, la minimización puede terminar incorrectamente porque no ha tenido tiempo de progresar
     parser.add_argument('--GE_PROGRESO'        , type=int  , default=10000  , help="número de generaciones para comprobar el progreso")
+    parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_HISTORIAL'       , type=int  , default=10000  , help="número de generaciones para mostrar evolución y en su caso salvar el historial")
     parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=100000 , help="número de generaciones para salvar la solución")
     parser.add_argument('--GE_MAX_ITER'        , type=int  , default=2000000, help="máximo número de generaciones a simular")
@@ -1039,7 +1041,7 @@ def valores_opciones5():
     parser.add_argument('--FACTOR_CSSH'        , type=float, default=[1.0, 1.0, 1.0] , nargs='*', help="para afectar los coeficientes de la seguridad social de los hohares, caso 8")
     parser.add_argument('--FACTOR_CSSE'        , type=float, default=[]    , nargs='*', help="para afectar los coeficientes de la seguridad social de las empresas, caso 8")
     parser.add_argument('--F_CSSE_LON'         , type=int  , default=0     , help="número de coeficientes de la seguridad social")
-    parser.add_argument('--F_CSSE'             , type=int  , default=[3,1.0] , nargs='*', help="coeficientes de la seguridad social")
+    parser.add_argument('--F_CSSE'             , type=float, default=[3,1.0] , nargs='*', help="coeficientes de la seguridad social para el sector indicado")
     '''
     factores aportados adicionales para el caso 6, si se especifica un solo valor (escalar) se afectan todos por él
     '''
@@ -1056,7 +1058,7 @@ def valores_opciones5():
     args = parser.parse_args()
     return args
 
-def valores_opciones():
+def valores_opciones6():
     parser = argparse.ArgumentParser()
     '''
     las matrices se especifican aplanadas como vectores.
@@ -1106,6 +1108,7 @@ def valores_opciones():
     parser.add_argument('--GE_SEMILLA'         , type=int  , default=17555  , help="valor inicial del generador de números aleatorios")
 
     parser.add_argument('--GE_WORKERS'         , type=int  , default=1      , help="número de procesadores a utilizar si no se usa el algoritmo genético de la DLL (en esta máquina el máximo es 61 y el óptimo 32)")
+    parser.add_argument('--DESV_RELATIVA'      , type=int  , default=1      , help="1: desviaciones en términos relativos, tanto por uno")
     # GE_PROGRESO tiene su importancia porque la minimización puede terminar si tras GE_PROGRESO generaciones no mejora al menos GE_MIN_PROGRESO
     # Si GE_PROGRESO es demasiado pequeño, la minimización puede terminar incorrectamente porque no ha tenido tiempo de progresar
     parser.add_argument('--GE_PROGRESO'        , type=int  , default=10000  , help="número de generaciones para comprobar el progreso")
