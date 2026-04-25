@@ -1,0 +1,110 @@
+@echo off
+TITLE ayudas_recalibra_alfa_42_det_P_0_00_aranceles_14_009_P4400_16_1001
+mode CON cols=118 lines=30
+cd C:\MEGA\MEGA
+CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--USAR_DLL            True ^
+--USAR_ALGE_DLL       True ^
+--DESV_RELATIVA       0 ^
+--ALGE_MAX_INTENTOS   5 ^
+--ALGE_N_HILOS        16 ^
+--ALGE_TOL_ACEPTABLE  1.0e-05 ^
+--ALGE_ID_SALID       1001 ^
+--ALGE_MODO_POB_INI   0 ^
+--ALGE_F_INICIO_POB   0.0008 ^
+--ALGE_SIGMA_POB_INI  0.1 ^
+--ALGE_TRAMOS_LHS     100 ^
+--ALGE_NPOB           4400 ^
+--ALGE_F_MUTACION     0.80 ^
+--ALGE_RECOMBINACION  0.99 1.10 ^
+--ALGE_CTRL_FACTIBLE  1 ^
+--ALGE_RES_EXTENSA    0 ^
+--EL_MEJOR_PRIMERO    0 ^
+--ALGE_INCLUIR_X0     1 ^
+--FI_SOL_LEE          "" ^
+--FI_SOL_SALVA        "" ^
+--NSAM                6 ^
+--DECIMALES           1 ^
+--PREFIJO             =ayudas_recalibra_alfa_42_det_P_0_00_aranceles_14_009_P4400_16_1001 ^
+--GE_SEMILLA          42 ^
+--NCASO               10 12 ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                31 ^
+--DEM_ADICIONAL_TIPO  0 ^
+--DEM_AD_LON          0 ^
+--DEM_AD_HO_PRO       0 14 1000. ^
+--RENTA_FICTICIA      False ^
+--AYD_AD_LON          1 ^
+--AYD_AD_HO_PRO       0 14 1000. ^
+--ARANCELES_LON       1 ^
+--ARANCELES_PRO       14 0.009 ^
+--EQ_BAL_PAGOS        True ^
+--PRECIO_IMPORTACION  ^
+--OR_PRE_EXCLUIDO     0 ^
+--PRECIO_F_EXCLUIDO   1.0 ^
+--VALOR_F_TRA         0 ^
+--FIX                 epsilon ^
+--FIX_LON             1 ^
+--FIX_LIMITES         0 1.0 1.0 ^
+--PARO_INICIAL        0.10 ^
+--ALFA_PHILLIPS       -0.5 ^
+--UTILIDAD_DEMANDA    0 ^
+--SIGMA_CES_DEMANDA   2. 2. ^
+--FF_ENDOGENA         True ^
+--MODO_PSEUDOIMPTOS   0 ^
+--ALP_FACTOR          0.0 ^
+--GE_INCLUYE_XP       False ^
+--CON_AD_LON          0 ^
+--CON_AD_HO_PRO       0 10. 1000. ^
+--DEM_ESENCIALES      False ^
+--OPT_DESVIOS         1 ^
+--SAL_CALIBRADO       False ^
+--SALIDA_VAL_INI      False ^
+--SALIDA_VEC_OPT      False ^
+--PRIMERA_VALORACION  False ^
+--SALIDA_DESVIOS      False ^
+--SAL_AUXILIARES      False ^
+--SAL_GRAFICOS_EVOL   False ^
+--SAL_GRAFICO_CES_DM  False ^
+--SAL_ISOCUANTA       False ^
+--SAL_VARIACIONES     True  ^
+--SAL_MCS             True  ^
+--SAL_VAR_MCS         True  ^
+--GE_RESTRICCIONES    False ^
+--GE_TIPO_RE          0 ^
+--GE_TOLERANCIA       1.e-11 ^
+--GE_VERIFICAR        1.e-06 ^
+--GE_PROGRESO         10000 ^
+--GE_MIN_PROGRESO     0.05 ^
+--GE_HISTORIAL        10000 ^
+--GE_SOLUCIONES       0 ^
+--GE_PRE_MIN          90.0 ^
+--GE_PRE_MAX          99.0 ^
+--GE_VAR_MIN          90.0 ^
+--GE_VAR_MAX          90.0 ^
+--GE_VAR_CERO         20000.0 ^
+--GE_VAR_CAN_MIN      8000 ^
+--GE_MAX_ITER         3000000 ^
+--GE_ACTUALIZACION    deferred ^
+--GE_RECONBINACION    0.90 ^
+--GE_DIM_POBLACION    5 ^
+--GE_WORKERS          1 ^
+--GE_IMG_FIL          5 ^
+--GE_IMG_COL          6 ^
+--GE_ESTRATEGIA       best1bin ^
+--METRICA_ERROR       0 ^
+--POT_DESVIOS         2 ^
+--PRECIO_INI          0.5 ^
+--FACTOR_CSSH         0.95 1.0 ^
+--FACTOR_CSSE         ^
+--F_CSSE_LON          0 ^
+--F_CSSE              3 1.0 ^
+--VAR_FACTORES        0. 0. 0. 0. ^
+--SIGMA_ESCENARIO     ^
+--SENDA_DATOS         C:/MEGA/Datos ^
+--SENDA_SALIDAS       C:/MEGA/Salidas/Mcs6/Phillips ^
+--SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs6 ^
+--SENDA_SOLUCIONES    C:/MEGA/Soluciones ^
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Release/MEGA_DLL.dll
+timeout 60
