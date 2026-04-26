@@ -300,6 +300,7 @@ if args.ARANCELES_LON > 0:
             ARANCELES[j] = args.ARANCELES_PRO[i+1]
             i += 2
 PREFIJO             = args.PREFIJO if args.PREFIJO != '"' else ''
+
 OR_PRE_EXCLUIDO     = args.OR_PRE_EXCLUIDO
 PRECIO_F_EXCLUIDO   = np.float64(args.PRECIO_F_EXCLUIDO)
 VALOR_F_TRA         = np.float64(args.VALOR_F_TRA)
@@ -2088,7 +2089,7 @@ if __name__ == '__main__':
     else:
         restricciones = []
     if USAR_ALGE_DLL:
-        imprime('No se muestra en pantalla la evolución de la minimización. Ver el fichero saDLL_{}_{}_{}_{}.log'.format(ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
+        imprime('No se muestra en pantalla la evolución de los cálculos. Ver el fichero {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
     else:
         imprime('Evolución de la minimización')
     imprime('')
@@ -2127,7 +2128,7 @@ if __name__ == '__main__':
         )
     else:
         if USAR_ALGE_DLL:
-            # llamar al procedimiento en la DLL pasandole como vectors:
+            # llamar al procedimiento en la DLL pasandole como vectores:
             #   los parámetros de configuración del algoritmo
             #   los cotas de variación de las variables
             #   el vector solución inicial
@@ -2156,7 +2157,7 @@ if __name__ == '__main__':
             par.append(np.float64(nvec_opt));
             par.append(np.float64(ALGE_ID_SALIDA));
             par.append(np.float64(DESV_RELATIVA))
-            
+
             cotas_inf =[]
             cotas_sup =[]
             for i in range(nvec_opt):
@@ -2175,7 +2176,7 @@ if __name__ == '__main__':
                 6. el índice de la variable con la máxima desviación
             '''
             cabecera = 7
-            r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA)
+            r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA, SENDA_SALIDAS)
             r_res   = int(r_sol[0])
             r_datos = int(r_sol[1])
             imprime('')
@@ -2517,8 +2518,6 @@ if __name__ == '__main__':
 
     t_fin = timer()
 
-    imprime('Valores finales de las variables')
-    imprime('')
     sol = rmin.x
     if len(FI_SOL_SALVA) > 0:
         with open(SENDA_SOLUCIONES + '/' + FI_SOL_SALVA, "w", encoding="utf-8") as log:
@@ -2532,7 +2531,14 @@ if __name__ == '__main__':
         )
     else:
         res_ecuaciones = sec_ecuaciones(sol)
-    dist = calcula_desvios(res_ecuaciones, True)
+    imprime('-----------------------------------------------------------')
+    imprime('VALORES FINALES')
+    imprime('-----------------------------------------------------------')
+    imprime('')
+    if SALIDA_DESVIOS:
+        imprime('Detalle de las desviaciones')
+        imprime('')
+    dist = calcula_desvios(res_ecuaciones, SALIDA_DESVIOS)
     infor.salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, sol, npre_sol, etq_precios, res_ecuaciones)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
@@ -2591,7 +2597,6 @@ if __name__ == '__main__':
                     sal.write(';{}'.format(vv[i]))
                 sal.write('\n')
 
-    imprime('-----------------------------------------------------------')
     imprime('La distancia (error de la función objetivo) es {:11.5e}'.format(dist))
     if USAR_DLL:
         dist_dll = fo(sol);
@@ -2691,7 +2696,7 @@ if __name__ == '__main__':
             imprime('exito :{}'.format('Si' if rmin[clave]==True else 'No'))
         clave = 'nit'
         imprime('Número de generaciones {}'.format(rmin[clave]))
-    imprime('')
+        imprime('')
     imprime('Precios    iniciales equilibrio')
     imprime('--------- ---------- ----------')
     imprime('{:10}                {:9.7f}'.format('pF_' + h[0], pf[0]))

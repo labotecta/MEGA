@@ -361,13 +361,14 @@ def merito_sol(libc, vec_opt):
     return r_sol
     '''
 
-def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida):
-    libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int)
+def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida, senda_salidas):
+    libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int, ct.c_char_p)
     libc.soluciona.restype = ct.POINTER(ct.c_double)
     v1 = np.array(par).ctypes.data_as(ct.POINTER(ct.c_double))
     v2 = np.array(cotas_inf).ctypes.data_as(ct.POINTER(ct.c_double))
     v3 = np.array(cotas_sup).ctypes.data_as(ct.POINTER(ct.c_double))
     v4 = vec.ctypes.data_as(ct.POINTER(ct.c_double))
-    res = libc.soluciona(v1, v2, v3, v4, extendida)
+    v5 = ct.c_char_p(senda_salidas.encode('utf-8'))
+    res = libc.soluciona(v1, v2, v3, v4, extendida, v5)
     return res
 
