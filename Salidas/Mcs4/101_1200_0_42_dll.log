@@ -1,0 +1,28 @@
+inicio: Sun Apr 26 14:58:51 2026
+
+
+Intentos       :           15
+Número procesos:           16
+Población      :         1200
+Modo población :            0
+Factor dispers :  5.00000e-02
+Variables      :           51
+Variables fijas:            1
+Factor mutación:  7.20000e-01
+Recombinación  :  9.90000e-01  1.10000e+00
+Semilla        :           42
+
+Variables con valores fijos
+
+    44 M            5 0.000000e+00
+
+generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl tpo.p  tpo.tot.  n.cruc.hij
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------
+        0  1.20353e+07  1.44811e+11  2.17624e+05      8 F-FF         1      0
+     1000  1.43530e+01  3.98408e+03  3.89494e+01     56 Ei           5      0      0.0       26914
+     2000  5.72138e-05  4.76263e-03  2.07407e-02    147 Fi           6      0      0.0       23800
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------
+     2735  2.12069e-13  9.95431e-12  1.50350e-06     83 Ydp          2      0      0.0    183
+
+fin   : Sun Apr 26 14:58:54 2026
+
