@@ -107,8 +107,9 @@ public:
 extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
+#ifdef COMPROBAR_MAX_DESVIACION
 extern "C" MEGA_DLL_API void indice_desviaciones();
-
+#endif
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
 
@@ -117,8 +118,7 @@ extern "C" MEGA_DLL_API double merito_s_relativa(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol_relativa(double* vec_opt);
 #endif 
 
-
-extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida);
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
 
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);

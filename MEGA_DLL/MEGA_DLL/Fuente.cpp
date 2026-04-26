@@ -337,6 +337,7 @@ bool poner_el_mejor_primero;
 bool incluir_x0;
 int NVEC;
 int id_salida;
+char senda_salidas[128];
 int desviaciones_relativas;
 FILE* salida;
 FILE* sal_sol;
@@ -366,7 +367,8 @@ void cancelar(int sig)
 {
 	CANCELAR = true;
 }
-double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida) {
+double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda) {
+	sprintf_s(senda_salidas, 127, "%s", senda);
 	CANCELAR = false;
 
 	// capurar la señal Ctrl+C
@@ -393,7 +395,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	char fichero[128];
-	sprintf_s(fichero, 127, "C:/MEGA/Salidas/saDLL_%d_%d_%d_%d.log", id_salida, NPOB, modo_poblacion_inicial, semilla);
+	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla);
 	salida = _fsopen(fichero, "w", _SH_DENYWR);
 	if (salida == 0) {
 		if (extendida == 1) {
@@ -490,40 +492,33 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	*/
 	if (inicia_cotas() == false) {
 		// Error al generar la poblacion
-#ifdef DESVIACONES_RELATIVAS
-		merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-		merito_sol(poblacion[ind_mejor_merito]);
-#endif
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -2.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -2.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
 	if (fija_cotas(cotasInf, cotasSup) == false) {
 		// Error al fijar las cotas
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -3.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -3;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -577,21 +572,19 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl tpo.p  tpo.tot.  n.cruc.hij\n");
 	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------\n");
 #endif
-
 	if (inicia_poblacion(factor_inicio) == false) {
 		// Error al reservar memoria para la poblacion
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -4.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -4.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -602,18 +595,17 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	dis_entero = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
 	if (genera_poblacion() == false) {
 		// Error al generar la poblacion
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -5.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -5.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -624,19 +616,17 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	media = (double*)malloc(NVEC * sizeof(double));
 	if (media == NULL) {
 		// Error, terminacion inesperada
-		merito_sol(poblacion[ind_mejor_merito]);
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -10.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -10.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -644,19 +634,17 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	desest = (double*)malloc(NVEC * sizeof(double));
 	if (desest == NULL) {
 		// Error, terminacion inesperada
-		merito_sol(poblacion[ind_mejor_merito]);
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -10.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -10.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -677,7 +665,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		desest[i] = sqrt(desest[i] / (double)(NPOB - 1));
 	}
 	FILE* se;
-	sprintf_s(fichero, 127, "C:/MEGA/Salidas/estaDLL_%d.log", id_salida);
+	sprintf_s(fichero, 127, "%s/%d_dll_esta.log", senda_salidas, id_salida);
 	se = _fsopen(fichero, "w", _SH_DENYWR);
 	if (se == 0) {
 		if (extendida == 1) {
@@ -703,23 +691,17 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 
 	if (max_generaciones == 0) {
 		// para una valoración inicial del modelo
-#ifdef DESVIACONES_RELATIVAS
-		merito_sol_relativa(vec);
-#else
-		merito_sol(vec);
-#endif
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = 0;
 			me_sol[2] = 0;
 			me_sol[3] = 0;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = 0;
 			VEC_OPT_E[2] = 0;
 			VEC_OPT_E[3] = 0;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -741,18 +723,17 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	hdis_double[0] = uniform_real_distribution<double>{ 0.0, 1.0 };
 	if (n_hilos > 0) {
 		if (PreparaMP() == -1) {
+			fin_soluciona(t_inicio);
 			if (extendida == 1) {
 				me_sol[0] = -8.;
 				me_sol[2] = intentos;
 				me_sol[3] = generacion;
-				fin_soluciona(t_inicio);
 				return me_sol;
 			}
 			else {
 				VEC_OPT_E[0] = -8.;
 				VEC_OPT_E[2] = intentos;
 				VEC_OPT_E[3] = generacion;
-				fin_soluciona(t_inicio);
 				return VEC_OPT_E;
 			}
 		}
@@ -767,90 +748,66 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #endif
 	if (res_Simulacion == -1) {
 		// Cancelado
-#ifdef DESVIACONES_RELATIVAS
-		merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-		merito_sol(poblacion[ind_mejor_merito]);
-#endif
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = 5.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = 5.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
 	else if (res_Simulacion == -2) {
 		// Encontrada solucion
-#ifdef DESVIACONES_RELATIVAS
-		merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-		merito_sol(poblacion[ind_mejor_merito]);
-#endif
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = 0.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = 0.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
 	else if (res_Simulacion == -3) {
 		if (mejor_merito > tol_aceptable) {
 			// No progresa, solucion no aceptable
-#ifdef DESVIACONES_RELATIVAS
-			merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-			merito_sol(poblacion[ind_mejor_merito]);
-#endif
+			fin_soluciona(t_inicio);
 			if (extendida == 1) {
 				me_sol[0] = 1.;
 				me_sol[2] = intentos;
 				me_sol[3] = generacion;
-				fin_soluciona(t_inicio);
 				return me_sol;
 			}
 			else {
 				VEC_OPT_E[0] = 1.;
 				VEC_OPT_E[2] = intentos;
 				VEC_OPT_E[3] = generacion;
-				fin_soluciona(t_inicio);
 				return VEC_OPT_E;
 			}
 		}
 		else {
 			// No progresa, pero la solucion puede ser aceptable
-#ifdef DESVIACONES_RELATIVAS
-			merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-			merito_sol(poblacion[ind_mejor_merito]);
-#endif
+			fin_soluciona(t_inicio);
 			if (extendida == 1) {
 				me_sol[0] = 2.;
 				me_sol[2] = intentos;
 				me_sol[3] = generacion;
-				fin_soluciona(t_inicio);
 				return me_sol;
 			}
 			else {
 				VEC_OPT_E[0] = 2.;
 				VEC_OPT_E[2] = intentos;
 				VEC_OPT_E[3] = generacion;
-				fin_soluciona(t_inicio);
 				return VEC_OPT_E;
 			}
 		}
@@ -858,68 +815,50 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	else if (res_Simulacion == -5) {
 		if (mejor_merito > 0.0001) {
 			// Superado el maximo de generaciones, solucion no aceptable
-#ifdef DESVIACONES_RELATIVAS
-			merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-			merito_sol(poblacion[ind_mejor_merito]);
-#endif
+			fin_soluciona(t_inicio);
 			if (extendida == 1) {
 				me_sol[0] = 3.;
 				me_sol[2] = intentos;
 				me_sol[3] = generacion;
-				fin_soluciona(t_inicio);
 				return me_sol;
 			}
 			else {
 				VEC_OPT_E[0] = 3.;
 				VEC_OPT_E[2] = intentos;
 				VEC_OPT_E[3] = generacion;
-				fin_soluciona(t_inicio);
 				return VEC_OPT_E;
 			}
 		}
 		else {
 			// Superado el maximo de generaciones, pero la solucion puede ser aceptable
-#ifdef DESVIACONES_RELATIVAS
-			merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-			merito_sol(poblacion[ind_mejor_merito]);
-#endif
+			fin_soluciona(t_inicio);
 			if (extendida == 1) {
 				me_sol[0] = 4.;
 				me_sol[2] = intentos;
 				me_sol[3] = generacion;
-				fin_soluciona(t_inicio);
 				return me_sol;
 			}
 			else {
 				VEC_OPT_E[0] = 4.;
 				VEC_OPT_E[2] = intentos;
 				VEC_OPT_E[3] = generacion;
-				fin_soluciona(t_inicio);
 				return VEC_OPT_E;
 			}
 		}
 	}
 	else {
 		// Error, terminacion inesperada
-#ifdef DESVIACONES_RELATIVAS
-		merito_sol_relativa(poblacion[ind_mejor_merito]);
-#else
-		merito_sol(poblacion[ind_mejor_merito]);
-#endif
+		fin_soluciona(t_inicio);
 		if (extendida == 1) {
 			me_sol[0] = -10.;
 			me_sol[2] = intentos;
 			me_sol[3] = generacion;
-			fin_soluciona(t_inicio);
 			return me_sol;
 		}
 		else {
 			VEC_OPT_E[0] = -10.;
 			VEC_OPT_E[2] = intentos;
 			VEC_OPT_E[3] = generacion;
-			fin_soluciona(t_inicio);
 			return VEC_OPT_E;
 		}
 	}
@@ -930,16 +869,16 @@ void fin_soluciona(auto t_inicio) {
 	time_t end_time = chrono::system_clock::to_time_t(tiempo_fin);
 	*/
 
-	auto t_fin = chrono::system_clock::now();
-	auto fin = chrono::system_clock::to_time_t(t_fin);
-	char tmBuff[30];
-	ctime_s(tmBuff, sizeof(tmBuff), &fin);
-	double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
 	merito_sol_relativa(poblacion[ind_mejor_merito]);
 #else
 	merito_sol(poblacion[ind_mejor_merito]);
 #endif
+	auto t_fin = chrono::system_clock::now();
+	auto fin = chrono::system_clock::to_time_t(t_fin);
+	char tmBuff[30];
+	ctime_s(tmBuff, sizeof(tmBuff), &fin);
+	double dist = distancia_clonacion();
 	ftime(&tiempo_act);
 	dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
 	ftime(&tiempo_ant);
@@ -947,9 +886,10 @@ void fin_soluciona(auto t_inicio) {
 	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 	fprintf(salida, "\nfin   : %s\n", tmBuff);
 	fclose(salida);
-	if (histo_sol > 0) {
+	if (histo_sol != 0) {
+		// se guarda el vector solución final, incluso si histo_sol = -1
 		char fichero[128];
-		sprintf_s(fichero, 127, "C:/MEGA/Salidas/solDLL_%d_%d_%d.txt", id_salida, modo_poblacion_inicial, semilla);
+		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_fin_sol.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla);
 		sal_sol = _fsopen(fichero, "wt", _SH_DENYWR);
 		if (sal_sol != 0) {
 			for (int j = 0; j < NVEC; j++) {
@@ -2055,7 +1995,7 @@ int comprobar_final() {
 	if (histo_sol > 0 && (generacion % histo_sol) == 0) {
 		char fichero[128];
 		int n_sol = (int)(generacion / histo_sol);
-		sprintf_s(fichero, 127, "C:/MEGA/Salidas/solDLL_%d_%d_%d_%d.txt", id_salida, modo_poblacion_inicial, semilla, n_sol);
+		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_%03d_sol.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla, n_sol);
 		sal_sol = _fsopen(fichero, "w", _SH_DENYWR);
 		if (sal_sol != 0) {
 			for (int j = 0; j < NVEC; j++) {
