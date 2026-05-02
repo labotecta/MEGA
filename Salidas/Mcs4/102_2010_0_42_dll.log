@@ -1,0 +1,27 @@
+inicio: Sat May  2 21:58:38 2026
+
+
+Intentos       :           15
+Número procesos:           30
+Población      :         2010
+Modo población :            0
+Factor dispers :  5.00000e-02
+Variables      :           51
+Variables fijas:            1
+Factor mutación:  7.20000e-01
+Recombinación  :  9.90000e-01  1.10000e+00
+Semilla        :           42
+
+Variables con valores fijos
+
+    44 M            5 0.000000e+00
+
+generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+        0  1.18725e+07  1.83844e+06  1.00000e+03      3 Qeq          2                           0
+     1000  1.57513e-08  7.71165e-07  2.36193e-04     63 Dai          0      0      0.0       50645     515998
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+     1358  2.65378e-13  9.59147e-12  9.29402e-07    150 Fi           9      0      0.0         851
+
+fin   : Sat May  2 21:58:41 2026
+
