@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#define MEGA6
+#define MEGA5
 
 #ifdef MEGA4
 const int NDEM = 2;
@@ -17,9 +17,26 @@ const int NDEM = 2;
 const int NSEC = 31;
 #endif
 
-//#define DEPURAR
+// añade a las salidas estadísticas de los cruces
+//#define ESTA_CRUCES
+
+// se pueden usar desviaciones relativas en lugar de absolutas al calcular la función de error, las desviaciones relativas son inútiles
 //#define DESVIACONES_RELATIVAS
+
+// para comprobar que la variable con la desviación máxima se está determinando correctamente, fue útil durante el desarrollo, pero ahora es inútil
 //#define COMPROBAR_MAX_DESVIACION
+
+// la función de merito termina cuando la desviación supera un cierto liston, no ahorra ningún tiempo
+//#define FIN_MERITO_ANTICIPADO
+
+// no ahorra tiempo, quizás el compilador ya lo hace.
+//#define CONSUMO_INTERMEDIO_AX
+
+// como puede haber alrededor de una tercera parte de valores 'ax' iguales a 0
+// guardamos los índices de los que no lo son, para usar solo estos en el cálculo de X
+// no ahorra tiempo.
+//#define CONSUMO_INTERMEDIO_INDESADO
+
 #define COPIAR_CON_COPY
 
 const int NFAC = 2;
@@ -120,6 +137,10 @@ extern "C" MEGA_DLL_API double* merito_sol_relativa(double* vec_opt);
 
 extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
 
+#ifdef FIN_MERITO_ANTICIPADO
+double merito_d(double* vec_opt, double liston);
+#endif
+
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);
 void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
@@ -131,14 +152,10 @@ void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM]
 void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
 void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M);
 void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
-void ayudas_empresas_AgE(double* AgE, double* cage, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te);
-void ayudas_hogares_AgH(double* AgH, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
 void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0);
 void seguridad_social_empresas_CssE(double* CssE, double* ctzsse, double* pf, double F[NSEC][NFAC], int INDICE_F_TRA);
 void seguridad_social_hogares_CssH(double* CssH, double* ctzssh, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], int INDICE_F_TRA);
 double gobierno_Sg_Xg(double* Xg, double ssg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);
-double ahorro_gobierno_Sg(double ssg, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);
-void demanda_gobierno_Xg(double* Xg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double Sg, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);
 double ahorro_exterior_Sf(double* M, double* E, double* pm, double* pe);
 void demanda_inversion_Xv(double* Xv, double* landa, double* pq, double* Sp, double Sg, double Sc, double epsilon, double Sf, double Ti, double Te);
 void demanda_maxima_utilidad_StoneGeary_Xp(double Xp[NDEM][NSEC], double alfa_esen[NDEM][NSEC], double CON_ESENCIALES[NDEM][NSEC], double* pq, double* pf, double FF[NDEM][NFAC], double* Sp, double* Td, double* CssH, double* AgH, double* PssH0, int DEM_ADICIONAL_TIPO, double DEM_ADICIONAL[NDEM][NSEC], bool RENTA_FICTICIA);
@@ -165,7 +182,7 @@ int avanza();
 void mutacion_cruze(int desde, int hasta, int hilo);
 void mutacion_cruzeH(int desde, int hasta, int hilo);
 void seleccion(int desde);
-void seleccionH(int desde, int hasta);
+void seleccionH(int desde, int hasta, int hilo);
 int comprobar_final();
 double distancia_clonacion();
 

@@ -27,19 +27,17 @@ a través de las funciones correspondientes para no tener que enviarlas a cada l
 OPCIONES   op;
 DATOS      datos;
 PARAMETROS parametros;
-/*
 // no parece que ahorre tiempo, más bien al contrario
+#ifdef CONSUMO_INTERMEDIO_INDESADO
 int ndc_ax;
 int dc_ax[NSEC * NSEC][2]{};	// índices i,j de los elementos de ax distintos de cero
-*/
+#endif
 /*
 longitud de las variables y punteros a estas, en el vector solución
   0    1    2    3      4        5    6   7   8   9   10
 ['pF','pY','pQ','pD','epsilon','Apz','F','E','M','D','Xp']
 */
 const int N_BLO_VEC = 11;
-const int len_var[N_BLO_VEC] = { 1, NSEC, NSEC, NSEC, 1, 1, NSEC * NFAC, NSEC, NSEC, NSEC, NDEM * NSEC };
-int pvec[N_BLO_VEC + 1]{};
 const char* rot_blo_vec[N_BLO_VEC + 1] = {
 "pF",
 "pY",
@@ -54,6 +52,8 @@ const char* rot_blo_vec[N_BLO_VEC + 1] = {
 "Xp",
 "fin"
 };
+const int len_var[N_BLO_VEC] = { 1, NSEC, NSEC, NSEC, 1, 1, NSEC * NFAC, NSEC, NSEC, NSEC, NDEM * NSEC };
+int pvec[N_BLO_VEC + 1]{};
 
 const int HISTO_MAX = 201;
 int histogenera[HISTO_MAX]{};
@@ -285,13 +285,14 @@ CRITICAL_SECTION seccion_fin_hilos;
 int hilos_terminados;
 bool CANCELADO;
 
-#ifdef DEPURAR
+#ifdef ESTA_CRUCES
 long long num_cruces_si[MAX_HILOS]{};
 long long num_cruces_ok[MAX_HILOS]{};
 long long num_cruces_no[MAX_HILOS]{};
 long long num_cruces_fj[MAX_HILOS]{};
 #endif
 long long num_var_hijo[MAX_HILOS]{};
+long long num_mejoras[MAX_HILOS]{};
 
 double** cotas = NULL;
 int* fijo = NULL;
@@ -336,6 +337,10 @@ int semilla;
 bool poner_el_mejor_primero;
 bool incluir_x0;
 int NVEC;
+#ifdef CONSUMO_INTERMEDIO_AX
+int RESTO_NSEC4;
+int NSEC4;
+#endif
 int id_salida;
 char senda_salidas[128];
 int desviaciones_relativas;
@@ -417,6 +422,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	ctime_s(tmBuff, sizeof(tmBuff), &inicio);
 	fprintf(salida, "inicio: %s\n\n", tmBuff);
 	fflush(salida);
+#ifdef CONSUMO_INTERMEDIO_INDESADO
 	/*
 	// la comprobación de si esto ahorra tiempo de cálculo, o todo lo contrario, resulta incoherente
 
@@ -490,6 +496,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "tiempo referencia mili s : %d\n\n", diff);
 	fflush(salida);
 	*/
+#endif
 	if (inicia_cotas() == false) {
 		// Error al generar la poblacion
 		fin_soluciona(t_inicio);
@@ -565,12 +572,12 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "\n");
 	fflush(salida);
 #endif
-#ifdef DEPURAR
-	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl tpo.p  tpo.tot.  n.cruce si n.cruce ok n.cruce no n.cruce fj\n");
-	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ----------\n");
+#ifdef ESTA_CRUCES
+	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ---------- ----------\n");
 #else
-	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl tpo.p  tpo.tot.  n.cruc.hij\n");
-	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------\n");
+	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------\n");
 #endif
 	if (inicia_poblacion(factor_inicio) == false) {
 		// Error al reservar memoria para la poblacion
@@ -741,10 +748,10 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	else {
 		res_Simulacion = avanza();
 	}
-#ifdef DEPURAR
-	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ----------\n");
+#ifdef ESTA_CRUCES
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ---------- ----------\n");
 #else
-	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ----------\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------\n");
 #endif
 	if (res_Simulacion == -1) {
 		// Cancelado
@@ -883,7 +890,11 @@ void fin_soluciona(auto t_inicio) {
 	dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
 	ftime(&tiempo_ant);
 	dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
-	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#ifdef ESTA_CRUCES
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f                                  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#else
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#endif
 	fprintf(salida, "\nfin   : %s\n", tmBuff);
 	fclose(salida);
 	if (histo_sol != 0) {
@@ -928,6 +939,10 @@ int parametros_alge(double* par) {
 	if (NVEC >= MAX_VEC) {
 		return -1;
 	}
+#ifdef CONSUMO_INTERMEDIO_AX
+	RESTO_NSEC4 = NSEC % 4;
+	NSEC4 = NSEC - RESTO_NSEC4;
+#endif
 	return 0;
 }
 bool inicia_cotas() {
@@ -1910,7 +1925,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
 
 				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
-#ifdef DEPURAR
+#ifdef ESTA_CRUCES
 				num_cruces_si[hilo]++;
 #endif
 				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
@@ -1921,7 +1936,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 					}
 				}
 				descendiente[i][j] = v;
-#ifdef DEPURAR
+#ifdef ESTA_CRUCES
 				num_cruces_ok[hilo]++;
 #endif
 			}
@@ -1930,7 +1945,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 				// individuos tienen el mismo valor), o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
 				// debe cruzar obligatoriamente
 				descendiente[i][j] = poblacion[i][j];
-#ifdef DEPURAR
+#ifdef ESTA_CRUCES
 				num_cruces_no[hilo]++;
 				if (fijo[j] == 1) {
 					num_cruces_fj[hilo]++;
@@ -1954,7 +1969,11 @@ void seleccion(int desde) {
 #ifdef DESVIACONES_RELATIVAS
 			me_descendiente = merito_s_relativa(descendiente[i]);
 #else
+#ifdef FIN_MERITO_ANTICIPADO
+			me_descendiente = merito_d(descendiente[i], merito_individuo[i]);
+#else
 			me_descendiente = merito_s(descendiente[i]);
+#endif
 #endif
 			if (me_descendiente < merito_individuo[i]) {
 				for (int j = 0; j < NVEC; j++) {
@@ -1969,14 +1988,18 @@ void seleccion(int desde) {
 		}
 	}
 }
-void seleccionH(int desde, int hasta) {
+void seleccionH(int desde, int hasta, int hilo) {
 	double me_descendiente;
 	for (int i = desde; i < hasta; i++) {
 		if (!control_factibilidad || factible[i]) {
 #ifdef DESVIACONES_RELATIVAS
 			me_descendiente = merito_s_relativa(descendiente[i]);
 #else
+#ifdef FIN_MERITO_ANTICIPADO
+			me_descendiente = merito_d(descendiente[i], merito_individuo[i]);
+#else
 			me_descendiente = merito_s(descendiente[i]);
+#endif
 #endif
 			if (me_descendiente < merito_individuo[i]) {
 #ifdef COPIAR_CON_COPY
@@ -1987,6 +2010,7 @@ void seleccionH(int desde, int hasta) {
 				}
 #endif
 				merito_individuo[i] = me_descendiente;
+				num_mejoras[hilo]++;
 			}
 		}
 	}
@@ -2015,7 +2039,11 @@ int comprobar_final() {
 		merito_sol(poblacion[ind_mejor_merito]);
 #endif
 		if (generacion == 0) {
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, ind_mejor_merito);
+#ifdef ESTA_CRUCES
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d                                                        %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, ind_mejor_merito);
+#else
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d                      %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, ind_mejor_merito);
+#endif
 			ftime(&tiempo_ini);
 			ftime(&tiempo_ant);
 		}
@@ -2026,7 +2054,12 @@ int comprobar_final() {
 			ftime(&tiempo_ant);
 			// tiempo total desde el inicio del proceso en minutos
 			dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
-#ifdef DEPURAR
+			long long n_mej = 0;
+			for (int i = 0; i < n_hilos; i++) {
+				n_mej += num_mejoras[i];
+				num_mejoras[i] = 0;
+			}
+#ifdef ESTA_CRUCES
 			long long n_c_s = 0;
 			long long n_c_o = 0;
 			long long n_c_n = 0;
@@ -2041,14 +2074,14 @@ int comprobar_final() {
 				num_cruces_no[i] = 0;
 				num_cruces_fj[i] = 0;
 			}
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
 #else
 			long long n_v_h = 0;
 			for (int i = 0; i < n_hilos; i++) {
 				n_v_h += num_var_hijo[i];
 				num_var_hijo[i] = 0;
 			}
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_v_h);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_v_h, n_mej);
 #endif
 		}
 		fflush(salida);
@@ -2093,7 +2126,11 @@ int comprobar_final() {
 				dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
 				ftime(&tiempo_ant);
 				dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
-				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#ifdef ESTA_CRUCES
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f                                   %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#else
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#endif
 				max_generaciones += generacion;
 				mejor_merito_anterior = 1.0e+99;
 				histogenera[histo_n] = generacion;
@@ -2136,7 +2173,11 @@ int comprobar_final() {
 						dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
 						ftime(&tiempo_ant);
 						dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
-						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#ifdef ESTA_CRUCES
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f                                  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#else
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+#endif
 						max_generaciones += generacion;
 						mejor_merito_anterior = 1.0e+99;
 						histogenera[histo_n] = generacion;
@@ -2199,7 +2240,7 @@ bool Arranque() {
 		}
 		hdis_entero_ivec[i] = uniform_int_distribution<int>{ 0, ((int)NVEC - 1) };
 		hdis_double[i] = uniform_real_distribution<double>{ 0.0, 1.0 };
-#ifdef DEPURAR
+#ifdef ESTA_CRUCES
 		num_cruces_si[i] = 0;
 		num_cruces_ok[i] = 0;
 		num_cruces_no[i] = 0;
@@ -2397,7 +2438,7 @@ unsigned int WINAPI HiloTramos(LPVOID param)
 
 				// Libera el semaforo para iterar
 
-				//printf("orden de terminara la espera del hilo de iterar\n");
+				//printf("orden de terminar la espera del hilo de iterar\n");
 
 				while (ReleaseSemaphore(semaforo_itera, 1, NULL) == FALSE);
 			}
@@ -2412,7 +2453,7 @@ unsigned int WINAPI HiloTramos(LPVOID param)
 }
 void ProcesarTramo(int hilo, int desde, int hasta) {
 	mutacion_cruzeH(desde, hasta, hilo);
-	seleccionH(desde, hasta);
+	seleccionH(desde, hasta, hilo);
 }
 #pragma endregion
 
@@ -2441,7 +2482,7 @@ DATOS recibe_datos(DATOS vdat) {
 }
 
 PARAMETROS recibe_parametros(PARAMETROS vpar) {
-	/*
+#ifdef CONSUMO_INTERMEDIO_INDESADO
 	// como puede haber alrededor de una tercera parte de valores 'ax' iguales a 0
 	// guardamos los índices de los que no lo son, para usar solo estos en el cálculo de X
 	ndc_ax = 0;
@@ -2454,7 +2495,7 @@ PARAMETROS recibe_parametros(PARAMETROS vpar) {
 			}
 		}
 	}
-	*/
+#endif
 	parametros = vpar;
 	return parametros;
 }
@@ -2486,7 +2527,7 @@ double merito_s(double* vec_opt) {
 	double pm[NSEC];
 	double Yp[NSEC];
 	double Z[NSEC];
-	double X[NSEC][NSEC]{};
+	double X[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double Yd[NSEC];
 	double Ypd[NSEC];
 	double pz[NSEC];
@@ -2513,7 +2554,7 @@ double merito_s(double* vec_opt) {
 	double Mr[NSEC];
 	double Ypr[NSEC];
 	double Zr[NSEC];
-	double Xr[NSEC][NSEC]{};
+	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double Ydr[NSEC];
 	double FFr[NDEM][NFAC];
 	double Alpr[NDEM][NFAC];
@@ -2640,14 +2681,10 @@ double merito_s(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgE, parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgH, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
 	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//Sg = ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//demanda_gobierno_Xg(Xg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE);
 	double PssH0_sum = 0.;
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
@@ -2734,13 +2771,9 @@ double merito_s(double* vec_opt) {
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgEr, parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgHr, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//Sgr = ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//demanda_gobierno_Xg(Xgr, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
 	if (abs(PssH0_sum) < 0.000001) {
 		Scr = 0.;
 	}
@@ -2898,12 +2931,505 @@ double merito_s(double* vec_opt) {
 
 	return dist;
 }
+
+#ifdef FIN_MERITO_ANTICIPADO
+double merito_d(double* vec_opt, double liston) {
+	// la función se termina cuando la desviación supera un cierto liston, no ahorra ningún tiempo
+
+	double pf[NFAC];
+	double py[NSEC];
+	double pq[NSEC];
+	double pd[NSEC];
+	double F[NSEC][NFAC];
+	double E[NSEC];
+	double M[NSEC];
+	double D[NSEC];
+
+	double Fi[NSEC][NFAC];
+	double Ei[NSEC];
+	double Mi[NSEC];
+	double Di[NSEC];
+	double Xpi[NDEM][NSEC];
+
+	double pe[NSEC];
+	double pm[NSEC];
+	double Yp[NSEC];
+	double Z[NSEC];
+	double X[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
+	double Yd[NSEC];
+	double Ypd[NSEC];
+	double pz[NSEC];
+	double FF[NDEM][NFAC];
+	double exceso[NDEM][NFAC];
+	double Alp[NDEM][NFAC];
+	double Td[NDEM];
+	double Tz[NSEC];
+	double Tm[NSEC];
+	double Sp[NDEM];
+	double AgE[NSEC];
+	double AgH[NDEM];
+	double CssE[NSEC];
+	double CssH[NDEM];
+	double Xg[NSEC];
+	double Xv[NSEC];
+	double Xp[NDEM][NSEC];
+	double Q[NSEC];
+	double Da[NSEC];
+	double Dt[NSEC];
+
+	double Fr[NSEC][NFAC];
+	double Er[NSEC];
+	double Mr[NSEC];
+	double Ypr[NSEC];
+	double Zr[NSEC];
+	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
+	double Ydr[NSEC];
+	double FFr[NDEM][NFAC];
+	double Alpr[NDEM][NFAC];
+	double Tdr[NDEM];
+	double Tzr[NSEC];
+	double Tmr[NSEC];
+	double Spr[NDEM];
+	double AgEr[NSEC];
+	double AgHr[NDEM];
+	double CssEr[NSEC];
+	double CssHr[NDEM];
+	double Xgr[NSEC];
+	double Xvr[NSEC];
+	double Xpr[NDEM][NSEC];
+	double Qr[NSEC];
+	double Dar[NSEC];
+	double Dtr[NSEC];
+
+	double epsilon;
+	double Apz;
+
+	double Sg;
+	double Sc;
+	double Sf;
+	double ebp;
+
+	double Sgr;
+	double Scr;
+	double Sfr;
+	double ebpr;
+
+	double suma_F;
+	double suma_FF;
+	double sum_Xpr;
+	double sum_Xr;
+
+	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
+	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
+	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
+	epsilon = vec_opt[pvec[4]];
+	Apz = vec_opt[pvec[5]];
+	int n = pvec[6];
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			Fi[i][j] = F[i][j] = vec_opt[n++];
+		}
+	}
+	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
+	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
+	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], D);
+	if (op.GE_INCLUYE_XP) {
+		int n = pvec[10];
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NSEC; j++) {
+				Xpi[i][j] = vec_opt[n++];
+			}
+		}
+	}
+	std::copy(E, E + NSEC, Ei);
+	std::copy(M, M + NSEC, Mi);
+	std::copy(D, D + NSEC, Di);
+	for (int i = 0; i < NSEC; i++) {
+		pe[i] = datos.pWe[i] * epsilon;
+		pm[i] = datos.pWm[i] * epsilon;
+	}
+	if (op.OR_PRE_EXCLUIDO == 1) {
+		pf[0] = vec_opt[pvec[0]];
+		if (op.VALOR_F_TRA == 0) {
+			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
+		}
+		else {
+			pf[1] = op.PRECIO_F_EXCLUIDO;
+		}
+	}
+	else {
+		pf[0] = op.PRECIO_F_EXCLUIDO;
+		if (op.VALOR_F_TRA < 0) {
+			pf[1] = vec_opt[pvec[0]];
+		}
+		else if (op.VALOR_F_TRA > 0) {
+			pf[1] = op.VALOR_F_TRA;
+		}
+		else {
+			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
+		}
+	}
+	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
+	restriccion_produccion_bruta_Z(Z, parametros.teta, parametros.xie, parametros.xid, E, D, parametros.phi);
+	consumo_intermedio_X(X, Z, parametros.ax);
+	utilizacion_factor_compuesto_Y(Yd, Z, parametros.ay);
+	for (int i = 0; i < NSEC; i++) {
+		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
+	}
+	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	if (op.FF_ENDOGENA) {
+		aportacion_factores_FF(FF, datos.FF0, F);
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					FF[i][j] -= Alp[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					Alp[i][j] = datos.Alp0[i][j];
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NFAC; j++) {
+				FF[i][j] = datos.FF0[i][j];
+				Alp[i][j] = datos.Alp0[i][j];
+			}
+		}
+	}
+	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
+	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
+	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
+	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
+	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
+	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
+	double PssH0_sum = 0.;
+	for (int i = 0; i < NDEM; i++) {
+		PssH0_sum += datos.PssH0[i];
+	}
+	if (abs(PssH0_sum) < 0.000001) {
+		Sc = 0.;
+	}
+	else {
+		Sc = -PssH0_sum;
+		for (int i = 0; i < NDEM; i++) {
+			Sc += CssH[i];
+		}
+		for (int i = 0; i < NSEC; i++) {
+			Sc += CssE[i];
+		}
+	}
+	if (op.EQ_BAL_PAGOS) {
+		Sf = datos.Sf0;
+	}
+	else {
+		Sf = ahorro_exterior_Sf(M, E, pm, pe);
+	}
+	demanda_inversion_Xv(Xv, parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0);
+	if (op.DEM_ESENCIALES) {
+		demanda_maxima_utilidad_StoneGeary_Xp(Xp, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+	}
+	else {
+		if (op.UTILIDAD_DEMANDA == 0) {
+			demanda_maxima_utilidad_CobbDouglas_Xp(Xp, parametros.alfa, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+		else {
+			demanda_maxima_utilidad_CES_Xp(Xp, parametros.eta_ces, parametros.alfa_ces, pq, pf, FF, Sp, Td, CssH, AgH, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+	}
+	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, D, parametros.eta);
+	importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
+	produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
+	produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	if (op.EQ_BAL_PAGOS) {
+		ebp = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf);
+	}
+	else {
+		ebp = 0.;
+	}
+
+	// -----------------------
+	// segundo pase
+	// -----------------------
+	double dd;
+	double dist = 0.;
+	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Zr[i] - Z[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
+	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Ydr[i] - Ypr[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	uso_optimo_factores_F(Fr, parametros.beta, pf, py, Ypr);
+	if (op.FF_ENDOGENA) {
+		aportacion_factores_FF(FFr, datos.FF0, Fr);
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					FFr[i][j] -= Alp[i][j];
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					Alpr[i][j] = datos.Alp0[i][j];
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NFAC; j++) {
+				FFr[i][j] = datos.FF0[i][j];
+				Alpr[i][j] = datos.Alp0[i][j];
+			}
+		}
+	}
+	if (op.FF_ENDOGENA) {
+		if (op.ALP_FACTOR > 0) {
+			for (int i = 0; i < NDEM; i++) {
+				for (int j = 0; j < NFAC; j++) {
+					dd = Alpr[i][j] - Alp[i][j];
+					dist += dd * dd;
+				}
+			}
+		}
+	}
+	else {
+		for (int i = 0; i < NFAC; i++) {
+			suma_F = 0.;
+			for (int j = 0; j < NSEC; j++) {
+				suma_F += abs(Fr[j][i]);
+			}
+			suma_FF = 0.;
+			for (int j = 0; j < NDEM; j++) {
+				suma_FF += abs(FFr[j][i]);
+			}
+			dd = suma_F - suma_FF;
+			dist += dd * dd;
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			dd = FFr[i][j] - FF[i][j];
+			dist += dd * dd;
+		}
+	}
+	if (dist > liston) return dist;
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			dd = Fr[i][j] - Fi[i][j];
+			dist += dd * dd;
+			dd = Fr[i][j] - F[i][j];
+			dist += dd * dd;
+		}
+	}
+	if (dist > liston) return dist;
+	consumo_intermedio_X(Xr, Zr, parametros.ax);
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			dd = Xr[i][j] - X[i][j];
+			dist += dd * dd;
+		}
+	}
+	if (dist > liston) return dist;
+	produccion_armington_Q(Qr, parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Qr[i] - Q[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
+	for (int i = 0; i < NDEM; i++) {
+		dd = Tdr[i] - Td[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Tzr[i] - Tz[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Tmr[i] - Tm[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	for (int i = 0; i < NDEM; i++) {
+		dd = Spr[i] - Sp[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
+	for (int i = 0; i < NSEC; i++) {
+		dd = AgEr[i] - AgE[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	for (int i = 0; i < NDEM; i++) {
+		dd = AgHr[i] - AgH[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
+	for (int i = 0; i < NSEC; i++) {
+		dd = CssEr[i] - CssE[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
+	for (int i = 0; i < NDEM; i++) {
+		dd = CssHr[i] - CssH[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Xgr[i] - Xg[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	dd = Sgr - Sg;
+	dist += dd * dd;
+	if (dist > liston) return dist;
+	if (abs(PssH0_sum) < 0.000001) {
+		Scr = 0.;
+	}
+	else {
+		Scr = -PssH0_sum;
+		for (int i = 0; i < NDEM; i++) {
+			Scr += CssHr[i];
+		}
+		for (int i = 0; i < NSEC; i++) {
+			Scr += CssEr[i];
+		}
+	}
+	if (op.EQ_BAL_PAGOS) {
+		Sfr = datos.Sf0;
+	}
+	else {
+		Sfr = ahorro_exterior_Sf(M, E, pm, pe);
+	}
+	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, datos.Ti0, datos.Te0);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Xvr[i] - Xv[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	if (op.DEM_ESENCIALES) {
+		demanda_maxima_utilidad_StoneGeary_Xp(Xpr, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+	}
+	else {
+		if (op.UTILIDAD_DEMANDA == 0) {
+			demanda_maxima_utilidad_CobbDouglas_Xp(Xpr, parametros.alfa, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+		else {
+			demanda_maxima_utilidad_CES_Xp(Xpr, parametros.eta_ces, parametros.alfa_ces, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			dd = Xpr[i][j] - Xp[i][j];
+			dist += dd * dd;
+		}
+	}
+	if (dist > liston) return dist;
+	if (op.GE_INCLUYE_XP) {
+		for (int i = 0; i < NDEM; i++) {
+			for (int j = 0; j < NSEC; j++) {
+				dd = Xp[i][j] - Xpi[i][j];
+				dist += dd * dd;
+			}
+		}
+	}
+	if (dist > liston) return dist;
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xpr = 0.;
+		for (int j = 0; j < NDEM; j++) {
+			sum_Xpr += Xpr[j][i];
+		}
+		sum_Xr = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_Xr += Xr[j][i];
+		}
+		dd = Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr);
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Mr[i] - Mi[i];
+		dist += dd * dd;
+		dd = Mr[i] - M[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Dar[i] - Di[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Er[i] - Ei[i];
+		dist += dd * dd;
+		dd = Er[i] - E[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	for (int i = 0; i < NSEC; i++) {
+		dd = Dar[i] - Dtr[i];
+		dist += dd * dd;
+	}
+	if (dist > liston) return dist;
+	if (op.EQ_BAL_PAGOS) {
+		ebpr = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, Sfr);
+	}
+	else {
+		ebpr = 0.;
+	}
+	if (op.EQ_BAL_PAGOS) {
+		// trata de que 'ebpr' sea igual a 'ebp' y a cero
+		dd = abs(ebp) + abs(ebpr);
+	}
+	else {
+		dd = Sfr - Sf;
+	}
+	dist += dd * dd;
+	return dist;
+}
+#endif
 /*
-prepara los vectores 'me_sol' y 'VEC_OPT_E' con todas las variables del modelo, o las variables de la solución. Al
+prepara los vectores 'me_sol' y 'VEC_OPT_E' con todas las variables del modelo, o solo las variables de la solución. Al
 ser estas variables globales quedan en memoria a disposición de cualquier otra función, como 'soluciona', para
 devolverlas a quien llame a la DLL.
 no es multiproceso, porque 'me_sol' y 'VEC_OPT_E' son variables globales, pero es segura porque está pensada para ser llamada
-una vez que los hilos del algoritmo genético han terminado.
+una vez que los hilos que calculan los cruces y selección han completado una generación y están es espera.
 */
 double* merito_sol(double* vec_opt) {
 	double pf[NFAC];
@@ -2930,7 +3456,7 @@ double* merito_sol(double* vec_opt) {
 	double Yp[NSEC];
 	double Yd[NSEC];
 	double Z[NSEC];
-	double X[NSEC][NSEC]{};
+	double X[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double FF[NDEM][NFAC];
 	double Alp[NDEM][NFAC];
 	double Td[NDEM];
@@ -2954,7 +3480,7 @@ double* merito_sol(double* vec_opt) {
 	double Ypr[NSEC];
 	double Ydr[NSEC];
 	double Zr[NSEC];
-	double Xr[NSEC][NSEC]{};
+	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double FFr[NDEM][NFAC];
 	double Alpr[NDEM][NFAC];
 	double Tdr[NDEM];
@@ -3078,14 +3604,10 @@ double* merito_sol(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgE, parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgH, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
 	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//Sg = ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//demanda_gobierno_Xg(Xg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE);
 	double PssH0_sum = 0.;
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
@@ -3172,13 +3694,9 @@ double* merito_sol(double* vec_opt) {
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgEr, parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgHr, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//Sgr = ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//demanda_gobierno_Xg(Xgr, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
 	if (abs(PssH0_sum) < 0.000001) {
 		Scr = 0.;
 	}
@@ -3905,7 +4423,7 @@ double merito_s_relativa(double* vec_opt) {
 	double pm[NSEC];
 	double Yp[NSEC];
 	double Z[NSEC];
-	double X[NSEC][NSEC]{};
+	double X[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double Yd[NSEC];
 	double Ypd[NSEC];
 	double pz[NSEC];
@@ -3932,7 +4450,7 @@ double merito_s_relativa(double* vec_opt) {
 	double Mr[NSEC];
 	double Ypr[NSEC];
 	double Zr[NSEC];
-	double Xr[NSEC][NSEC]{};
+	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double Ydr[NSEC];
 	double FFr[NDEM][NFAC];
 	double Alpr[NDEM][NFAC];
@@ -4059,14 +4577,10 @@ double merito_s_relativa(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgE, parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgH, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
 	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//Sg = ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//demanda_gobierno_Xg(Xg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE);
 	double PssH0_sum = 0.;
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
@@ -4153,13 +4667,9 @@ double merito_s_relativa(double* vec_opt) {
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgEr, parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgHr, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//Sgr = ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//demanda_gobierno_Xg(Xgr, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
 	if (abs(PssH0_sum) < 0.000001) {
 		Scr = 0.;
 	}
@@ -4373,7 +4883,8 @@ double* merito_sol_relativa(double* vec_opt) {
 	double Yp[NSEC];
 	double Yd[NSEC];
 	double Z[NSEC];
-	double X[NSEC][NSEC]{};
+	double X[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
+
 	double FF[NDEM][NFAC];
 	double Alp[NDEM][NFAC];
 	double Td[NDEM];
@@ -4397,7 +4908,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	double Ypr[NSEC];
 	double Ydr[NSEC];
 	double Zr[NSEC];
-	double Xr[NSEC][NSEC]{};
+	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
 	double FFr[NDEM][NFAC];
 	double Alpr[NDEM][NFAC];
 	double Tdr[NDEM];
@@ -4521,14 +5032,10 @@ double* merito_sol_relativa(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgE, parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgH, parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
 	Sg = gobierno_Sg_Xg(Xg, parametros.ssg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//Sg = ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE);
-	//demanda_gobierno_Xg(Xg, parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE);
 	double PssH0_sum = 0.;
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
@@ -4615,13 +5122,9 @@ double* merito_sol_relativa(double* vec_opt) {
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
-	//ayudas_empresas_AgE(AgEr, parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0);
-	//ayudas_hogares_AgH(AgHr, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//Sgr = ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
-	//demanda_gobierno_Xg(Xgr, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
 	if (abs(PssH0_sum) < 0.000001) {
 		Scr = 0.;
 	}
@@ -5409,15 +5912,31 @@ void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double
 		Z[i] = teta[i] * copysign(1.0, base) * pow(abs(base), (1. / phi[i]));
 	}
 }
+#ifdef CONSUMO_INTERMEDIO_AX
 void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
+	// no ahorra tiempo, quizás el compilador ya lo hace
+	__m256d ax_Z;
+	__m256d ax_ax;
+	__m256d ax_X{};
+	double* ax_vX = (double*)&ax_X;
 	for (int i = 0; i < NSEC; i++) {
-		for (int j = 0; j < NSEC; j++) {
+		ax_Z = _mm256_set1_pd(Z[i]);
+		for (int j = 0; j < NSEC4; j += 4) {
+			ax_ax = _mm256_setr_pd(ax[i][j], ax[i][j + 1], ax[i][j + 2], ax[i][j + 3]);
+			ax_X = _mm256_mul_pd(ax_ax, ax_Z);
+			X[i][j] = ax_vX[0];
+			X[i][j + 1] = ax_vX[1];
+			X[i][j + 2] = ax_vX[2];
+			X[i][j + 3] = ax_vX[3];
+		}
+		for (int j = NSEC4; j < NSEC; j++) {
 			X[i][j] = ax[i][j] * Z[i];
 		}
 	}
 }
-/*
-void consumo_intermedio_op_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
+#else
+#ifdef CONSUMO_INTERMEDIO_INDESADO
+void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
 	int i;
 	int j;
 	for (int n = 0; n < ndc_ax; n++) {
@@ -5426,6 +5945,17 @@ void consumo_intermedio_op_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NS
 		X[i][j] = ax[i][j] * Z[i];
 	}
 }
+#else
+void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			X[i][j] = ax[i][j] * Z[i];
+		}
+	}
+}
+#endif
+#endif
+/*
 */
 void utilizacion_factor_compuesto_Y(double* Y, double* Z, double* ay) {
 	for (int i = 0; i < NSEC; i++) {
@@ -5501,32 +6031,6 @@ void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double
 		AgH[i] = cagh[i] * ingresos + AYD_ADI_DEM[i];
 	}
 }
-
-void ayudas_empresas_AgE(double* AgE, double* cage, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te) {
-	double ingresos = Ti + Te;
-	for (int i = 0; i < NDEM; i++) {
-		ingresos += Td[i];
-	}
-	for (int i = 0; i < NSEC; i++) {
-		ingresos += Tz[i] + Tm[i];
-	}
-	for (int i = 0; i < NSEC; i++) {
-		AgE[i] = cage[i] * ingresos;
-	}
-}
-void ayudas_hogares_AgH(double* AgH, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM) {
-	double ingresos = Ti + Te;
-	for (int i = 0; i < NDEM; i++) {
-		ingresos += Td[i];
-	}
-	for (int i = 0; i < NSEC; i++) {
-		ingresos += Tz[i] + Tm[i];
-	}
-	for (int i = 0; i < NDEM; i++) {
-		AgH[i] = cagh[i] * ingresos + AYD_ADI_DEM[i];
-	}
-}
-
 void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0) {
 
 	// parece que faltan los Alp
@@ -5579,56 +6083,6 @@ double gobierno_Sg_Xg(double* Xg, double ssg, double* mu, double* pq, double* Td
 	}
 	return Sg;
 }
-
-double ahorro_gobierno_Sg(double ssg, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE) {
-	double sPssH = 0.;
-	for (int i = 0; i < NDEM; i++) {
-		sPssH += PssH0[i];
-	}
-	double Css = 0.;
-	if (abs(sPssH) < 0.000001) {
-		for (int i = 0; i < NDEM; i++) {
-			Css += CssH[i];
-		}
-		for (int i = 0; i < NSEC; i++) {
-			Css += CssE[i];
-		}
-	}
-	double neto = Ti + Te + Css;
-	for (int i = 0; i < NDEM; i++) {
-		neto += (Td[i] - AgH[i]);
-	}
-	for (int i = 0; i < NSEC; i++) {
-		neto += (Tz[i] + Tm[i] - AgE[i]);
-	}
-	return ssg * neto;
-}
-void demanda_gobierno_Xg(double* Xg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double Sg, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE) {
-	double sPssH = 0.;
-	for (int i = 0; i < NDEM; i++) {
-		sPssH += PssH0[i];
-	}
-	double Css = 0.;
-	if (abs(sPssH) < 0.000001) {
-		for (int i = 0; i < NDEM; i++) {
-			Css += CssH[i];
-		}
-		for (int i = 0; i < NSEC; i++) {
-			Css += CssE[i];
-		}
-	}
-	double neto = Ti + Te + Css - Sg;
-	for (int i = 0; i < NDEM; i++) {
-		neto += (Td[i] - AgH[i]);
-	}
-	for (int i = 0; i < NSEC; i++) {
-		neto += (Tz[i] + Tm[i] - AgE[i]);
-	}
-	for (int i = 0; i < NSEC; i++) {
-		Xg[i] = mu[i] * neto / pq[i];
-	}
-}
-
 double ahorro_exterior_Sf(double* M, double* E, double* pm, double* pe) {
 	double Sf = 0.;
 	for (int i = 0; i < NSEC; i++) {
