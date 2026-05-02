@@ -1505,7 +1505,7 @@ def imprime_opciones(nvec_opt):
         imprime('Rango mínimo de las variables         {:9.1f}'.format(GE_VAR_CAN_MIN))
     if len(FIX) > 0:
         imprime('------------------------------------------------------------------------------------------')
-        imprime('Rangos de validez explícitos, indesados')
+        imprime('Rangos de validez explícitos')
         imprime('------------------------------------------------------------------------------------------')
         for i in range(len(FIX)):
             imprime('{:8}'.format(FIX[i]), False)

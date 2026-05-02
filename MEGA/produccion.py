@@ -5,7 +5,7 @@ import numpy as np
 def produccion_factor_compuesto_Y(F, beta, b):
     '''
     ecuación 6.1 Producción óptima de factor compuesto (composite factor) 'Y' para cada sector,
-    dadas las utilización de factores de producción 'F' y la función de producción Cobb Douglas correspondiente
+    dada la utilización de factores de producción 'F' y la función de producción Cobb Douglas correspondiente
 
     F   : factores utilizados por cada sector
     beta: coeficientes de participación de cada factor en la función de producción (utilidad) de cada sector
