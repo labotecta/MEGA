@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#define MEGA5
+#define MEGA6
 
 #ifdef MEGA4
 const int NDEM = 2;
@@ -34,7 +34,7 @@ const int NSEC = 31;
 
 // como puede haber alrededor de una tercera parte de valores 'ax' iguales a 0
 // guardamos los índices de los que no lo son, para usar solo estos en el cálculo de X
-// no ahorra tiempo.
+// no ahorra tiempo, es inútil.
 //#define CONSUMO_INTERMEDIO_INDESADO
 
 #define COPIAR_CON_COPY
@@ -119,14 +119,12 @@ public:
 	double deltam[NSEC];
 	double deltad[NSEC];
 	double eta[NSEC];
+	double tai;
 } PARAMETROS;
 
 extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
-#ifdef COMPROBAR_MAX_DESVIACION
-extern "C" MEGA_DLL_API void indice_desviaciones();
-#endif
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
 
@@ -134,13 +132,16 @@ extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
 extern "C" MEGA_DLL_API double merito_s_relativa(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol_relativa(double* vec_opt);
 #endif 
-
-extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
-
 #ifdef FIN_MERITO_ANTICIPADO
 double merito_d(double* vec_opt, double liston);
 #endif
+#ifdef COMPROBAR_MAX_DESVIACION
+extern "C" MEGA_DLL_API void indice_desviaciones();
+#endif
 
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
+
+#pragma region Merito
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);
 void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
@@ -151,6 +152,7 @@ void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], doubl
 void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0);
 void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
 void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M);
+double impuestos_directos_Ti(double tai, double* Sp);
 void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
 void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0);
 void seguridad_social_empresas_CssE(double* CssE, double* ctzsse, double* pf, double F[NSEC][NFAC], int INDICE_F_TRA);
@@ -168,6 +170,10 @@ void produccion_para_exportacion_E(double* E, double* teta, double* xie, double*
 void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
 double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double* pWm, double* M, double Sf);
 double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, double pF0L, double F0[NSEC][NFAC], double F[NSEC][NFAC]);
+#ifdef COMPROBAR_MAX_DESVIACION
+void indice_desviaciones();
+#endif 
+#pragma endregion
 
 #pragma region Genetico
 
@@ -192,8 +198,4 @@ int ProcesoMP(int gh);
 void ProcesarTramo(int hilo, int desde, int hasta);
 unsigned int WINAPI HiloTramos(LPVOID param);
 void fin_soluciona(auto t_inicio);
-#ifdef COMPROBAR_MAX_DESVIACION
-void indice_desviaciones();
-#endif 
-
 #pragma endregion
