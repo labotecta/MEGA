@@ -89,6 +89,7 @@ class PARAMETROS(ct.Structure):
         ('deltam',    (ct.c_double * nsec )),
         ('deltad',    (ct.c_double * nsec )),
         ('eta',       (ct.c_double * nsec )),
+        ('tai',        ct.c_double),
     )
 
 def abre_dll(fichero):
@@ -178,6 +179,7 @@ def envia_parametros(libc, p):
         (ct.c_double * nsec ) (*p.deltam   .flatten()),
         (ct.c_double * nsec ) (*p.deltad   .flatten()),
         (ct.c_double * nsec ) (*p.eta      .flatten()),
+        ct.c_double(p.tai),
     )
     libc.recibe_parametros.argtypes = [PARAMETROS]
     libc.recibe_parametros.restype = PARAMETROS

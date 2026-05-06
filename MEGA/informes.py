@@ -73,8 +73,8 @@ def valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, V
     mfun.i_tabla(''  , [] , ['Tz0',]       , datos.Tz0              , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['Tm0',]       , datos.Tm0              , False, DECIMALES)
     mfun.i_tabla('/' , dem, ['Td0',]       , datos.Td0              , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['Tg0',]       , datos.Tg0              , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['Ti0',]       , datos.Ti0              , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['Tg0',]       , datos.Tg0              , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['Te0',]       , datos.Te0              , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['CssH0',]     , datos.CssH0            , True , DECIMALES)
     mfun.i_tabla('/' , ind, ['CssE0',]     , datos.CssE0            , True , DECIMALES)
@@ -279,6 +279,9 @@ def salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES):
     mfun.cierre(dem)
     imprime('')
 
+    imprime('tai. Tasa de impuestos sobre la inversión {:9.{prec}f}'.format(parametros.tai, prec=5))
+    imprime('')
+
     imprime('ctzsse. Cotización a la seguridad social de las empresas')
     mfun.cabecera('', ind)
     mfun.cuerpo2D(['ctzsse',], parametros.ctzsse)
@@ -310,7 +313,7 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nfac = len(h)
     nsec = len(ind)
     ndem = len(dem)
-    (pf,py,pz,pq,pd,epsilon,Apz,F,Z,E,M,D,FF,Y,X,Xp,Xg,Xv,Q,ebp,Sp,Sg,Sf,Td,Tz,Tm,CssE,CssH,AgE,AgH,Alp) = vec_veri_sol
+    (pf,py,pz,pq,pd,epsilon,Apz,F,Z,E,M,D,FF,Y,X,Xp,Xg,Xv,Q,ebp,Sp,Sg,Sf,Td,Tz,Tm,CssE,CssH,AgE,AgH,Alp,Ti) = vec_veri_sol
 
     nvar_end = 0
     nvar_end += pf.size
@@ -374,17 +377,17 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += Tz.size
     desviacion[7]  = Tm    - gob.aranceles_importacion_Tm(datos.taum, pm, M)                                # 6. 8
     nvar_end += Tm.size
-    desviacion[8]  = Xg    - gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
+    desviacion[8]  = Xg    - gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
     nvar_end += Xg.size
     if datos.PssH0.sum() == 0:
         Sc = 0.
     else:
         Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
-    desviacion[9]  = Xv    - ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0)    # 6.10
+    desviacion[9]  = Xv    - ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, Ti, datos.Te0)    # 6.10
     nvar_end += Xv.size
     desviacion[10] = Sp    - ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
     nvar_end += Sp.size
-    desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
+    desviacion[11] = Sg    - ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
     nvar_end += 1
                                                                                                             # 6.13
     if DEM_ESENCIALES:
@@ -415,9 +418,9 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += CssE.size
     desviacion[21]  = CssH - gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)    # CssH
     nvar_end += CssH.size
-    desviacion[22]  = AgE  - gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0)                           # AgE
+    desviacion[22]  = AgE  - gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0)                           # AgE
     nvar_end += AgE.size
-    desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM)               # AgH
+    desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM)               # AgH
     nvar_end += AgH.size
     desviacion[24]  = Q    - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))                                     # 6.23
     desviacion[25]  = F.sum(axis=0) - (FF.sum(axis=0) + Alp.sum(axis=0))                                    # 6.24
@@ -496,7 +499,8 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     ndem = len(dem)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+        Ti,Tir
     ) = res_ecuaciones
     pf = prin.extrae_var(vec_opt, 'pF', 0, nfac - 1)
     # el precio del otro factor se añade al principio o al final de 'pf'
@@ -564,8 +568,8 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     mfun.i_tabla(''  , []                   , ['Tz',]         , Tzr                   , False, DECIMALES)
     mfun.i_tabla(''  , []                   , ['Tm',]         , Tmr                   , False, DECIMALES)
     mfun.i_tabla('/' , dem                  , ['Td',]         , Tdr                   , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Ti',]         , Tir                   , False, DECIMALES)
     mfun.i_tabla(''  , []                   , ['Tg',]         , datos.Tg0             , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Ti',]         , datos.Ti0             , False, DECIMALES)
     mfun.i_tabla(''  , []                   , ['Te',]         , datos.Te0             , False, DECIMALES)
     mfun.i_tabla(''  , []                   , ['CssH',]       , CssHr                 , True , DECIMALES)
     mfun.i_tabla('/' , ind                  , ['CssE',]       , CssEr                 , True , DECIMALES)
@@ -596,7 +600,8 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
 def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist):
         (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
             Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+            Ti,Tir
         ) = res_ecuaciones
         (des_produccion,des_factores,des_ebp,
                 des_Fi,des_Mi,des_Ei,des_Di,des_Xpi,
@@ -606,7 +611,7 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
                 des_Yp,des_Yd,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH,des_Ti
         ) = param
 
         # todos son positivos porque se ha guardado el valor absoluto de las diferencias
@@ -638,6 +643,7 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         des_Td   = des_Td ** 2
         des_Tz   = des_Tz ** 2
         des_Tm   = des_Tm ** 2
+        des_Ti   = des_Ti ** 2
         des_Sp   = des_Sp ** 2
         des_Sg   = des_Sg ** 2
         des_Sf   = des_Sf ** 2
@@ -675,6 +681,7 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         suma += des_Td.sum()
         suma += des_Tz.sum()
         suma += des_Tm.sum()
+        suma += des_Ti.sum()
         suma += des_Sp.sum()
         suma += des_Sg.sum()
         suma += des_Sf.sum()
@@ -713,6 +720,7 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         mfun.tabla_2De(['des Td',]    , des_Td, 6)
         mfun.tabla_2De(['des Tz',]    , des_Tz, 6)
         mfun.tabla_2De(['des Tm',]    , des_Tm, 6)
+        mfun.tabla_2De(['des Ti',]    , des_Ti, 6)
         mfun.tabla_2De(['des Sp',]    , des_Sp, 6)
         mfun.tabla_2De(['des Sg',]    , des_Sg, 6)
         mfun.tabla_2De(['des Sf',]    , des_Sf, 6)
@@ -756,6 +764,7 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Td'   , des_Td.sum()        , 100. * des_Td.sum()         / (1 if np.mean(Td)==0   else np.mean(Td))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Tz'   , des_Tz.sum()        , 100. * des_Tz.sum()         / (1 if np.mean(Tz)==0   else np.mean(Tz))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Tm'   , des_Tm.sum()        , 100. * des_Tm.sum()         / (1 if np.mean(Tm)==0   else np.mean(Tm))   , prec=6))
+        imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Ti'   , des_Ti.sum()        , 100. * des_Ti.sum()         / (1 if np.mean(Ti)==0   else np.mean(Ti))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sp'   , des_Sp.sum()        , 100. * des_Sp.sum()         / (1 if np.mean(Sp)==0   else np.mean(Sp))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sg'   , des_Sg.sum()        , 100. * des_Sg.sum()         / (1 if np.mean(Sg)==0   else np.mean(Sg))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Sf'   , des_Sf.sum()        , 100. * des_Sf.sum()         / (1 if np.mean(Sf)==0   else np.mean(Sf))   , prec=6))
@@ -774,7 +783,8 @@ def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, 
     ndem = len(dem)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+        Ti,Tir
     ) = res_ecuaciones
     imprime('Diferencias entre los valores finales y los iniciales')
     imprime('')
@@ -858,10 +868,10 @@ def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, 
     mfun.i_tabla(''  , [] , ['Tm',]       , dTm0                   , False, DECIMALES)
     dTd0 = Td - datos.Td0
     mfun.i_tabla('/' , dem, ['Td',]       , dTd0                   , False, DECIMALES)
+    dTi0 = Ti - datos.Ti0
+    mfun.i_tabla(''  , [] , ['Ti',]      , dTi0                    , False, DECIMALES)
     dTg0 = datos.Tg0 - datos.Tg0
     mfun.i_tabla(''  , [] , ['Tg',]      , dTg0                    , False, DECIMALES)
-    dTi0 = datos.Ti0 - datos.Ti0
-    mfun.i_tabla(''  , [] , ['Ti',]      , dTi0                    , False, DECIMALES)
     dTe0 = datos.Te0 - datos.Te0
     mfun.i_tabla(''  , [] , ['Te',]      , dTe0                    , False, DECIMALES)
     dCssH0 = CssH - datos.CssH0
@@ -901,7 +911,8 @@ def diferencias_importes_finales_iniciales(datos, parametros, DECIMALES, ind, de
     ndem = len(dem)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+        Ti,Tir
     ) = res_ecuaciones
     imprime('Diferencias entre los valores finales y los iniciales')
     imprime('')
@@ -985,10 +996,10 @@ def diferencias_importes_finales_iniciales(datos, parametros, DECIMALES, ind, de
     mfun.i_tabla(''  , [] , ['Tm',]       , dTm0                   , False, DECIMALES)
     dTd0 = Td - datos.Td0
     mfun.i_tabla('/' , dem, ['Td',]       , dTd0                   , False, DECIMALES)
+    dTi0 = Ti - datos.Ti0
+    mfun.i_tabla(''  , [] , ['Ti',]      , dTi0                    , False, DECIMALES)
     dTg0 = datos.Tg0 - datos.Tg0
     mfun.i_tabla(''  , [] , ['Tg',]      , dTg0                    , False, DECIMALES)
-    dTi0 = datos.Ti0 - datos.Ti0
-    mfun.i_tabla(''  , [] , ['Ti',]      , dTi0                    , False, DECIMALES)
     dTe0 = datos.Te0 - datos.Te0
     mfun.i_tabla(''  , [] , ['Te',]      , dTe0                    , False, DECIMALES)
     dCssH0 = CssH - datos.CssH0
@@ -1033,7 +1044,8 @@ def datos_grafico_solucion(datos, parametros, ind, dem, h, v):
     res_ecuaciones = prin.sec_ecuaciones(v)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+        Ti,Tir
     ) = res_ecuaciones
     # precios
     pf      = prin.extrae_var(v,'pF', 0, nfac - 1)

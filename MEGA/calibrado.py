@@ -230,7 +230,7 @@ class datos(object):
 
         # 'INV' recolecta inversiones de los hogares, el gobierno y sector exterior (sus ahorros) y las emplea (transfiere) en los sectores.
         # inversión recibida por cada sector = ventas de los sectores (filas 'ind') al agente inversor ('INV') 
-        # dicho de otra forma                = ingresos de los sectores aportados por 'INV'
+        # dicho de otra forma                = ingresos de los sectores aportados por la inversión ('INV')
         self.Xv0 = DataFrame(sam, index=ind, columns=inv)                       # (len(ind), 1)
         '''
                   A-I
@@ -551,15 +551,17 @@ class parametros(object):
         self.taud     = ecua.tasa_impuestos_directos_taud(datos.Td0, datos.FF0, datos.PssH0)
         self.taud_id  = ecua.tasa_impuestos_directos_taud(datos.Tid0, datos.FF0, datos.PssH0)
         self.taud_oi  = ecua.tasa_impuestos_directos_taud(datos.Toi0, datos.FF0, datos.PssH0)
-        
+        # tasa de impuestos al ahorro-inversion
+        self.tai = ecua.tasa_impuestos_directos_tai(datos.Ti0, datos.Sp0)
+
         # propensión al ahorro del gobierno
-        self.ssg   = ecua.propension_ahorro_gobierno_ssg(datos.Sg0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos. Ti0, datos.Te0, datos.AgE0, datos.AgH0, datos.CssE0, datos.CssH0, datos.PssH0)
+        self.ssg   = ecua.propension_ahorro_gobierno_ssg(datos.Sg0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos.Ti0, datos.Te0, datos.AgE0, datos.AgH0, datos.CssE0, datos.CssH0, datos.PssH0)
 
         # ayudas del gobierno a las empresas
-        self.cage = ecua.coeficiente_ayudas_gobierno_empresas_cage(datos.AgE0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos. Ti0, datos.Te0)
+        self.cage = ecua.coeficiente_ayudas_gobierno_empresas_cage(datos.AgE0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos.Ti0, datos.Te0)
         
         # ayudas del gobierno a los hogares
-        self.cagh = ecua.coeficiente_ayudas_gobierno_hogares_cagh(datos.AgH0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos. Ti0, datos.Te0)
+        self.cagh = ecua.coeficiente_ayudas_gobierno_hogares_cagh(datos.AgH0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos.Ti0, datos.Te0)
         
         # ATENCION se está suponiendo que el trabajo es la coluna 1 (segunda columna) de FF
 

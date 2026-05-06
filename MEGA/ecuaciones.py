@@ -302,6 +302,20 @@ def tasa_impuestos_directos_taud(Td, FF, PssH):
     taud = Td / ingresos
     return taud
 
+def tasa_impuestos_directos_tai(Ti, Sp):
+    '''
+    Tasa de impuestos directos al ahorro+inversión de los hogares
+
+    Ti   : impuestos directos
+    Sp   : ahorro de los hogares
+    '''
+    ingresos = Sp.sum()
+    if ingresos == 0:
+        tai = 0.
+    else:
+        tai = Ti / ingresos
+    return tai
+
 def propension_ahorro_gobierno_ssg(Sg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, CssE, CssH, PssH):
     '''
     Propensión al ahorro del gobierno

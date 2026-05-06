@@ -10,7 +10,6 @@ tienen el mismo peso, sea cual sea el importe absoluto de la variable. Casi segu
 scipy.differential_evolution si normaliza las variables para que todos los intervalos de existencia sean el mismo.
 
 Los pagos de impuestos directos del gobierno no se usan para nada (Tg0).
-Los pagos de impuestos directos del ahorro+inversión no se usan para nada (Ti0).
 Los pagos de impuestos directos del sector exterior no se usan para nada (Te0).
 
 Utilizar para la demanda la función de utilidad Cobb-Douglas o la CES con cualquier valor de sigma, da prácticamente los
@@ -68,7 +67,7 @@ import restricciones as restri
 global datos
 global parametros
 
-VERSION = '1.5.0'
+VERSION = '1.6.0'
 
 # 7 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
@@ -1073,7 +1072,7 @@ def sec_ecuaciones(vec_opt):
     # producción bruta, se usa la ecuación alternativa que no necesita el cálculo de un valor mínimo
     pz = prod.coste_unitario_produccion_pz(ay, py, ax, pq)                              # 6. 5 alternativa
 
-    # La variación de la suma del factor compuesto, respecto del factor compuesto de la MCS,
+    # la variación de la suma del factor compuesto, respecto del factor compuesto de la MCS,
     # es la variación de factores de producción que deben aportar los hogares (FF).
     # en el caso de que los (FF) sean constantes la ecuación de cierre exige que la suma de
     # variaciones sea cero.
@@ -1103,16 +1102,20 @@ def sec_ecuaciones(vec_opt):
     Td = gob.impuestos_directos_Td(parametros.taud, pf, FF, Alp, datos.PssH0)           # 6. 6
     Tz = gob.impuestos_produccion_Tz(datos.tauz, pz, Z)                                 # 6. 7
     Tm = gob.aranceles_importacion_Tm(datos.taum, pm, M)                                # 6. 8
-    # ayudas (pagos) del gobierno a las empresas, un porcentaje de lo recaudado por impuestos
-    AgE  = gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0)
-    # ayudas (pagos) del gobierno a los hogares, un porcentaje de lo recaudado por impuestos
-    AgH  = gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM)
 
-    # Ahorro (privado -hogares- y del gobierno). Se invertirán íntegramente en los sectores
-    # las calculamos antes que 6. 9 y 6.10, porque mo dependen de los resultados de estas y sin
-    # embargo 6. 9 y 6.10 si dependen de ellos. El ahorro a corto plazo es por tanto sin Alp
+    # horro (privado -hogares- y del gobierno). Se invertirán íntegramente (menos impuestos) en los sectores
+    # las calculamos antes que 6. 9, 6.10 y 6.11, porque mo dependen de los resultados de estas y sin
+    # embargo 6. 9, 6.10 y 'Ti' si dependen del ahoro. El ahorro a corto plazo es por tanto sin Alp
     #--------------------------------------------------------------------------------------------------
     Sp = ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
+    
+    # solo calculamos impuestos a la inversión de los hogares (inversores) porque los que el gobierno pague son un ingreso para él
+    Ti = gob.impuestos_directos_Ti(parametros.tai, Sp)
+
+    # ayudas (pagos) del gobierno a las empresas, un porcentaje de lo recaudado por impuestos
+    AgE  = gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0)
+    # ayudas (pagos) del gobierno a los hogares, un porcentaje de lo recaudado por impuestos
+    AgH  = gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM)
 
     # Seguridad social
     # los pagos de la seguridad social a los hogares (pensiones -PssH0-) es un valor constante fijado de antemano (exógena).
@@ -1124,11 +1127,11 @@ def sec_ecuaciones(vec_opt):
     #   de los hogares. (FF) es la prestación de factores de cada hogar (consumidor)
     CssH = gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)
 
-    Sg = ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
+    Sg = ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
 
     # El gobierno compra productos con cargo a sus ingresos disponibles que son lo que recauda por
     # impuestos menos su ahorro (Sg) y las ayudas a empresas (AgE) y hogares (AgH)
-    Xg = gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, datos.Ti0, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
+    Xg = gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
 
     # Inversión con cargo a los ahorros: los ahorros privados (Sp), del gobierno (Sg) y del
     # exterior (Sf0), se reparten entre sectores proporcionalmente a la MCS (parametros.landa)
@@ -1147,7 +1150,7 @@ def sec_ecuaciones(vec_opt):
     else:
         # la balanza de pagos no tiene un valor determinado
         Sf = ainv.ahorro_exterior_Sf(M, E, pm, pe)
-    Xv = ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, datos.Ti0, datos.Te0)    # 6.10
+    Xv = ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, Ti, datos.Te0)    # 6.10
 
     # Consumo de productos de los hogares. Mediante la función que optimiza la utilidad (pq, parametros.alfa) a
     # partir de los ingresos netos:
@@ -1228,14 +1231,16 @@ def sec_ecuaciones(vec_opt):
     Tdr   = gob.impuestos_directos_Td(parametros.taud, pf, FFr, Alpr, datos.PssH0)          # 6. 6
     Tzr   = gob.impuestos_produccion_Tz(datos.tauz, pz, Zr)                                 # 6. 7
     Tmr   = gob.aranceles_importacion_Tm(datos.taum, pm, M)                                 # 6. 8
-    
+
     Spr   = ainv.ahorro_hogares_Sp(parametros.ssp, FFr, pf, datos.PssH0)                    # 6.11
-    AgEr  = gob.ayudas_empresas_AgE(parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0)
-    AgHr  = gob.ayudas_hogares_AgH(parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AYD_ADI_DEM)
+    Tir   = gob.impuestos_directos_Ti(parametros.tai, Spr)
+    
+    AgEr  = gob.ayudas_empresas_AgE(parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0)
+    AgHr  = gob.ayudas_hogares_AgH(parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM)
     CssEr = gob.seguridad_social_empresas_CssE(parametros.ctzsse, pf, Fr, INDICE_F_TRA)
     CssHr = gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FFr, Alpr, INDICE_F_TRA)
-    Sgr   = ainv.ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr)              # 6.12
-    Xgr   = gob.demanda_gobierno_Xg(parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, datos.Ti0, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)      # 6. 9
+    Sgr   = ainv.ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr)              # 6.12
+    Xgr   = gob.demanda_gobierno_Xg(parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)      # 6. 9
     if datos.PssH0.sum() == 0:
         Scr = 0.
     else:
@@ -1245,7 +1250,7 @@ def sec_ecuaciones(vec_opt):
         Sfr = np.float64(datos.Sf0)    
     else:
         Sfr = ainv.ahorro_exterior_Sf(M, E, pm, pe)
-    Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, datos.Ti0, datos.Te0)   # 6.10
+    Xvr   = ainv.demanda_inversion_Xv(parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, Tir, datos.Te0)   # 6.10
     if DEM_ESENCIALES:
         Xpr   = deho.demanda_maxima_utilidad_StoneGeary_Xp(parametros.alfa_esen, CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA)
     else:
@@ -1272,7 +1277,8 @@ def sec_ecuaciones(vec_opt):
 
     res_ecuaciones = (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
             Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH, ebp,Zl,pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+            Ti,Tir
     )
     return res_ecuaciones
 
@@ -1282,7 +1288,8 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     '''
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH, ebp, Zl, pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+        Ti,Tir
     ) = res_ecuaciones
 
     # Se trata de forma individualizada la desviación en valor absoluto de cada variable
@@ -1347,6 +1354,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     des_Td         = abs(Tdr  - Td  ).flatten()    
     des_Tz         = abs(Tzr  - Tz  ).flatten()    
     des_Tm         = abs(Tmr  - Tm  ).flatten()    
+    des_Ti         = abs(Tir  - Ti  ).flatten()    
     des_Sp         = abs(Spr  - Sp  ).flatten()    
     des_Sg         = abs(Sgr  - Sg  ).flatten()    
     des_AgE        = abs(AgEr - AgE ).flatten()    
@@ -1368,7 +1376,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 des_Yp,des_Yd,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH,des_Ti
             )
         )
     else:
@@ -1379,7 +1387,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 des_Dat,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH,des_Ti
             )
         )
     if METRICA_ERROR == 0:
@@ -1408,7 +1416,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 des_Yp,des_Yd,
                 des_Ydp,
                 des_Alp,des_FF,des_Z,des_X,des_Xp,des_Xg,des_Xv,des_Q,
-                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH
+                des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH,des_Ti
                 )
 
         infor.salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist)
@@ -1987,6 +1995,7 @@ if __name__ == '__main__':
                     datos.AgE0,
                     datos.AgH0,
                     datos.Alp0,
+                    datos.Ti0,
         )
         # verifica solución
         infor.veri_solucion(datos, parametros, ind, dem, h,
@@ -2010,7 +2019,8 @@ if __name__ == '__main__':
         # verificar la solución
         (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
             Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+            Ti,Tir
         ) = res_ecuaciones
         pf      = extrae_var(vec_opt,'pF', 0, nfac - 1)
         pf      = completa_pf(pf, F)
@@ -2050,6 +2060,7 @@ if __name__ == '__main__':
                     AgE,
                     AgH,
                     Alp,
+                    Ti,
         )
         infor.veri_solucion(datos, parametros, ind, dem, h,
                             vec_veri_sol, etq_veri, UTILIDAD_DEMANDA, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, ALP_FACTOR, CON_ESENCIALES,
@@ -2065,7 +2076,7 @@ if __name__ == '__main__':
                                                 INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                                 Yp,X,F,Z,CssE,Tz,M,AgE,
                                                 FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                                Xg,Sg,datos.Tg0,datos.Ti0,datos.Te0,Tm,
+                                                Xg,Sg,datos.Tg0,Ti,datos.Te0,Tm,
                                                 E,Sf,TOLERA_MCS,
                                                 'MCS primera valoración. Importes', True
                                               )
@@ -2414,6 +2425,7 @@ if __name__ == '__main__':
                         'Fi',
                         'F',
                         'X',
+                        'Ti',
                         '???'
                     ]
                 ind_des = [
@@ -2448,7 +2460,8 @@ if __name__ == '__main__':
                         27,
                         8,
                         0,
-                        31
+                        31,
+                        32
                     ]
                 ids = copy.deepcopy(ind_des)
                 ids.sort()
@@ -2464,6 +2477,8 @@ if __name__ == '__main__':
                 sol = np.array([r_sol[i] for i in range(cabecera + 1, r_datos)], dtype=np.float64)
                 ne = r_datos
                 nd = int(r_sol[ne])
+                if nd != len(ind_des) - 1:
+                    imprime('*--* Error en el número de desviaciones, {} en lugar de {}'.format(nd, len(ind_des) - 1))
                 ne += 1
 
                 val_des = []
@@ -2483,7 +2498,7 @@ if __name__ == '__main__':
                 imprime('{:6} {:12.6e}'.format('total', suma))
                 if GE_HISTORIAL > 0:
                     if r_sol[ne] != HISTO_MAX:
-                        imprime('Error el número de datos de evolución {} no es coherente {}'.format(r_sol[r_datos + i], HISTO_MAX))
+                        imprime('*--* Error el número de datos de evolución {} no es coherente {}'.format(r_sol[r_datos + i], HISTO_MAX))
                         sys.exit()
                     ne += 1
                     imprime('')
@@ -2527,7 +2542,8 @@ if __name__ == '__main__':
     if USAR_ALGE_DLL and ALGE_RES_EXTENSA == 1:
         res_ecuaciones = (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
             Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Z,pz,
-            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
+            Ti,Tir
         )
     else:
         res_ecuaciones = sec_ecuaciones(sol)
@@ -2542,7 +2558,8 @@ if __name__ == '__main__':
     infor.salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, sol, npre_sol, etq_precios, res_ecuaciones)
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Srf,AgEr,AgHr,CssEr,CssHr,ebpr
+        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Srf,AgEr,AgHr,CssEr,CssHr,ebpr,
+        Ti,Tir
     ) = res_ecuaciones
     if SAL_MCS:
         pf = extrae_var(sol,'pF', 0, nfac - 1)
@@ -2556,7 +2573,7 @@ if __name__ == '__main__':
                                             INDICE_F_TRA,pf,py,pq,pd,pz,epsilon,pe,pm,
                                             Yp,X,F,Z,CssE,Tz,M,AgE,
                                             FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                            Xg,Sg,datos.Tg0,datos.Ti0,datos.Te0,Tm,
+                                            Xg,Sg,datos.Tg0,Ti,datos.Te0,Tm,
                                             E,Sf,
                                             TOLERA_MCS,'MCS final. Importes',True
                                           )
@@ -2566,7 +2583,7 @@ if __name__ == '__main__':
                                             INDICE_F_TRA,datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
                                             Yp,X,F,Z,CssE,Tz,M,AgE,
                                             FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,datos.PssH0,
-                                            Xg,Sg,datos.Tg0,datos.Ti0,datos.Te0,Tm,
+                                            Xg,Sg,datos.Tg0,Ti,datos.Te0,Tm,
                                             E,Sf,
                                             TOLERA_MCS,'MCS final. Cantidades',False
                                           )
@@ -2636,6 +2653,7 @@ if __name__ == '__main__':
                 AgE,
                 AgH,
                 Alp,
+                Ti,
     )
     infor.veri_solucion(datos, parametros, ind, dem, h,
                         vec_veri_sol, etq_veri, UTILIDAD_DEMANDA, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, ALP_FACTOR, CON_ESENCIALES,

@@ -30,6 +30,13 @@ def aranceles_importacion_Tm(taum, pm, M):
     '''
     return taum * M * pm
 
+def impuestos_directos_Ti(tai, Sp):
+    '''
+    tai : tasa de impuestos directos sobre la inversión
+    Sp  : ahorro de los hogares
+    '''
+    return tai * Sp.sum()
+
 def ayudas_empresas_AgE(cage, Td, Tz, Tm, Tg, Ti, Te):
     # no está adaptado al caso en que el gobierno paga las pensiones, por tanto recauda las cotizaciones
     '''

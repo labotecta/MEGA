@@ -51,7 +51,7 @@ def ahorro_gobierno_Sg(ssg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, PssH, CssH, CssE):
     Tz   : impuestos a la producción
     Tm   : aranceles de importación
     Tg   : impuestos que paga el gobierno. No se usa porque lo que paga lo recibe
-    Ti   : impuestos pagados por la inversión
+    Ti   : impuestos pagados por la inversión de los hogares
     Css  : si es el gobierno quien paga las pensiones, ingresos recibidos de la seguridad social
     restan:
     Sg   : ahorro del gobierno
