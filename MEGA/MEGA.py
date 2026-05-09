@@ -23,18 +23,22 @@ El tratamiento del precio de los factores es enrevesado y fuente de multitud de 
 que siempre se fijaría el precio del factor trabajo y que por lo tanto no debía formar parte de las soluciones a
 probar, pero los parches al considerar que se podría fijar el del capital o usar la curva Phillips hacen
 incomprensible la gestión de estos precios en las soluciones de prueba.
+
+Los impuestos al ahorro-inversión (Ti) se pueden interpretar de varias formas, el modelo los considera como un impuesto a las
+rentas de capital (ingresos por el factor capital) que perciben los hogares, los ubica en la cuenta ahorro-inversión pero podrían incluirse en
+la de impuestos pagados por cada hogar (de forma análoga a la cotización a la seguridad social por el factor trabajo), lo que
+permitiría individualizarlos para cada uno de ellos. La inclusión en la cuenta ahorro-inversión es algo incoherente en el sentido de que se
+"mezclan" las nuevas inversiones con los impuestos a las rentas de capital de las inversiones previas, que son dos cosas distintas y que
+además no están relacionadas en nuestro modelo, aúnque numéricamente sea equivalente, ya que el disponible para invertir es el mismo anotando el
+impuesto como un pago de los hogares, o como un pago de la cuenta ahorro-inversión.
 '''
 '''
 Mejoras:
-    1. Relacionar los pagos de impuestos por: el gobierno, el ahorro+inversión y el sector exterior con sus
-    correspondientes catidades
+    1. Relacionar las iniversiones con uso del factor capital por los sectores y la retribición de los hogares por rentas de capital
 
-    2. Establecer una relación entre el reparto de las inversiones por sectores y el uso que hace cada uno de ellos del
-    factor capital.
+    2. Desglosar la cuenta del IVA
 
-    3. Desglosar la cuenta del IVA
-
-    4. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
+    3. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
 
 '''
 import os
@@ -1110,7 +1114,7 @@ def sec_ecuaciones(vec_opt):
     Sp = ainv.ahorro_hogares_Sp(parametros.ssp, FF, pf, datos.PssH0)                    # 6.11
     
     # solo calculamos impuestos a la inversión de los hogares (inversores) porque los que el gobierno pague son un ingreso para él
-    Ti = gob.impuestos_directos_Ti(parametros.tai, Sp)
+    Ti = gob.impuestos_directos_Ti(parametros.tai, pf, FF, INDICE_F_TRA)
 
     # ayudas (pagos) del gobierno a las empresas, un porcentaje de lo recaudado por impuestos
     AgE  = gob.ayudas_empresas_AgE(parametros.cage, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0)
@@ -1233,7 +1237,7 @@ def sec_ecuaciones(vec_opt):
     Tmr   = gob.aranceles_importacion_Tm(datos.taum, pm, M)                                 # 6. 8
 
     Spr   = ainv.ahorro_hogares_Sp(parametros.ssp, FFr, pf, datos.PssH0)                    # 6.11
-    Tir   = gob.impuestos_directos_Ti(parametros.tai, Spr)
+    Tir   = gob.impuestos_directos_Ti(parametros.tai, pf, FFr, INDICE_F_TRA)
     
     AgEr  = gob.ayudas_empresas_AgE(parametros.cage, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0)
     AgHr  = gob.ayudas_hogares_AgH(parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM)
@@ -2108,11 +2112,31 @@ if __name__ == '__main__':
     dist = calcula_desvios(res_ecuaciones, False)
     imprime('{:>9} {:12.5e}'.format('Python ', dist))
     if USAR_DLL:
+        '''
+        libc.abre_salida.argtypes = [ct.c_char_p]
+        libc.abre_salida.restype = ct.c_bool
+        v5 = ct.c_char_p(SENDA_SALIDAS.encode('utf-8'))
+        res = libc.abre_salida(v5)
+        if res == False:
+            imprime('*--* Error al abrir la salida en la DLL')
+            imprime('aplicación terminada')
+            imprime('')
+            sys.exit()
+        '''
         dist_dll = fo(vec_opt);
         imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
         dist_dll = dll.merito_sol(libc, vec_opt);
         imprime('{:>9} {:12.5e}'.format('DLL sol', dist_dll))
-        
+        '''
+        res = libc.cierra_salida()
+        if res == False:
+            imprime('*--* Error al cerrar la salida en la DLL')
+            imprime('aplicación terminada')
+            imprime('')
+            sys.exit()
+
+        sys.exit()
+        '''
     imprime('')
 
     t_inicio = timer()

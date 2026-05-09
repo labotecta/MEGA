@@ -552,7 +552,7 @@ class parametros(object):
         self.taud_id  = ecua.tasa_impuestos_directos_taud(datos.Tid0, datos.FF0, datos.PssH0)
         self.taud_oi  = ecua.tasa_impuestos_directos_taud(datos.Toi0, datos.FF0, datos.PssH0)
         # tasa de impuestos al ahorro-inversion
-        self.tai = ecua.tasa_impuestos_directos_tai(datos.Ti0, datos.Sp0)
+        self.tai = ecua.tasa_impuestos_directos_tai(datos.Ti0, datos.FF0, INDICE_F_TRA)
 
         # propensión al ahorro del gobierno
         self.ssg   = ecua.propension_ahorro_gobierno_ssg(datos.Sg0, datos.Td0, datos.Tz0, datos.Tm0, datos.Tg0, datos.Ti0, datos.Te0, datos.AgE0, datos.AgH0, datos.CssE0, datos.CssH0, datos.PssH0)

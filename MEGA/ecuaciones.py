@@ -302,14 +302,15 @@ def tasa_impuestos_directos_taud(Td, FF, PssH):
     taud = Td / ingresos
     return taud
 
-def tasa_impuestos_directos_tai(Ti, Sp):
+def tasa_impuestos_directos_tai(Ti, FF, INDICE_F_TRA):
     '''
-    Tasa de impuestos directos al ahorro+inversión de los hogares
+    Tasa de impuestos directos a las rentas de capital por el ahorro+inversión de los hogares
 
-    Ti   : impuestos directos
-    Sp   : ahorro de los hogares
+    Ti           : impuestos directos a la inversión
+    FF           : factores prestados por cada hogar
+    INDICE_F_TRA : índice del factor trabajo
     '''
-    ingresos = Sp.sum()
+    ingresos = FF[:, 1 - INDICE_F_TRA].sum()
     if ingresos == 0:
         tai = 0.
     else:
