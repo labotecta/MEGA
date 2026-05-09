@@ -128,6 +128,9 @@ extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
 
+extern "C" MEGA_DLL_API bool abre_salida(const char* senda);
+extern "C" MEGA_DLL_API bool cierra_salida();
+
 #ifdef DESVIACONES_RELATIVAS
 extern "C" MEGA_DLL_API double merito_s_relativa(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol_relativa(double* vec_opt);
@@ -152,9 +155,9 @@ void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], doubl
 void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0);
 void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
 void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M);
-double impuestos_directos_Ti(double tai, double* Sp);
-void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
 void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0);
+double impuestos_directos_Ti(double tai, double* pf, double FF[NDEM][NFAC], int INDICE_F_TRA);
+void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
 void seguridad_social_empresas_CssE(double* CssE, double* ctzsse, double* pf, double F[NSEC][NFAC], int INDICE_F_TRA);
 void seguridad_social_hogares_CssH(double* CssH, double* ctzssh, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], int INDICE_F_TRA);
 double gobierno_Sg_Xg(double* Xg, double ssg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);

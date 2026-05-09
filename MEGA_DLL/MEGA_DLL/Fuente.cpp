@@ -130,15 +130,15 @@ NSEC*NFAC Fr
 	 NDEM AgHr;
 	 NSEC CssEr;
 	 NDEM CssHr;
-	    1 Sgr;
-	    1 Scr;
-	    1 Sfr;
-	    1 ebpr;
+		1 Sgr;
+		1 Scr;
+		1 Sfr;
+		1 ebpr;
 NDEM*NSEC Xpr;
 NDEM*NFAC FFr;
 NDEM*NFAC Alpr;
 NSEC*NSEC Xr;
-	    1 Tir
+		1 Tir
 */
 const int LVAR =
 1 +
@@ -386,8 +386,8 @@ int NSEC4;
 int id_salida;
 char senda_salidas[128];
 int desviaciones_relativas;
-FILE* salida;
-FILE* sal_sol;
+FILE* salida{};
+FILE* sal_sol{};
 
 struct timeb tiempo_ini, tiempo_ant, tiempo_act;
 int dif_tpo_par;
@@ -399,6 +399,24 @@ para el caso monoproceso que es poco útil con los procesadores actuales
 mt19937 gen;
 uniform_real_distribution<double> dis_double(0.0, 1.0);
 uniform_int_distribution<int> dis_entero{};
+
+bool abre_salida(const char* senda) {
+	sprintf_s(senda_salidas, 127, "%s", senda);
+	char fichero[128];
+	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, 0, 0, 0, 0);
+	salida = _fsopen(fichero, "w", _SH_DENYWR);
+	if (salida == 0) {
+		// Error al abrir el fichero de salida
+		return false;
+	}
+	return true;
+}
+bool cierra_salida() {
+	if (salida != 0) {
+		fclose(salida);
+	}
+	return true;
+}
 void cancelar(int sig)
 {
 	// cunado se pulsa Ctrl+C, se establece la variable global 'CANCELAR' a true para que el algoritmo genético termine lo antes posible
@@ -447,6 +465,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 	char fichero[128];
 	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla);
+	if (salida != 0) {
+		fclose(salida);
+	}
 	salida = _fsopen(fichero, "w", _SH_DENYWR);
 	if (salida == 0) {
 		if (extendida == 1) {
@@ -2729,10 +2750,8 @@ double merito_s(double* vec_opt) {
 	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
-
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
-	Ti = impuestos_directos_Ti(parametros.tai, Sp);
-
+	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
@@ -2822,11 +2841,11 @@ double merito_s(double* vec_opt) {
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
-	Tir = impuestos_directos_Ti(parametros.tai, Spr);
-	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
+	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
+	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
-	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Ti, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
 	if (abs(PssH0_sum) < 0.000001) {
 		Scr = 0.;
 	}
@@ -2845,7 +2864,7 @@ double merito_s(double* vec_opt) {
 	else {
 		Sfr = ahorro_exterior_Sf(M, E, pm, pe);
 	}
-	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, Ti, datos.Te0);
+	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, Tir, datos.Te0);
 	if (op.DEM_ESENCIALES) {
 		demanda_maxima_utilidad_StoneGeary_Xp(Xpr, parametros.alfa_esen, op.CON_ESENCIALES, pq, pf, FFr, Spr, Tdr, CssHr, AgHr, datos.PssH0, op.DEM_ADICIONAL_TIPO, op.DEM_ADICIONAL, op.RENTA_FICTICIA);
 	}
@@ -2984,6 +3003,122 @@ double merito_s(double* vec_opt) {
 	dd = Tir - Ti;
 	dist += dd * dd;
 
+	/*
+	fprintf(salida, "MERITO S\n");
+	fprintf(salida, "--------\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", F[i][j]);
+		}
+	}
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", E[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", M[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Yp[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Yd[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Da[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Dt[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Z[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xg[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xv[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Q[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Td[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tz[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tm[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Sp[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", AgE[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", AgH[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", CssE[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", CssH[i]);
+	fprintf(salida, "%f\n", Sg);
+	fprintf(salida, "%f\n", Sc);
+	fprintf(salida, "%f\n", Sf);
+	fprintf(salida, "%f\n", ebp);
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", Xp[i][j]);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", FF[i][j]);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", Alp[i][j]);
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", X[i][j]);
+		}
+	}
+	fprintf(salida, "SEGUNDO-\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", Fr[i][j]);
+		}
+	}
+	fprintf(salida, "Er\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Er[i]);
+	fprintf(salida, "Mr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Mr[i]);
+	fprintf(salida, "Yp\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Ypr[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Ydr[i]);
+	fprintf(salida, "Dar\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Dar[i]);
+	fprintf(salida, "Dtr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Dtr[i]);
+	fprintf(salida, "Zr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Zr[i]);
+	fprintf(salida, "Xgr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xgr[i]);
+	fprintf(salida, "Xvr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xvr[i]);
+	fprintf(salida, "Qr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Qr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Tdr[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tzr[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tmr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Spr[i]);
+	fprintf(salida, "Ager\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", AgEr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", AgHr[i]);
+	fprintf(salida, "CssEr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", CssEr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", CssHr[i]);
+	fprintf(salida, "%f\n", Sgr);
+	fprintf(salida, "%f\n", Scr);
+	fprintf(salida, "%f\n", Sfr);
+	fprintf(salida, "%f\n", ebpr);
+	fprintf(salida, "Xpr\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", Xpr[i][j]);
+		}
+	}
+	fprintf(salida, "FFr\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", FFr[i][j]);
+		}
+	}
+	fprintf(salida, "Alpr\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", Alpr[i][j]);
+		}
+	}
+	fprintf(salida, "Xr\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", Xr[i][j]);
+		}
+	}
+	fprintf(salida, "merito: %f Ti: %f Tir: %f IFT: %d pf: %f %f tai: %f\n", dist, Ti, Tir, op.INDICE_F_TRA, pf[0], pf[1], parametros.tai);
+	fprintf(salida, "--------\n");
+	*/
 	return dist;
 }
 
@@ -3166,7 +3301,7 @@ double merito_d(double* vec_opt, double liston) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
-	Ti = impuestos_directos_Ti(parametros.tai, Sp);
+	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
@@ -3341,11 +3476,11 @@ double merito_d(double* vec_opt, double liston) {
 		dist += dd * dd;
 	}
 	if (dist > liston) return dist;
-	Tir = impuestos_directos_Ti(parametros.tai, Spr);
+	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	dd = Tir - Ti;
 	dist += dd * dd;
 	if (dist > liston) return dist;
-	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
+	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	for (int i = 0; i < NSEC; i++) {
 		dd = AgEr[i] - AgE[i];
 		dist += dd * dd;
@@ -3368,7 +3503,7 @@ double merito_d(double* vec_opt, double liston) {
 		dist += dd * dd;
 	}
 	if (dist > liston) return dist;
-	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Ti, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
+	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr);
 	for (int i = 0; i < NSEC; i++) {
 		dd = Xgr[i] - Xg[i];
 		dist += dd * dd;
@@ -3395,7 +3530,7 @@ double merito_d(double* vec_opt, double liston) {
 	else {
 		Sfr = ahorro_exterior_Sf(M, E, pm, pe);
 	}
-	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, Ti, datos.Te0);
+	demanda_inversion_Xv(Xvr, parametros.landa, pq, Spr, Sgr, Scr, epsilon, Sfr, Tir, datos.Te0);
 	for (int i = 0; i < NSEC; i++) {
 		dd = Xvr[i] - Xv[i];
 		dist += dd * dd;
@@ -3668,7 +3803,7 @@ double* merito_sol(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
-	Ti = impuestos_directos_Ti(parametros.tai, Sp);
+	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
@@ -3758,7 +3893,7 @@ double* merito_sol(double* vec_opt) {
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
-	Tir = impuestos_directos_Ti(parametros.tai, Spr);
+	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
@@ -4471,6 +4606,123 @@ double* merito_sol(double* vec_opt) {
 			VEC_OPT_E[nsol++] = histograma[i];
 		}
 	}
+
+	/*
+	fprintf(salida, "MERITO SOL\n");
+	fprintf(salida, "----------\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", F[i][j]);
+		}
+	}
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", E[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", M[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Yp[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Yd[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Da[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Dt[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Z[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xg[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xv[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Q[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Td[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tz[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tm[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Sp[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", AgE[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", AgH[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", CssE[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", CssH[i]);
+	fprintf(salida, "%f\n", Sg);
+	fprintf(salida, "%f\n", Sc);
+	fprintf(salida, "%f\n", Sf);
+	fprintf(salida, "%f\n", ebp);
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", Xp[i][j]);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", FF[i][j]);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", Alp[i][j]);
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", X[i][j]);
+		}
+	}
+	fprintf(salida, "SEGUNDO-\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", Fr[i][j]);
+		}
+	}
+	fprintf(salida, "Er\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Er[i]);
+	fprintf(salida, "Mr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Mr[i]);
+	fprintf(salida, "Yp\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Ypr[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Ydr[i]);
+	fprintf(salida, "Dar\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Dar[i]);
+	fprintf(salida, "Dtr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Dtr[i]);
+	fprintf(salida, "Zr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Zr[i]);
+	fprintf(salida, "Xgr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xgr[i]);
+	fprintf(salida, "Xvr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Xvr[i]);
+	fprintf(salida, "Qr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Qr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Tdr[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tzr[i]);
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", Tmr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", Spr[i]);
+	fprintf(salida, "Ager\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", AgEr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", AgHr[i]);
+	fprintf(salida, "CssEr\n");
+	for (int i = 0; i < NSEC; i++)	fprintf(salida, "%f\n", CssEr[i]);
+	for (int i = 0; i < NDEM; i++)	fprintf(salida, "%f\n", CssHr[i]);
+	fprintf(salida, "%f\n", Sgr);
+	fprintf(salida, "%f\n", Scr);
+	fprintf(salida, "%f\n", Sfr);
+	fprintf(salida, "%f\n", ebpr);
+	fprintf(salida, "Xpr\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", Xpr[i][j]);
+		}
+	}
+	fprintf(salida, "FFr\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", FFr[i][j]);
+		}
+	}
+	fprintf(salida, "Alpr\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fprintf(salida, "%f\n", Alpr[i][j]);
+		}
+	}
+	fprintf(salida, "Xr\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fprintf(salida, "%f\n", Xr[i][j]);
+		}
+	}
+	fprintf(salida, "merito: %f Ti: %f Tir: %f IFT: %d pf: %f %f tai: %f\n", dist, Ti, Tir, op.INDICE_F_TRA, pf[0], pf[1], parametros.tai);
+	fprintf(salida, "----------\n");
+	*/
 	return me_sol;
 }
 
@@ -4656,7 +4908,7 @@ double merito_s_relativa(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
-	Ti = impuestos_directos_Ti(parametros.tai, Sp);
+	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
@@ -4746,7 +4998,7 @@ double merito_s_relativa(double* vec_opt) {
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
-	Tir = impuestos_directos_Ti(parametros.tai, Spr);
+	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
@@ -5118,7 +5370,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
 	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
-	Ti = impuestos_directos_Ti(parametros.tai, Sp);
+	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssH, parametros.ctzssh, pf, FF, Alp, op.INDICE_F_TRA);
@@ -5208,7 +5460,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
 	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
-	Tir = impuestos_directos_Ti(parametros.tai, Spr);
+	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
@@ -6105,12 +6357,12 @@ void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M) {
 		Tm[i] = taum[i] * M[i] * pm[i];
 	}
 }
-double impuestos_directos_Ti(double tai, double* Sp) {
-	double ahorro = 0.;
+double impuestos_directos_Ti(double tai, double* pf, double FF[NDEM][NFAC], int INDICE_F_TRA) {
+	double ingreso = 0.;
 	for (int i = 0; i < NDEM; i++) {
-		ahorro += Sp[i];
+		ingreso += FF[i][1 - INDICE_F_TRA];
 	}
-	return tai * ahorro;
+	return tai * ingreso * pf[1 - INDICE_F_TRA];
 }
 void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM) {
 	double ingresos = Ti + Te;
