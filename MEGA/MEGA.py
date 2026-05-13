@@ -9,20 +9,21 @@ resultado de la función objetivo. La aplicación no los normaliza, se trata de 
 tienen el mismo peso, sea cual sea el importe absoluto de la variable. Casi seguro no serviría de nada
 scipy.differential_evolution si normaliza las variables para que todos los intervalos de existencia sean el mismo.
 
-Los pagos de impuestos directos del gobierno no se usan para nada (Tg0).
+Los pagos de impuestos directos del gobierno no se usan para nada (Tg0) los paga y los cobra el mismo agente.
 Los pagos de impuestos directos del sector exterior no se usan para nada (Te0).
 
 Utilizar para la demanda la función de utilidad Cobb-Douglas o la CES con cualquier valor de sigma, da prácticamente los
-mismos resultados, lo cual es lógico porque los parámetros se determinan en todos los casos para que se
+mismos resultados, lo cual es lógico porque los parámetros se determinan, en todos los casos, para que se
 reproduzcan los valores Xp0 de la MCS y las variaciones que experimentan los Xp en otros esenarios son suficientemente
 pequeñas para que todas las funciones de utilidad repartan los ingresos netos en prácticamente las mismas cantidades.
 
 Resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución.
 
-El tratamiento del precio de los factores es enrevesado y fuente de multitud de errores, se diseño pensando
+El tratamiento del precio de los factores es enrevesado y fuente de multitud de errores, se diseñó pensando
 que siempre se fijaría el precio del factor trabajo y que por lo tanto no debía formar parte de las soluciones a
 probar, pero los parches al considerar que se podría fijar el del capital o usar la curva Phillips hacen
-incomprensible la gestión de estos precios en las soluciones de prueba.
+difícil de enetender la gestión de estos precios en la aplicación, reformular esto supone mucho esfuerzo, sobre todo
+si tenemos en cuenta que el planteamiento que hace la aplicación, aunque enrevesado, funciona.
 
 Los impuestos al ahorro-inversión (Ti) se pueden interpretar de varias formas, el modelo los considera como un impuesto a las
 rentas de capital (ingresos por el factor capital) que perciben los hogares, los ubica en la cuenta ahorro-inversión pero podrían incluirse en
@@ -36,7 +37,8 @@ impuesto como un pago de los hogares, o como un pago de la cuenta ahorro-inversi
 Mejoras:
     1. Relacionar las iniversiones con uso del factor capital por los sectores y la retribición de los hogares por rentas de capital
 
-    2. Desglosar la cuenta del IVA
+    2. Desglosar la cuenta del IVA, en general desglosar las cuentas de impuestos, porque la base de los mismos es diferente,
+       por ejemplo la del IRPF y la del IVA es muy distinta
 
     3. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
 
@@ -115,8 +117,7 @@ etq_mpob =(
     'valores próximos, o iguales, al extremo superior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
     'valores próximos, o iguales, al extremo inferior, con permutaciones distintas para cada variable y desplazamiento independiente',
 )
-# extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto,
-# ajustando las dimensiones de las matrices 'reshape' cuando corresponde
+# extrae los argumentos de la línea de comandos y si no la hay de los valores por defecto
 try:
     args = argumentos.valores_opciones()
 except BaseException as e:
@@ -138,7 +139,11 @@ nsec = args.NSEC    # número de sectores
 #----------------------------------------------------------------------------
 import dll           as dll
 #----------------------------------------------------------------------------
-
+'''
+copiamos a variables globales los parámetros de la línea de comando o su valor por defecto y ajustamos las dimensiones de
+las matrices ('reshape') cuando corresponde, ya que en la línea de comandos solo podemos incluir vectores, se realizan algunas comprobaciones 
+de la consistencia de los valores reecibidos
+'''
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
 FI_SOL_LEE          = args.FI_SOL_LEE
@@ -148,9 +153,18 @@ USAR_DLL            = args.USAR_DLL
 SENDA_DLL           = args.SENDA_DLL
 USAR_ALGE_DLL       = args.USAR_ALGE_DLL
 DESV_RELATIVA       = args.DESV_RELATIVA
-if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 4 and NSAM != 5 and NSAM != 6:
+if DESV_RELATIVA == 1:
+    if USAR_DLL == False or USAR_ALGE_DLL == False:
+        if __name__ == 'MEGA':
+            avisos_diferidos.append('Solo se puede usar DESV_RELATIVA con la DLL. Se desactiva DESV_RELATIVA')
+            DESV_RELATIVA = 0
+    else:
+        if __name__ == 'MEGA':
+            avisos_diferidos.append('Para usar DESV_RELATIVA hay que recompilar la DLL. Se desactiva DESV_RELATIVA')
+            DESV_RELATIVA = 0
+if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 0 and NSAM != 1 and NSAM != 2 and NSAM != 3 and NSAM != 4 and NSAM != 5 and NSAM != 6:
     if __name__ == 'MEGA':
-        errores_diferidos.append('La DLL solo se puede usar con las MCS 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
+        errores_diferidos.append('La DLL solo se puede usar con las MCS 0, 1, 2, 3, 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
     else:
         errores_diferidos.append('')
 ALGE_ID_SALIDA      = args.ALGE_ID_SALIDA
@@ -406,10 +420,10 @@ GE_WORKERS          = args.GE_WORKERS
 if GE_WORKERS != 1:
     if USAR_ALGE_DLL:
         if __name__ == 'MEGA':
-            errores_diferidos.append('Para usar el algoritmo genético desde la DLL en número de Workers ({}) debe ser 1'.format(GE_WORKERS))
+            errores_diferidos.append('Para usar el algoritmo genético desde la DLL, el número de Workers ({}) debe ser 1'.format(GE_WORKERS))
         else:
             errores_diferidos.append('')
-    # aunque 'scipy' lo modifica automáticamente, no está de más especificarlo por transparencia
+    # aunque 'scipy' lo modifica automáticamente (y la DLL no lo usa), no está de más, especificarlo por transparencia
     GE_ACTUALIZACION = 'deferred'
     # comprobar el número de GE_WORKERS según la máquina
     n_cores = psutil.cpu_count(logical = False)
@@ -510,7 +524,7 @@ class rmin_dll(object):
 # --------------------------------------------------------------------
 # ATENCION el factor trabajo debe ser la columna 'INDICE_F_TRA' de 'h'
 # --------------------------------------------------------------------
-INDICE_F_TRA = 1        # índice del factor trabajo, es mejor cambiar el orden en la definición de la lista 'h' que cambiar este índice
+INDICE_F_TRA = 1        # índice del factor trabajo, es más seguro cambiar el orden en la definición de la lista 'h', que cambiar este índice
 
 # los bloques (ind, h, ...) se declaran como 'tuple' (entre paréntesis) que es igual que
 # 'list' pero no modificable, lo que las hace más eficientes
@@ -577,8 +591,6 @@ elif NSAM == 3:
     #
 elif NSAM == 4:
     # MCA-ESP-05 corregida
-    SENDA_DLL = 'C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA4.dll'
-
     '''
     Actividades_Agrarias_y_pesca                AP1
     Energía_e_industrias_extractivas            AP2
@@ -612,10 +624,6 @@ elif NSAM == 4:
     #
 elif NSAM == 5:
     # España 2022
-    SENDA_DLL = 'C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll'
-    
-    #FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/INE', "mcs_22_final")
-    #SAM_HOJA    = '63R'
     FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/INE', "mcs_22_sin_R32_R64")
     SAM_HOJA    = 'MCS'
     # B3
@@ -640,7 +648,6 @@ elif NSAM == 5:
     #
 elif NSAM == 6:
     # España 2008
-    SENDA_DLL   = 'C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll'
     FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/Datos', "MCS-ESP-RENO")
     SAM_HOJA    = 'Ajustada'
     # C3
@@ -717,7 +724,7 @@ mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
-# ya podemos escribir los mensajes de error y avisos
+# ya que sabemos el nombre del fichero de log, podemos escribir los mensajes de error y avisos
 if len(avisos_diferidos) > 0:
     imprime('')
     imprime('....................................................................................................................................')
@@ -731,8 +738,7 @@ if len(errores_diferidos) > 0:
     for mensaje in errores_diferidos:
         imprime('Error. ' + mensaje)
     imprime('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    
-    # con errorres se cancela la aplicación
+    # con errores se cancela la aplicación
     sys.exit()
 
 def punteros():
@@ -807,7 +813,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
         bnds.append((0.,0.))
 
     # limites con criterio general para todas las variables en el vector solución
-
+    #----------------------------------------------------------------------------
     # en el vector solución sólo se incluye el precio de un factor y sus cotas están en la posición 0 de 'bnds' con
     # indepemdencia de que sea el del capital, o el del trabajo
     if OR_PRE_EXCLUIDO == 1:
@@ -857,6 +863,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
         bnds[i] = ((vi,vs))
 
     # procesamos las especificaciones explicitas de límites (especificadas manualmente)
+    #----------------------------------------------------------------------------------
     if len(FIX) > 0:
         for n in range(len(FIX)):
             # 'n' es la fila de 'FIX_LIMITES' que corresponde a la variable
@@ -893,8 +900,8 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
                 vi = CON_ESENCIALES[j][k]
                 bnds[i] = (vi,bnds[i][1])
                 i += 1
-    # si no hay exportaciones o importaciones en la MCS, el modelo las mantendrá a cero, por
-    # lo tamto, fijamos sus intervalos en el valor cero
+    # si no hay exportaciones o importaciones en la MCS, nuestro modelo las mantendrá a cero, por lo tanto, fijamos sus
+    # intervalos en (0, 0), igual valor mínimo que máximo, para que el algoritmo genético no pierda tiempo "probando" valores para ellos
     n_Efijas = 0
     i = ind_pvec_desde['E']
     for j in range(nsec):
@@ -912,7 +919,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
             n_Mfijas += 1
         i += 1
 
-    # ajustar los entornos de validez al valor mínimo
+    # ajustar los entornos de validez al valor mínimo de intervalo ''GE_VAR_CAN_MIN'
     if GE_VAR_CAN_MIN > 0:
         cuenta = 0
         for i in range(npre_sol, nvec_opt):
@@ -932,12 +939,14 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
             if __name__ == '__main__':
                 imprime('*--* Se han modificado {} intervalos para ajustarlos al valor mínimo'.format(cuenta))
                 imprime('')
-    #--------------------------------------------------------------------------------------------------------    
-    # resulta increible el papel de Apz, si no se deja libre en un intervalo grande, no se encuentra solución
-    #--------------------------------------------------------------------------------------------------------    
+    #-------------------------------------------------------------------------------------------------------------------------------------    
+    # resulta increible el papel de Apz, si no se deja libre en un intervalo grande (-GE_VAR_CERO, +GE_VAR_CERO), no se encuentra solución
+    #-------------------------------------------------------------------------------------------------------------------------------------    
     return (bnds, n_Efijas, n_Mfijas)
 
 def completa_pf(pf, F):
+    # 'parche' para completar el vector de precios de los factores 'pf' con el precio del factor excluido (capital o trabajo), que no forma parte del
+    # vector solución por culpa de un mal planteamiento de partida de la aplicación.
     if OR_PRE_EXCLUIDO == 1:
         # el precio del factor OR_PRE_EXCLUIDO no forma parte del vector solución, luego
         # si es 1, el trabajo es el que no forma parte y estará prefijado (PRECIO_F_EXCLUIDO) o debemos calcularlo (precio_factor_trabajo_pFL)
@@ -1032,8 +1041,7 @@ def sec_ecuaciones(vec_opt):
     # calculamos los precios del comercio internacional en moneda local
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)            # 6.14 y 6.15
     
-
-    # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes.
+        # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes.
     # no hay problema en igualar las variables porque ni 'ax' ni 'ay' se van a modificar y por tanto
     # ni 'parametros.ax' ni 'parametros.ay' se verán afectados
     ax = parametros.ax
@@ -1444,6 +1452,10 @@ def fun_objetivo(vec_opt):
 def imprime_opciones(nvec_opt):
     imprime('-------------------------------------------------------------------')
     imprime('-------------------------------------------------------------------')
+    nfijas = 0
+    for i in range(nvec_opt):
+        if bnds[i][1] - bnds[i][0] < 0.000001:
+            nfijas += 1
     if GE_RESTRICCIONES:
         imprime('MEGA mediante algoritmo genético. Resolución con restricciones ' + ('lineales' if GE_TIPO_RE==0 else 'no lineales'))
     else:
@@ -1486,7 +1498,7 @@ def imprime_opciones(nvec_opt):
     else:
         imprime('Recombinación                          {:10.3f}'.format(GE_RECONBINACION))
         imprime('Estrategia                             {}'.format(GE_ESTRATEGIA))
-        imprime('Tamaño de la población                 {:10} {:10} individuos'.format(GE_DIM_POBLACION, GE_DIM_POBLACION * nvec_opt))
+        imprime('Tamaño de la población                 {:10} {:10} individuos'.format(GE_DIM_POBLACION, GE_DIM_POBLACION * (nvec_opt - nfijas)))
         imprime('Número de workers                      {:10}'.format(GE_WORKERS))
         imprime('Periodicidad actualización             {}'.format(GE_ACTUALIZACION))
 
@@ -1539,10 +1551,6 @@ def imprime_opciones(nvec_opt):
     elif VALOR_F_TRA != -1:
         imprime('El precio del factor {} es fijo con valor igual a {}'.format(h[INDICE_F_TRA], VALOR_F_TRA))
     imprime('')
-    nfijas = 0
-    for i in range(nvec_opt):
-        if bnds[i][1] - bnds[i][0] < 0.000001:
-            nfijas += 1
     imprime('Dimensión del vector de prueba: {:6} variables; con valor fijo: {:5} (E:{:4} M:{:4})'.format(nvec_opt, nfijas, n_Efijas, n_Mfijas))
     imprime('------------------------------------------------------------------------------------------')
     imprime('------------------------------------------------------------------------------------------')
