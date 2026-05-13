@@ -1,0 +1,109 @@
+@echo off
+TITLE Mcs1_salarios_1_05_42_det_P_0_31
+mode CON cols=118 lines=30
+cd C:\MEGA\MEGA
+CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
+--PREFIJO             =Mcs1_salarios_1_05_42_det_P_0_31 ^
+--ALP_FACTOR          0.31 ^
+--DESV_RELATIVA       0 ^
+--USAR_DLL            False ^
+--USAR_ALGE_DLL       False ^
+--ALGE_MAX_INTENTOS   15 ^
+--ALGE_N_HILOS        20 ^
+--ALGE_TOL_ACEPTABLE  1.0e-05 ^
+--ALGE_ID_SALID       100 ^
+--ALGE_MODO_POB_INI   0 ^
+--ALGE_F_INICIO_POB   0.05 ^
+--ALGE_SIGMA_POB_INI  0.1 ^
+--ALGE_TRAMOS_LHS     100 ^
+--ALGE_NPOB           1000 ^
+--ALGE_F_MUTACION     0.72 ^
+--ALGE_RECOMBINACION  0.99 1.10 ^
+--ALGE_CTRL_FACTIBLE  1 ^
+--ALGE_RES_EXTENSA    0 ^
+--EL_MEJOR_PRIMERO    0 ^
+--ALGE_INCLUIR_X0     1 ^
+--FI_SOL_LEE          "" ^
+--FI_SOL_SALVA        "" ^
+--NSAM                1 ^
+--DECIMALES           4 ^
+--GE_SEMILLA          42 ^
+--NCASO               0 ^
+--NFAC                2 ^
+--NDEM                2 ^
+--NSEC                2 ^
+--DEM_ADICIONAL_TIPO  0 ^
+--DEM_AD_LON          0 ^
+--DEM_AD_HO_PRO       0 0 1000. ^
+--RENTA_FICTICIA      False ^
+--AYD_AD_LON          0 ^
+--AYD_AD_HO_PRO       0 0 1000. ^
+--ARANCELES_LON       0 ^
+--ARANCELES_PRO       2 0.002961 ^
+--EQ_BAL_PAGOS        True ^
+--PRECIO_IMPORTACION  ^
+--OR_PRE_EXCLUIDO     0 ^
+--PRECIO_F_EXCLUIDO   1.0 ^
+--VALOR_F_TRA         1.05 ^
+--FIX                 epsilon ^
+--FIX_LON             1 ^
+--FIX_LIMITES         0 1.0 1.0 ^
+--PARO_INICIAL        0.10 ^
+--ALFA_PHILLIPS       -0.5 ^
+--UTILIDAD_DEMANDA    0 ^
+--SIGMA_CES_DEMANDA   2. 2. ^
+--FF_ENDOGENA         True ^
+--MODO_PSEUDOIMPTOS   0 ^
+--GE_INCLUYE_XP       False ^
+--CON_AD_LON          0 ^
+--CON_AD_HO_PRO       0 10. 1000. ^
+--DEM_ESENCIALES      False ^
+--OPT_DESVIOS         1 ^
+--PRIMERA_VALORACION  False ^
+--SAL_CALIBRADO       False ^
+--SALIDA_VEC_OPT      False ^
+--SALIDA_DESVIOS      False ^
+--SAL_AUXILIARES      False ^
+--SAL_GRAFICOS_EVOL   False ^
+--SAL_GRAFICO_CES_DM  False ^
+--SAL_ISOCUANTA       False ^
+--SAL_VARIACIONES     True  ^
+--SAL_MCS             True  ^
+--SAL_VAR_MCS         True  ^
+--GE_RESTRICCIONES    False ^
+--GE_TIPO_RE          0 ^
+--GE_TOLERANCIA       1.e-11 ^
+--GE_VERIFICAR        1.e-08 ^
+--GE_PROGRESO         10000 ^
+--GE_MIN_PROGRESO     0.02 ^
+--GE_HISTORIAL        100 ^
+--GE_SOLUCIONES       0 ^
+--GE_PRE_MIN          200.0 ^
+--GE_PRE_MAX          200.0 ^
+--GE_VAR_MIN          800.0 ^
+--GE_VAR_MAX          800.0 ^
+--GE_VAR_CERO         10000.0 ^
+--GE_VAR_CAN_MIN      2000 ^
+--GE_MAX_ITER         1000000 ^
+--GE_ACTUALIZACION    deferred ^
+--GE_RECONBINACION    0.90 ^
+--GE_DIM_POBLACION    5 ^
+--GE_WORKERS          32 ^
+--GE_IMG_FIL          5 ^
+--GE_IMG_COL          6 ^
+--GE_ESTRATEGIA       best1bin ^
+--METRICA_ERROR       0 ^
+--POT_DESVIOS         2 ^
+--PRECIO_INI          0.5 ^
+--FACTOR_CSSH         1.0 1.0 ^
+--FACTOR_CSSE         ^
+--F_CSSE_LON          0 ^
+--F_CSSE              3 1.0 ^
+--VAR_FACTORES        0. 0. 0. 0. ^
+--SIGMA_ESCENARIO     4. 2. ^
+--SENDA_DATOS         C:/MEGA/Datos ^
+--SENDA_SALIDAS       C:/MEGA/Salidas/Mcs1/Catastrofe ^
+--SENDA_GRAFICOS      C:/MEGA/Graficos/Catastrofe ^
+--SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs1 ^
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA1.dll
+TIMEOUT 60
