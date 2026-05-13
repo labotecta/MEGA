@@ -6,7 +6,19 @@ using namespace std;
 
 #define MEGA6
 
-#ifdef MEGA4
+#ifdef MEGA0
+const int NDEM = 1;
+const int NSEC = 2;
+#elif defined(MEGA1)
+const int NDEM = 2;
+const int NSEC = 2;
+#elif defined(MEGA2)
+const int NDEM = 2;
+const int NSEC = 2;
+#elif defined(MEGA3)
+const int NDEM = 3;
+const int NSEC = 2;
+#elif defined(MEGA4)
 const int NDEM = 2;
 const int NSEC = 6;
 #elif defined(MEGA5)
@@ -17,7 +29,7 @@ const int NDEM = 2;
 const int NSEC = 31;
 #endif
 
-// añade a las salidas estadísticas de los cruces
+// añade estadísticas de los cruces a las salidas
 //#define ESTA_CRUCES
 
 // se pueden usar desviaciones relativas en lugar de absolutas al calcular la función de error, las desviaciones relativas son inútiles

@@ -386,11 +386,12 @@ int NSEC4;
 int id_salida;
 char senda_salidas[128];
 int desviaciones_relativas;
+
 FILE* salida{};
 FILE* sal_sol{};
 
 struct timeb tiempo_ini, tiempo_ant, tiempo_act;
-int dif_tpo_par;
+double dif_tpo_par;
 double dif_tpo_tot;
 
 /*
@@ -400,6 +401,11 @@ mt19937 gen;
 uniform_real_distribution<double> dis_double(0.0, 1.0);
 uniform_int_distribution<int> dis_entero{};
 
+/*
+Permite que la aplicación que llama a la DLL abra el archivo de salida y
+así poder escribir en este fichero información util para depurar errores, por ejemplo, en las
+funciones de 'merito' sin necesidad de haber llamado a la función 'soluciona'
+*/
 bool abre_salida(const char* senda) {
 	sprintf_s(senda_salidas, 127, "%s", senda);
 	char fichero[128];
@@ -411,15 +417,20 @@ bool abre_salida(const char* senda) {
 	}
 	return true;
 }
+/*
+el complemento de 'abre_salida'
+*/
 bool cierra_salida() {
 	if (salida != 0) {
 		fclose(salida);
 	}
 	return true;
 }
+/*
+cunado se pulsa Ctrl+C, se establece la variable global 'CANCELAR' a true para que el algoritmo genético termine lo antes posible
+*/
 void cancelar(int sig)
 {
-	// cunado se pulsa Ctrl+C, se establece la variable global 'CANCELAR' a true para que el algoritmo genético termine lo antes posible
 	CANCELAR = true;
 }
 /*
@@ -440,7 +451,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	sprintf_s(senda_salidas, 127, "%s", senda);
 	CANCELAR = false;
 
-	// capturar la señal Ctrl+C
+	// capturar la señal Ctrl+C, al pulsar esta combinación de teclas se ejecuta la funciín 'cancelar'
 	signal(SIGINT, &cancelar);
 	/*
 	// dar la máxima prioridad al proceso
@@ -939,11 +950,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 }
 void fin_soluciona(auto t_inicio) {
-	/*
-	chrono::duration<double> elapsed_seconds = tiempo_fin - tiempo_ini;
-	time_t end_time = chrono::system_clock::to_time_t(tiempo_fin);
-	*/
-
 #ifdef DESVIACONES_RELATIVAS
 	merito_sol_relativa(poblacion[ind_mejor_merito]);
 #else
@@ -955,18 +961,32 @@ void fin_soluciona(auto t_inicio) {
 	ctime_s(tmBuff, sizeof(tmBuff), &fin);
 	double dist = distancia_clonacion();
 	ftime(&tiempo_act);
-	dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+	dif_tpo_par = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
 	ftime(&tiempo_ant);
 	dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
 #ifdef ESTA_CRUCES
-	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f                                  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+	long long n_c_s = 0;
+	long long n_c_o = 0;
+	long long n_c_n = 0;
+	long long n_c_f = 0;
+	for (int i = 0; i < n_hilos; i++) {
+		n_c_s += num_cruces_si[i];
+		n_c_o += num_cruces_ok[i];
+		n_c_n += num_cruces_no[i];
+		n_c_f += num_cruces_fj[i];
+		num_cruces_si[i] = 0;
+		num_cruces_ok[i] = 0;
+		num_cruces_no[i] = 0;
+		num_cruces_fj[i] = 0;
+	}
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
 #else
-	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 	fprintf(salida, "\nfin   : %s\n", tmBuff);
 	fclose(salida);
 	if (histo_sol != 0) {
-		// se guarda el vector solución final, incluso si histo_sol = -1
+		// se guarda el vector solución final, incluido cuando histo_sol = -1, solo se omite si histo_sol = 0
 		char fichero[128];
 		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_fin_sol.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla);
 		sal_sol = _fsopen(fichero, "wt", _SH_DENYWR);
@@ -978,6 +998,9 @@ void fin_soluciona(auto t_inicio) {
 		}
 	}
 }
+/*
+separar los parámetros del algoritmo genético que se reciben como un vector de valores 'double' en la función 'soluciona'
+*/
 int parametros_alge(double* par) {
 	int ipar = 0;
 	max_intentos = (int)par[ipar++];
@@ -1013,6 +1036,9 @@ int parametros_alge(double* par) {
 #endif
 	return 0;
 }
+/*
+crea las matrices dinámicas para las cotas (entornos de validez de las variables)
+*/
 bool inicia_cotas() {
 	size_t const mem_primer_ind = 2 * sizeof(double*);
 	cotas = (double**)malloc(mem_primer_ind);
@@ -1025,6 +1051,9 @@ bool inicia_cotas() {
 	fijo = (int*)malloc(NVEC * sizeof(int));
 	return true;
 }
+/*
+crea las variables dinámicas para la población, los descendientes, el mérito de cada individuo y si un vector de prueba es factible o no
+*/
 bool inicia_poblacion(double factor_inicio) {
 	size_t const mem_primer_indice = sizeof(double*) * NPOB;
 	poblacion = (double**)malloc(mem_primer_indice);
@@ -1046,6 +1075,9 @@ bool inicia_poblacion(double factor_inicio) {
 	if (factible == NULL) return false;
 	return true;
 }
+/*
+da valores a las cotas de cada variable, y marca como fijas aquellas variables que tienen el mismo valor en la cota inferior y en la superior
+*/
 bool fija_cotas(double* cotasInf, double* cotasSup) {
 	nvar_fijas = 0;
 	for (int i = 0; i < NVEC; i++) {
@@ -1061,6 +1093,11 @@ bool fija_cotas(double* cotasInf, double* cotasSup) {
 	}
 	return true;
 }
+/*
+genera la población inicial de individuos, dependiendo del valor de 'modo_poblacion_inicial', lo ortodoso es el modo 0, las otras opciones se
+han incluido para valorar si pueden mejorar el rendimiento del algoritmo, aunque NO se ha observado que esto ocurra, y en
+algunos casos incluso empeora el rendimiento
+*/
 bool genera_poblacion() {
 	double semi_izq;
 	double semi_dch;
@@ -1903,6 +1940,12 @@ bool genera_poblacion() {
 	*/
 	return true;
 }
+/*
+la implementación 'habitual' de este algoritmo es colocar el mejor individuo de la población en la primera posición del array 'poblacion',
+esto solo tiene sentido si se quiere evitar que el mejor individuo de la población pueda ser seleccionado como parte del par de individuos que se van a cruzar para generar un descendiente,
+lo que se consigue si se empieza a cruzar a partir del segundo individuo de la población (poner_el_mejor_primero == true)
+no he observado ninguna ventaja en hacerlo.
+*/
 void recolocar_al_mejor(int ind_mejor_merito) {
 	double* p = poblacion[0];
 	poblacion[0] = poblacion[ind_mejor_merito];
@@ -1912,6 +1955,9 @@ void recolocar_al_mejor(int ind_mejor_merito) {
 	merito_individuo[ind_mejor_merito] = me;
 	ind_mejor_merito = 0;
 }
+/*
+inicia la ejecuciín en mono proceso (sin hilos), tiene poca utilidad o ninguna
+*/
 int avanza() {
 	int desde = poner_el_mejor_primero ? 1 : 0;
 	cte_recombinacion = (recombinacion[0] + recombinacion[1]) / 2.;
@@ -1934,6 +1980,9 @@ int avanza() {
 	}
 	return -6;
 }
+/*
+versión mono proceso
+*/
 void mutacion_cruze(int desde, int hasta, int hilo) {
 	int i1;
 	int i2;
@@ -1974,6 +2023,9 @@ void mutacion_cruze(int desde, int hasta, int hilo) {
 		}
 	}
 }
+/*
+versión multi proceso, cada hilo se encarga de cruzar una parte de la población, determinada por los parámetros 'desde' y 'hasta'
+*/
 void mutacion_cruzeH(int desde, int hasta, int hilo) {
 	int i1;
 	int i2;
@@ -2030,6 +2082,9 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 		}
 	}
 }
+/*
+versión mono proceso
+*/
 void seleccion(int desde) {
 	double me_descendiente;
 	for (int i = desde; i < NPOB; i++) {
@@ -2056,6 +2111,9 @@ void seleccion(int desde) {
 		}
 	}
 }
+/*
+versión multiproceso, cada hilo se encarga de seleccionar una parte de la población, determinada por los parámetros 'desde' y 'hasta'
+*/
 void seleccionH(int desde, int hasta, int hilo) {
 	double me_descendiente;
 	for (int i = desde; i < hasta; i++) {
@@ -2083,6 +2141,10 @@ void seleccionH(int desde, int hasta, int hilo) {
 		}
 	}
 }
+/*
+se llama cada vez que se completa una generación, para comprobar si se ha alcanzado el número máximo de
+generaciones, o para salvar la solución cada 'histo_sol' generaciones, o para imprimir información cada 'histo_int' generaciones
+*/
 int comprobar_final() {
 	if (histo_sol > 0 && (generacion % histo_sol) == 0) {
 		char fichero[128];
@@ -2108,7 +2170,21 @@ int comprobar_final() {
 #endif
 		if (generacion == 0) {
 #ifdef ESTA_CRUCES
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d                                                        %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, ind_mejor_merito);
+			long long n_c_s = 0;
+			long long n_c_o = 0;
+			long long n_c_n = 0;
+			long long n_c_f = 0;
+			for (int i = 0; i < n_hilos; i++) {
+				n_c_s += num_cruces_si[i];
+				n_c_o += num_cruces_ok[i];
+				n_c_n += num_cruces_no[i];
+				n_c_f += num_cruces_fj[i];
+				num_cruces_si[i] = 0;
+				num_cruces_ok[i] = 0;
+				num_cruces_no[i] = 0;
+				num_cruces_fj[i] = 0;
+			}
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
 #else
 			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d                      %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, ind_mejor_merito);
 #endif
@@ -2118,7 +2194,7 @@ int comprobar_final() {
 		else {
 			ftime(&tiempo_act);
 			// 'time' da el número de segundos transcurridos desde el 1 de enero de 1970, y 'millitm' da los milisegundos transcurridos desde el último segundo completo
-			dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+			dif_tpo_par = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
 			ftime(&tiempo_ant);
 			// tiempo total desde el inicio del proceso en minutos
 			dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
@@ -2142,14 +2218,14 @@ int comprobar_final() {
 				num_cruces_no[i] = 0;
 				num_cruces_fj[i] = 0;
 			}
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
 #else
 			long long n_v_h = 0;
 			for (int i = 0; i < n_hilos; i++) {
 				n_v_h += num_var_hijo[i];
 				num_var_hijo[i] = 0;
 			}
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_v_h, n_mej);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_v_h, n_mej);
 #endif
 		}
 		fflush(salida);
@@ -2191,13 +2267,27 @@ int comprobar_final() {
 				merito_sol(poblacion[ind_mejor_merito]);
 #endif
 				ftime(&tiempo_act);
-				dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+				dif_tpo_par = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
 				ftime(&tiempo_ant);
 				dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
 #ifdef ESTA_CRUCES
-				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f                                   %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+				long long n_c_s = 0;
+				long long n_c_o = 0;
+				long long n_c_n = 0;
+				long long n_c_f = 0;
+				for (int i = 0; i < n_hilos; i++) {
+					n_c_s += num_cruces_si[i];
+					n_c_o += num_cruces_ok[i];
+					n_c_n += num_cruces_no[i];
+					n_c_f += num_cruces_fj[i];
+					num_cruces_si[i] = 0;
+					num_cruces_ok[i] = 0;
+					num_cruces_no[i] = 0;
+					num_cruces_fj[i] = 0;
+				}
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
 #else
-				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 				max_generaciones += generacion;
 				mejor_merito_anterior = 1.0e+99;
@@ -2238,13 +2328,27 @@ int comprobar_final() {
 						merito_sol(poblacion[ind_mejor_merito]);
 #endif
 						ftime(&tiempo_act);
-						dif_tpo_par = (int)((double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.);
+						dif_tpo_par = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
 						ftime(&tiempo_ant);
 						dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
 #ifdef ESTA_CRUCES
-						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f                                  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+						long long n_c_s = 0;
+						long long n_c_o = 0;
+						long long n_c_n = 0;
+						long long n_c_f = 0;
+						for (int i = 0; i < n_hilos; i++) {
+							n_c_s += num_cruces_si[i];
+							n_c_o += num_cruces_ok[i];
+							n_c_n += num_cruces_no[i];
+							n_c_f += num_cruces_fj[i];
+							num_cruces_si[i] = 0;
+							num_cruces_ok[i] = 0;
+							num_cruces_no[i] = 0;
+							num_cruces_fj[i] = 0;
+						}
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej);
 #else
-						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6d %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %6d %-8s %5d %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], (int)VEC_OPT_E[6], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 						max_generaciones += generacion;
 						mejor_merito_anterior = 1.0e+99;
@@ -2279,6 +2383,9 @@ int comprobar_final() {
 	}
 	return 0;
 }
+/*
+mide lo proximo que estan todos los individuos de la población, en relación al mejor individuo, para tener una idea de la diversidad de la población
+*/
 double distancia_clonacion() {
 	double d;
 	double des = 0.;
@@ -2322,11 +2429,11 @@ bool Arranque() {
 	return true;
 }
 int PreparaMP() {
-	// Comprobar la relación entre el número de hilos y el de la población
+	// Comprobar que el número de individuos de la población es múltiplo del número de hilos (procesos)
 
 	int bloques = NPOB / n_hilos;
 	if (bloques * n_hilos != NPOB) {
-		//printf("Cancelado. El numero de individuos debe ser multiplo del numero de hilos\n");
+		//printf("Cancelado. El numero de individuos debe ser multiplo del numero de hilos (procesos)\n");
 		return -1;
 	}
 	if (!Arranque()) return -2;
@@ -2471,6 +2578,11 @@ int ProcesoMP(int bloques) {
 	DeleteCriticalSection(&seccion_fin_hilos);
 	return generacion;
 }
+/*
+los hilos se crean una sola vez, crearlos y cerrarlos a cada generación consume más tiempo del que ahorran, para esto se usa un
+ciclo perpetuo, donde cada cada hilo espera a que se le permita calcular su tramo, y avisando al hilo 'director' cuando terminan,
+para que este decida iniciar una nueva generación, o terminar, si se ha alcanzado el número máximo de generaciones o se ha cancelado el proceso
+*/
 unsigned int WINAPI HiloTramos(LPVOID param)
 {
 	int* parametros = (int*)param;
@@ -2519,6 +2631,9 @@ unsigned int WINAPI HiloTramos(LPVOID param)
 	}
 	return 0;
 }
+/*
+función que hace que cada hilo procese un tramo de la población, realizando mutación, cruce y selección.
+*/
 void ProcesarTramo(int hilo, int desde, int hasta) {
 	mutacion_cruzeH(desde, hasta, hilo);
 	seleccionH(desde, hasta, hilo);
@@ -2526,6 +2641,10 @@ void ProcesarTramo(int hilo, int desde, int hasta) {
 #pragma endregion
 
 #pragma region Merito
+
+/*
+la parte de la DLL relacionada con el modelo: ecuaciones, parámetros, datos iniciales y opciones de cálculo del 'merito'
+*/
 
 double AYD_ADI_DEM[NDEM]{};
 
@@ -2573,8 +2692,10 @@ función objetivo multiproceso, la que hay que usar siempre, aunque no se utilic
 double merito_s(double* vec_opt) {
 	/*
 	No se pueden poner restricciones a variables que no formen parte de 'vec_opt'
-	una cosa es que no haya gradientes y otra que la función objetivo dependa de cosas distintas a sus variables
+	una cosa es que no haya gradientes y otra que la función objetivo dependa de cosas distintas a sus variables,
 	el proceso de cruce va reduciendo, para cada variable, las diferencias, de su valor, entre los distintos individuos de la población
+
+	al definir las matices no se inicializan porque es innecesario ya que a todas las variables se les asigna un valor como parte del proceso de cálculo
 	*/
 	double pf[NFAC];
 	double py[NSEC];
@@ -6381,7 +6502,7 @@ void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double
 }
 void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0) {
 
-	// parece que faltan los Alp
+	// puede ser que falten los Alp
 
 	double ingresos;
 	for (int i = 0; i < NDEM; i++) {
