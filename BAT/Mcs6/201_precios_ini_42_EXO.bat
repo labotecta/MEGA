@@ -106,5 +106,5 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs6 ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs6 ^
 --SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs6 ^
---SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Release/MEGA_DLL.dll
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll
 TIMEOUT 60

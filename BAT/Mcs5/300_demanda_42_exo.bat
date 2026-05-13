@@ -14,7 +14,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_F_INICIO_POB   0.0008 ^
 --ALGE_SIGMA_POB_INI  0.1 ^
 --ALGE_TRAMOS_LHS     100 ^
---ALGE_NPOB           20010 ^
+--ALGE_NPOB           16020 ^
 --ALGE_F_MUTACION     0.80 ^
 --ALGE_RECOMBINACION  0.99 1.10 ^
 --ALGE_CTRL_FACTIBLE  1 ^
@@ -106,5 +106,5 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5 ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^
 --SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs5 ^
---SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Release/MEGA_DLL.dll
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll
 timeout 60
