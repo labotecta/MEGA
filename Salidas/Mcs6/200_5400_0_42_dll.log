@@ -1,0 +1,32 @@
+inicio: Wed May 13 15:16:37 2026
+
+
+Intentos (reinicios)   :            5
+Número procesos        :           30
+Población              :         5400
+Modo población inicial :            0
+Factor dispersión      :  8.00000e-04
+Variables sol + 2 pases:         3587
+Variables solución     :          251
+Variables fijas en sol :            6
+Factor mutación        :  8.00000e-01
+Recombinación          :  9.90000e-01  1.10000e+00
+Semilla num.aleatorios :           42
+
+Variables con valores fijos
+
+   166 E            8 0.000000e+00
+   167 E            9 0.000000e+00
+   197 M            8 0.000000e+00
+   198 M            9 0.000000e+00
+   199 M           10 0.000000e+00
+   200 M           11 0.000000e+00
+
+generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+        0  3.32266e+02  4.24497e-10  1.88007e-05      0 ebp          0                           0
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+        0  3.32266e+02  4.24497e-10  1.88007e-05      0 ebp          0    0.0      0.0           0
+
+fin   : Wed May 13 15:16:39 2026
+
