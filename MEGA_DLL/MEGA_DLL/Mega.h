@@ -6,6 +6,8 @@ using namespace std;
 
 #define MEGA6
 
+const int NFAC = 2;
+
 #ifdef MEGA0
 const int NDEM = 1;
 const int NSEC = 2;
@@ -51,7 +53,6 @@ const int NSEC = 31;
 
 #define COPIAR_CON_COPY
 
-const int NFAC = 2;
 
 typedef struct
 {
@@ -167,7 +168,7 @@ void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], doubl
 void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0);
 void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
 void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M);
-void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0);
+void ahorro_hogares_Sp(double* Sp, double* ssp, double* pf, double FF[NDEM][NFAC], double* PssH0);
 double impuestos_directos_Ti(double tai, double* pf, double FF[NDEM][NFAC], int INDICE_F_TRA);
 void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
 void seguridad_social_empresas_CssE(double* CssE, double* ctzsse, double* pf, double F[NSEC][NFAC], int INDICE_F_TRA);

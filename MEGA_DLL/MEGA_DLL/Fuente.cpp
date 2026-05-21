@@ -2721,12 +2721,10 @@ double merito_s(double* vec_opt) {
 	double Ypd[NSEC];
 	double pz[NSEC];
 	double FF[NDEM][NFAC];
-	double exceso[NDEM][NFAC];
 	double Alp[NDEM][NFAC];
 	double Td[NDEM];
 	double Tz[NSEC];
 	double Tm[NSEC];
-	double Ti;
 	double Sp[NDEM];
 	double AgE[NSEC];
 	double AgH[NDEM];
@@ -2751,7 +2749,6 @@ double merito_s(double* vec_opt) {
 	double Tdr[NDEM];
 	double Tzr[NSEC];
 	double Tmr[NSEC];
-	double Tir;
 	double Spr[NDEM];
 	double AgEr[NSEC];
 	double AgHr[NDEM];
@@ -2767,16 +2764,19 @@ double merito_s(double* vec_opt) {
 	double epsilon;
 	double Apz;
 
+	double Ti;
 	double Sg;
 	double Sc;
 	double Sf;
 	double ebp;
 
+	double Tir;
 	double Sgr;
 	double Scr;
 	double Sfr;
 	double ebpr;
 
+	double exceso;
 	double suma_F;
 	double suma_FF;
 	double sum_Xpr;
@@ -2843,11 +2843,11 @@ double merito_s(double* vec_opt) {
 	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
-		if (op.ALP_FACTOR > 0) {
+		if (op.ALP_FACTOR > 0.) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
-					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso * op.ALP_FACTOR;
 					FF[i][j] -= Alp[i][j];
 				}
 			}
@@ -2871,7 +2871,7 @@ double merito_s(double* vec_opt) {
 	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
-	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	ahorro_hogares_Sp(Sp, parametros.ssp, pf, FF, datos.PssH0);
 	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
@@ -2933,11 +2933,11 @@ double merito_s(double* vec_opt) {
 	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FFr, datos.FF0, Fr);
-		if (op.ALP_FACTOR > 0) {
+		if (op.ALP_FACTOR > 0.) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
-					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso * op.ALP_FACTOR;
 					FFr[i][j] -= Alp[i][j];
 				}
 			}
@@ -2961,7 +2961,7 @@ double merito_s(double* vec_opt) {
 	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
-	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ahorro_hogares_Sp(Spr, parametros.ssp, pf, FFr, datos.PssH0);
 	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
@@ -3271,7 +3271,6 @@ double merito_d(double* vec_opt, double liston) {
 	double Ypd[NSEC];
 	double pz[NSEC];
 	double FF[NDEM][NFAC];
-	double exceso[NDEM][NFAC];
 	double Alp[NDEM][NFAC];
 	double Td[NDEM];
 	double Tz[NSEC];
@@ -3327,6 +3326,7 @@ double merito_d(double* vec_opt, double liston) {
 	double Sfr;
 	double ebpr;
 
+	double exceso;
 	double suma_F;
 	double suma_FF;
 	double sum_Xpr;
@@ -3396,8 +3396,8 @@ double merito_d(double* vec_opt, double liston) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
-					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso * op.ALP_FACTOR;
 					FF[i][j] -= Alp[i][j];
 				}
 			}
@@ -3421,7 +3421,7 @@ double merito_d(double* vec_opt, double liston) {
 	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
-	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	ahorro_hogares_Sp(Sp, parametros.ssp, pf, FF, datos.PssH0);
 	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
@@ -3497,8 +3497,8 @@ double merito_d(double* vec_opt, double liston) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
-					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso * op.ALP_FACTOR;
 					FFr[i][j] -= Alp[i][j];
 				}
 			}
@@ -3591,7 +3591,7 @@ double merito_d(double* vec_opt, double liston) {
 		dist += dd * dd;
 	}
 	if (dist > liston) return dist;
-	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ahorro_hogares_Sp(Spr, parametros.ssp, pf, FFr, datos.PssH0);
 	for (int i = 0; i < NDEM; i++) {
 		dd = Spr[i] - Sp[i];
 		dist += dd * dd;
@@ -3763,7 +3763,6 @@ double* merito_sol(double* vec_opt) {
 	double Xpi[NDEM][NSEC];
 
 	double pz[NSEC];
-	double exceso[NDEM][NFAC];
 	double Ypd[NSEC];
 
 	double F[NSEC][NFAC];
@@ -3829,6 +3828,7 @@ double* merito_sol(double* vec_opt) {
 	double Sfr;
 	double ebpr;
 
+	double exceso;
 	double suma_F;
 	double suma_FF;
 	double sum_Xpr;
@@ -3898,8 +3898,8 @@ double* merito_sol(double* vec_opt) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
-					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso * op.ALP_FACTOR;
 					FF[i][j] -= Alp[i][j];
 				}
 			}
@@ -3923,7 +3923,7 @@ double* merito_sol(double* vec_opt) {
 	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
-	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	ahorro_hogares_Sp(Sp, parametros.ssp, pf, FF, datos.PssH0);
 	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
@@ -3988,8 +3988,8 @@ double* merito_sol(double* vec_opt) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
-					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso * op.ALP_FACTOR;
 					FFr[i][j] -= Alp[i][j];
 				}
 			}
@@ -4013,7 +4013,7 @@ double* merito_sol(double* vec_opt) {
 	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
-	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ahorro_hogares_Sp(Spr, parametros.ssp, pf, FFr, datos.PssH0);
 	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
@@ -4878,7 +4878,6 @@ double merito_s_relativa(double* vec_opt) {
 	double Ypd[NSEC];
 	double pz[NSEC];
 	double FF[NDEM][NFAC];
-	double exceso[NDEM][NFAC];
 	double Alp[NDEM][NFAC];
 	double Td[NDEM];
 	double Tz[NSEC];
@@ -4934,6 +4933,7 @@ double merito_s_relativa(double* vec_opt) {
 	double Sfr;
 	double ebpr;
 
+	double exceso;
 	double suma_F;
 	double suma_FF;
 	double sum_Xpr;
@@ -5003,8 +5003,8 @@ double merito_s_relativa(double* vec_opt) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
-					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso * op.ALP_FACTOR;
 					FF[i][j] -= Alp[i][j];
 				}
 			}
@@ -5028,7 +5028,7 @@ double merito_s_relativa(double* vec_opt) {
 	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
-	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	ahorro_hogares_Sp(Sp, parametros.ssp, pf, FF, datos.PssH0);
 	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
@@ -5093,8 +5093,8 @@ double merito_s_relativa(double* vec_opt) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
-					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso * op.ALP_FACTOR;
 					FFr[i][j] -= Alp[i][j];
 				}
 			}
@@ -5118,7 +5118,7 @@ double merito_s_relativa(double* vec_opt) {
 	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
-	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ahorro_hogares_Sp(Spr, parametros.ssp, pf, FFr, datos.PssH0);
 	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
@@ -5329,7 +5329,6 @@ double* merito_sol_relativa(double* vec_opt) {
 	double Xpi[NDEM][NSEC];
 
 	double pz[NSEC];
-	double exceso[NDEM][NFAC];
 	double Ypd[NSEC];
 
 	double F[NSEC][NFAC];
@@ -5396,6 +5395,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	double Sfr;
 	double ebpr;
 
+	double exceso;
 	double suma_F;
 	double suma_FF;
 	double sum_Xpr;
@@ -5465,8 +5465,8 @@ double* merito_sol_relativa(double* vec_opt) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FF[i][j] - datos.FF0[i][j];
-					Alp[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FF[i][j] - datos.FF0[i][j];
+					Alp[i][j] = exceso * op.ALP_FACTOR;
 					FF[i][j] -= Alp[i][j];
 				}
 			}
@@ -5490,7 +5490,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	impuestos_directos_Td(Td, parametros.taud, pf, FF, Alp, datos.PssH0);
 	impuestos_produccion_Tz(Tz, datos.tauz, pz, Z);
 	aranceles_importacion_Tm(Tm, datos.taum, pm, M);
-	ahorro_hogares_Sp(Sp, parametros.ssp, FF, pf, datos.PssH0);
+	ahorro_hogares_Sp(Sp, parametros.ssp, pf, FF, datos.PssH0);
 	Ti = impuestos_directos_Ti(parametros.tai, pf, FF, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgE, AgH, parametros.cage, parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssE, parametros.ctzsse, pf, F, op.INDICE_F_TRA);
@@ -5555,8 +5555,8 @@ double* merito_sol_relativa(double* vec_opt) {
 		if (op.ALP_FACTOR > 0) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
-					exceso[i][j] = FFr[i][j] - datos.FF0[i][j];
-					Alpr[i][j] = exceso[i][j] * op.ALP_FACTOR;
+					exceso = FFr[i][j] - datos.FF0[i][j];
+					Alpr[i][j] = exceso * op.ALP_FACTOR;
 					FFr[i][j] -= Alp[i][j];
 				}
 			}
@@ -5580,7 +5580,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	impuestos_directos_Td(Tdr, parametros.taud, pf, FFr, Alpr, datos.PssH0);
 	impuestos_produccion_Tz(Tzr, datos.tauz, pz, Zr);
 	aranceles_importacion_Tm(Tmr, datos.taum, pm, M);
-	ahorro_hogares_Sp(Spr, parametros.ssp, FFr, pf, datos.PssH0);
+	ahorro_hogares_Sp(Spr, parametros.ssp, pf, FFr, datos.PssH0);
 	Tir = impuestos_directos_Ti(parametros.tai, pf, FFr, op.INDICE_F_TRA);
 	ayudas_AgE_AgH(AgEr, AgHr, parametros.cage, parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM);
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
@@ -6443,11 +6443,9 @@ void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], doubl
 	double sfachog[NFAC]{};
 	double sfacsec[NFAC]{};
 	for (int j = 0; j < NFAC; j++) {
-		//sfachog[j] = 0.;
 		for (int i = 0; i < NDEM; i++) {
 			sfachog[j] += FF0[i][j];
 		}
-		//sfacsec[j] = 0.;
 		for (int i = 0; i < NSEC; i++) {
 			sfacsec[j] += F[i][j];
 		}
@@ -6479,11 +6477,11 @@ void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M) {
 	}
 }
 double impuestos_directos_Ti(double tai, double* pf, double FF[NDEM][NFAC], int INDICE_F_TRA) {
-	double ingreso = 0.;
+	double ingresos = 0.;
 	for (int i = 0; i < NDEM; i++) {
-		ingreso += FF[i][1 - INDICE_F_TRA];
+		ingresos += FF[i][1 - INDICE_F_TRA];
 	}
-	return tai * ingreso * pf[1 - INDICE_F_TRA];
+	return tai * ingresos * pf[1 - INDICE_F_TRA];
 }
 void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM) {
 	double ingresos = Ti + Te;
@@ -6500,9 +6498,9 @@ void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double
 		AgH[i] = cagh[i] * ingresos + AYD_ADI_DEM[i];
 	}
 }
-void ahorro_hogares_Sp(double* Sp, double* ssp, double FF[NDEM][NFAC], double* pf, double* PssH0) {
+void ahorro_hogares_Sp(double* Sp, double* ssp, double* pf, double FF[NDEM][NFAC], double* PssH0) {
 
-	// puede ser que falten los Alp
+	// los Alp van aparte
 
 	double ingresos;
 	for (int i = 0; i < NDEM; i++) {
@@ -6691,18 +6689,18 @@ void produccion_maxima_utilidad_armington_D(double* Da, double* gamma, double* d
 }
 void produccion_para_exportacion_E(double* E, double* teta, double* xie, double* pz, double* pe, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS) {
 	double base;
-	double s_teta;
-	double b_teta;
+	double signo_teta;
+	double abs_teta;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
 		if (xie[i] > 0.000001) {
-			s_teta = copysign(1.0, teta[i]);
-			b_teta = abs(teta[i]);
+			signo_teta = copysign(1.0, teta[i]);
+			abs_teta = abs(teta[i]);
 			if (MODO_PSEUDOIMPTOS == 0) {
-				base = s_teta * pow(b_teta, phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xie[i] / pe[i];
+				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xie[i] / pe[i];
 			}
 			else {
-				base = s_teta * pow(b_teta, phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xie[i] / pe[i];
+				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xie[i] / pe[i];
 			}
 			expo = 1. / (1. - phi[i]);
 			E[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
@@ -6714,18 +6712,18 @@ void produccion_para_exportacion_E(double* E, double* teta, double* xie, double*
 }
 void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS) {
 	double base;
-	double s_teta;
-	double b_teta;
+	double signo_teta;
+	double abs_teta;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
 		if (xid[i] > 0.000001) {
-			s_teta = copysign(1.0, teta[i]);
-			b_teta = abs(teta[i]);
+			signo_teta = copysign(1.0, teta[i]);
+			abs_teta = abs(teta[i]);
 			if (MODO_PSEUDOIMPTOS == 0) {
-				base = s_teta * pow(b_teta, phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xid[i] / pd[i];
+				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xid[i] / pd[i];
 			}
 			else {
-				base = s_teta * pow(b_teta, phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xid[i] / pd[i];
+				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xid[i] / pd[i];
 			}
 			expo = 1. / (1. - phi[i]);
 			Dt[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
