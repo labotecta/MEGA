@@ -134,15 +134,15 @@ ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
 
 #----------------------------------------------------------------------------
-# retrasamos hasta aquí la imortación del módulo 'dll'
+# retrasamos hasta aquí la importación del módulo 'dll'
 # para que al importarlo ya estén definidas 'nfac, ndem y nsec'
 #----------------------------------------------------------------------------
 import dll           as dll
 #----------------------------------------------------------------------------
 '''
-copiamos a variables globales los parámetros de la línea de comando o su valor por defecto y ajustamos las dimensiones de
-las matrices ('reshape') cuando corresponde, ya que en la línea de comandos solo podemos incluir vectores, se realizan algunas comprobaciones 
-de la consistencia de los valores reecibidos
+copiamos a variables globales los parámetros de la línea de comando, o su valor por defecto y ajustamos las dimensiones de
+las matrices ('reshape') cuando corresponde, ya que en la línea de comandos solo podemos incluir vectores, además se
+realizan algunas comprobaciones de la consistencia de los valores reecibidos
 '''
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
@@ -155,13 +155,20 @@ USAR_ALGE_DLL       = args.USAR_ALGE_DLL
 DESV_RELATIVA       = args.DESV_RELATIVA
 if DESV_RELATIVA == 1:
     if USAR_DLL == False or USAR_ALGE_DLL == False:
+        DESV_RELATIVA = 0
         if __name__ == 'MEGA':
             avisos_diferidos.append('Solo se puede usar DESV_RELATIVA con la DLL. Se desactiva DESV_RELATIVA')
-            DESV_RELATIVA = 0
     else:
-        if __name__ == 'MEGA':
-            avisos_diferidos.append('Para usar DESV_RELATIVA hay que recompilar la DLL. Se desactiva DESV_RELATIVA')
+        try:
+            libc = ct.CDLL(SENDA_DLL)
+            libc.merito_s_relativa.argtypes = [ct.POINTER(ct.c_double)]
+            libc.merito_s_relativa.restype = ct.c_double
+            libc.merito_sol_relativa.argtypes = [ct.POINTER(ct.c_double)]
+            libc.merito_sol_relativa.restype = ct.POINTER(ct.c_double)
+        except:
             DESV_RELATIVA = 0
+            if __name__ == 'MEGA':
+                avisos_diferidos.append('Para usar DESV_RELATIVA es probable que haya que recompilar la DLL. Se desactiva DESV_RELATIVA')
 if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 0 and NSAM != 1 and NSAM != 2 and NSAM != 3 and NSAM != 4 and NSAM != 5 and NSAM != 6:
     if __name__ == 'MEGA':
         errores_diferidos.append('La DLL solo se puede usar con las MCS 0, 1, 2, 3, 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
@@ -258,9 +265,9 @@ if abs(CON_ESENCIALES.sum()) == 0:
     if (13 in NCASO) == False and (14 in NCASO) == False:
         # los casos 13 y 14 fijan los consumos esenciales
         if DEM_ESENCIALES == True:
+            DEM_ESENCIALES = False
             if __name__ == 'MEGA':
                 avisos_diferidos.append('Se ha cambiado DEM_ESENCIALES a False, sin consumos esenciales no tiene sentido calcular demandas con consumos esenciales')
-                DEM_ESENCIALES = False
         if GE_INCLUYE_XP == True:
             if __name__ == 'MEGA':
                 avisos_diferidos.append('Se ha especificado GE_INCLUYE_XP = True, sin consumos esenciales')
@@ -482,7 +489,7 @@ SENDA_GRAFICOS    = args.SENDA_GRAFICOS
 SENDA_SOLUCIONES  = args.SENDA_SOLUCIONES
 if (13 in NCASO) and DEM_ESENCIALES:
     if __name__ == 'MEGA':
-        errores_diferidos.append('Consumos esenciales iguales a Xp0 es incompatible con Stone-Geary (rentas 0)')
+        errores_diferidos.append('Consumos esenciales iguales a Xp0 (caso 13) es incompatible con Stone-Geary (rentas 0)')
     else:
         errores_diferidos.append('')
 
@@ -719,7 +726,7 @@ FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
 FI_HISTORIAL    = SENDA_FI_SALIDA + '_his.csv'
 FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
 
-# preparar para usar la función 'imprime' que llama a la del módulo 'mfun' del mismo nombre, pasándole el nombre del fichero donde escribir
+# preparar para usar la función 'imprime', que llama a la del módulo 'mfun' del mismo nombre, pasándole el nombre del fichero donde escribir
 mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
@@ -1035,13 +1042,13 @@ def sec_ecuaciones(vec_opt):
     #   el valor en el vector de solución no se usará
     #   el del capital se fija (OR_PRE_EXCLUIDO == 0) y el del trabajo se calcula (VALOR_F_TRA)
 
-    # el precio del otro factor se añade al principio o al final de 'pf'
+    # para los cálculos en esta función, el precio del otro factor se añade al principio o al final de 'pf'
     pf = completa_pf(pf, F)
 
     # calculamos los precios del comercio internacional en moneda local
     (pe, pm) = exte.precio_moneda_local_pe_pm(datos.pWe, datos.pWm, epsilon)            # 6.14 y 6.15
     
-        # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes.
+    # Los coeficientes de consumos intermedios 'ax' y factor compuesto 'ay' se consideran constantes.
     # no hay problema en igualar las variables porque ni 'ax' ni 'ay' se van a modificar y por tanto
     # ni 'parametros.ax' ni 'parametros.ay' se verán afectados
     ax = parametros.ax
@@ -1055,7 +1062,7 @@ def sec_ecuaciones(vec_opt):
 
     # Producción
     #--------------------------------------------------------------------------------------------------
-    # (Y) factor compuesto óptimo para por cada sector, dadas las utilizaciones de factores de
+    # (Y) factor compuesto óptimo, para cada sector, dadas las utilizaciones de factores de
     # producción (F) y la función de producción Cobb Douglas correspondiente.
     # en el equilibrio debe ser igual a la necesidad (Yd) de factor compuesto dada una producción bruta (Z) (6. 4)
     Yp = prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)           # 6. 1
@@ -1097,7 +1104,7 @@ def sec_ecuaciones(vec_opt):
         if ALP_FACTOR > 0:
             # se ahorra a largo plazo (Alp) un porcentaje del exceso de ingresos (FF) respecto a los iniciales (FF0)
             # lo que significa que no se usará en comprar productos
-            # si AHORRO_L_PLAZO = False, el modelo se realimenta, además de por los consumos internos, por la demanda final.
+            # en la medida que ALP_FACTOR sea mayor que 0, el modelo se realimenta, además de por los consumos internos, por la demanda final.
             exceso = FF - datos.FF0
             Alp = exceso * ALP_FACTOR
             FF -= Alp
@@ -1139,11 +1146,12 @@ def sec_ecuaciones(vec_opt):
     #   de los hogares. (FF) es la prestación de factores de cada hogar (consumidor)
     CssH = gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FF, Alp, INDICE_F_TRA)
 
-    Sg = ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE) # 6.12
+    # ahorro del gobierno
+    Sg = ainv.ahorro_gobierno_Sg(parametros.ssg, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AgE, AgH, datos.PssH0, CssH, CssE)           # 6.12
 
     # El gobierno compra productos con cargo a sus ingresos disponibles que son lo que recauda por
     # impuestos menos su ahorro (Sg) y las ayudas a empresas (AgE) y hogares (AgH)
-    Xg = gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE) # 6. 9
+    Xg = gob.demanda_gobierno_Xg(parametros.mu, pq, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, Sg, AgE, AgH, datos.PssH0, CssH, CssE)    # 6. 9
 
     # Inversión con cargo a los ahorros: los ahorros privados (Sp), del gobierno (Sg) y del
     # exterior (Sf0), se reparten entre sectores proporcionalmente a la MCS (parametros.landa)
@@ -1152,7 +1160,7 @@ def sec_ecuaciones(vec_opt):
     if datos.PssH0.sum() == 0:
         # si no se han explicitado pensiones en la MCS, suponemos que es el gobierno quien las paga
         # y no ha lugar un déficit o superhabit de la seguridad social. Esto es un truco para que el modelo trabaje
-        # con las 5 MCS que hemos definido, ya que algunas no tienene separada la cuenta de la seguridad social.
+        # con las 7 MCS que hemos definido, ya que algunas no tienene separada la cuenta de la seguridad social.
         Sc = 0.
     else:
         Sc = CssE.sum() + CssH.sum() - datos.PssH0.sum()
@@ -1160,7 +1168,7 @@ def sec_ecuaciones(vec_opt):
         # mantener la balanza de pagos igual a la inicial (MCS)
         Sf = np.float64(datos.Sf0)    
     else:
-        # la balanza de pagos no tiene un valor determinado
+        # la balanza de pagos no tiene un valor predeterminado, no es una opción realista
         Sf = ainv.ahorro_exterior_Sf(M, E, pm, pe)
     Xv = ainv.demanda_inversion_Xv(parametros.landa, pq, Sp, Sg, Sc, epsilon, Sf, Ti, datos.Te0)    # 6.10
 
@@ -1223,10 +1231,10 @@ def sec_ecuaciones(vec_opt):
     '''
 
     Zr    = exte.restriccion_produccion_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi)             # 6.20
-    Ypr   = prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)            # 6. 1
-    Fr    = prod.uso_optimo_factores_F(parametros.beta, pf, py, Ypr)                        # 6. 2
-    Xr    = prod.consumo_intermedio_X(Zr, ax)                                               # 6. 3
-    Ydr   = prod.utilizacion_factor_compuesto_Y(Zr, ay)                                     # 6. 4
+    Ypr   = prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)                                                    # 6. 1
+    Fr    = prod.uso_optimo_factores_F(parametros.beta, pf, py, Ypr)                                                                # 6. 2
+    Xr    = prod.consumo_intermedio_X(Zr, ax)                                                                                       # 6. 3
+    Ydr   = prod.utilizacion_factor_compuesto_Y(Zr, ay)                                                                             # 6. 4
 
     if  FF_ENDOGENA:
         FFr = deho.aportacion_factores_FF(datos.FF0, Fr)
@@ -1251,8 +1259,8 @@ def sec_ecuaciones(vec_opt):
     AgHr  = gob.ayudas_hogares_AgH(parametros.cagh, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AYD_ADI_DEM)
     CssEr = gob.seguridad_social_empresas_CssE(parametros.ctzsse, pf, Fr, INDICE_F_TRA)
     CssHr = gob.seguridad_social_hogares_CssH(parametros.ctzssh, pf, FFr, Alpr, INDICE_F_TRA)
-    Sgr   = ainv.ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr)              # 6.12
-    Xgr   = gob.demanda_gobierno_Xg(parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)      # 6. 9
+    Sgr   = ainv.ahorro_gobierno_Sg(parametros.ssg, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr)            # 6.12
+    Xgr   = gob.demanda_gobierno_Xg(parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, Sgr, AgEr, AgHr, datos.PssH0, CssHr, CssEr)    # 6. 9
     if datos.PssH0.sum() == 0:
         Scr = 0.
     else:
@@ -1304,9 +1312,9 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
         Ti,Tir
     ) = res_ecuaciones
 
-    # Se trata de forma individualizada la desviación en valor absoluto de cada variable
+    # Se trata de forma individualizada la desviación, en valor absoluto, de cada variable
 
-    # Apz es como los precios, no es el resultado de ninguna ecuación y por tanto no se puede
+    # Apz es como los precios, no es el resultado de ninguna ecuación y por tanto no procede
     # calcular un desvío para ella
 
     if EQ_BAL_PAGOS:
@@ -1434,6 +1442,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
         infor.salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist)
     return dist
 
+# función objetivo intermedia para llamar a la correspondiente Python o a la de la DLL, según el caso
 def fo(vec_opt):
     if USAR_DLL:
         vo = vec_opt.ctypes.data_as(ct.POINTER(ct.c_double))
@@ -1445,6 +1454,7 @@ def fo(vec_opt):
         res = fun_objetivo(vec_opt)
     return res
 
+# función objetivo Python, se llama desde 'fo' si no se usa la DLL
 def fun_objetivo(vec_opt):
     res_ecuaciones = sec_ecuaciones(vec_opt)
     return calcula_desvios(res_ecuaciones, False)
@@ -1504,7 +1514,7 @@ def imprime_opciones(nvec_opt):
 
     imprime('Usar genético DLL                      {}'.format('Si' if USAR_ALGE_DLL else 'No'))
     if USAR_ALGE_DLL:
-        imprime('    Fichero log de la DLL                               saDLL_{}.log'.format(ALGE_ID_SALIDA))
+        imprime('    Fichero log de la DLL                               {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
         imprime('    Número de hilos multiproceso                        {:10}'.format(ALGE_N_HILOS))
         imprime('    Número máximo de reinicios por falta de progreso    {:10}'.format(ALGE_MAX_INTENTOS))
         imprime('    Error máximo para calificar aceptable una solución  {:10}'.format(ALGE_TOL_ACEPTABLE))
@@ -1643,11 +1653,6 @@ if __name__ == '__main__':
 # leemos la Matriz de Contabilidad Social (MCS o SAM) de esta economía
 xls = pandas.ExcelFile(FICHERO_SAM)
 if NSAM == 5:
-    '''
-    dsam = nsec + nfac + ndem + 6 + 1
-    lsam = np.arange(dsam + 2).tolist()
-    sam = pandas.read_excel(xls, sheet_name=SAM_HOJA, index_col=SAM_COL, header=SAM_FIL, nrows=dsam, usecols=lsam)
-    '''
     # 'dsam' las filas a procesar a partir de la fila con las cabeceras de las columnas 
     # el 8 = 7 cuentas + la suma (recursos)
     dsam = nsec + nfac + ndem + 8
@@ -1668,13 +1673,6 @@ elif NSAM == 6:
     # 'lsam' columnas a procesar, como la primera es la coluna de los rótulos de las filas (SAM_COL), index_col debe ser 0
     lsam = np.arange(SAM_COL, SAM_COL + dsam).tolist()
     sam = pandas.read_excel(xls, sheet_name=SAM_HOJA, usecols=lsam, index_col=0, header=SAM_FIL, nrows=dsam)
-    '''
-    nombre filas    : sam.index
-    nombre columnas : sam.columns
-    primera columna : sam.iloc[:, 1]        TIO.iloc[:, 0] tiene los nombres de las filas 
-    primera fila    : sam.iloc[0,  0:]      TIO.iloc[:, 0] tiene nan
-    datos           : sam.iloc[0:, 0:]
-    '''
 else:
     sam = pandas.read_excel(xls, index_col=0, header=0)
 xls.close()
@@ -1690,6 +1688,7 @@ el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan 
 datos = calibrado.datos(sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL)
 parametros = calibrado.parametros(datos, ndem, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA)
 if __name__ == '__main__':
+    # realizamos algunas comprobaciones sobre los datos y parámetros
     linea_blanca = True
     if np.any(datos.F0    < 0.):
         if linea_blanca:
@@ -1776,7 +1775,7 @@ if __name__ == '__main__':
             imprime('')
             linea_blanca = False
         imprime('*--* Error. El modelo no está preparado para el pago (positivo o negativo) de impuestos por la exportación (Te0)')
-    if abs(parametros.landa.sum() - 1.)                       > 0.000001:
+    if abs(parametros.landa.sum() - 1.) > 0.000001:
         if linea_blanca:
             imprime('')
             linea_blanca = False
@@ -1806,12 +1805,12 @@ if __name__ == '__main__':
             imprime('')
             linea_blanca = False
         imprime('*--* Error. Al menos un coeficiente de reparto xie (exportación) en la CET, es negativo.')
-    if np.any(abs(parametros.xid + parametros.xie - 1.)       > 0.000001):
+    if np.any(abs(parametros.xid + parametros.xie - 1.) > 0.000001):
         if linea_blanca:
             imprime('')
             linea_blanca = False
         imprime('*--* Error. Los coeficientes de reparto en la CET, xie (exportación) y xid (demanda local) no suman 1.')
-    if np.any(abs(parametros.beta.sum(axis=1) - 1.)           > 0.000001):
+    if np.any(abs(parametros.beta.sum(axis=1) - 1.) > 0.000001):
         if linea_blanca:
             imprime('')
             linea_blanca = False
@@ -1836,7 +1835,7 @@ ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, d
 # ---------------------------------------------------------------------
 # Solucíonar el MEGA
 # ---------------------------------------------------------------------
-# adaptar algunos valores y parámetros según el escenario que se haya seleccionado
+# en primer lugar, adaptar algunos valores y parámetros según el escenario que se haya seleccionado
 (CON_ESENCIALES) = esce.escenarios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
                NCASO, DEM_ADICIONAL, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES, UTILIDAD_DEMANDA, RENTA_FICTICIA,
                AYD_ADICIONAL, GE_INCLUYE_XP,
@@ -1858,8 +1857,8 @@ if USAR_DLL:
     dll.envia_opciones  (libc)
     dll.envia_datos     (libc, datos)
     dll.envia_parametros(libc, parametros)
-    # si la DLL está compilada para comprobar desviaciones, necesitamos llamar explicitamente a 'indice_desviaciones' porque llamaremos a las
-    # funciones de merito antes de llamar a 'soluciona'
+    # si la DLL está compilada para comprobar desviaciones (lo que no es probable), necesitamos llamar explicitamente a
+    # 'indice_desviaciones' porque llamaremos a las funciones de merito antes de llamar a 'soluciona'
     #libc.indice_desviaciones()
 
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
@@ -1874,7 +1873,7 @@ if USAR_DLL:
 
 if __name__ == '__main__':
     # sin el precio del último factor ya que su valor se fija de forma exógena, esto es realmente incorrecto
-    # porque según las opciones el precio del factor que se incluirá en el vector de prueba pueser el del
+    # porque según las opciones, el precio del factor que se incluirá en el vector de prueba pueser el del
     # capital o el del trabajo, pero inicialmente ambos están puestos a 1.0 en 'datos.pF0'
     pf0 = datos.pF0[0:nfac-1].flatten()
     # sólución inicial para la función minimizar
@@ -1895,13 +1894,16 @@ if __name__ == '__main__':
     nvec_opt = len(vec_opt)
 
     if len(FI_SOL_LEE) > 0:
-        # sustituir el vector de orueba inicial
+        # sustituir el vector de prueba inicial por el contenido en el fichero
         vec_opt = []
         with open(SENDA_SOLUCIONES + '/' + FI_SOL_LEE, "r", encoding="utf-8") as log:
             for i in range(nvec_opt):
                 v = np.float64(log.readline())
                 vec_opt.append(v)
         vec_opt = np.array(vec_opt, dtype=np.float64)
+        if nvec_opt != len(vec_opt):
+            imprime('*--* Error. El número de variables en la solución leida del fichero no coincide con el número de variables del modelo')
+            sys.exit()
     pzi = copy.deepcopy(datos.pZ0)
     vec_opt_ini = copy.deepcopy(vec_opt)
 
@@ -2365,6 +2367,7 @@ if __name__ == '__main__':
                 for i in range(nsec):
                     for j in range(nsec):
                         X[i,j] = r_sol[n];n += 1
+                Ti = np.array(r_sol[n],dtype=np.float64);n += 1
                 # recálculos
                 for i in range(nsec):
                     for j in range(nfac):
@@ -2403,6 +2406,7 @@ if __name__ == '__main__':
                 for i in range(nsec):
                     for j in range(nsec):
                         Xr[i,j] = r_sol[n];n += 1
+                Tir = np.array(r_sol[n],dtype=np.float64);n += 1
                 
                 # la DLL las devuelve transpuestas
                 X  = X.T
