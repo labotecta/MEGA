@@ -1,7 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="Alge/Alge.vcxproj" Id="0df2e46c-a46c-4136-bef6-00ce456a99dd" />
-</Solution>
