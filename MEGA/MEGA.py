@@ -73,7 +73,7 @@ import restricciones as restri
 global datos
 global parametros
 
-VERSION = '1.6.0'
+VERSION = '1.6.1'
 
 # 7 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
@@ -140,9 +140,9 @@ nsec = args.NSEC    # número de sectores
 import dll           as dll
 #----------------------------------------------------------------------------
 '''
-copiamos a variables globales los parámetros de la línea de comando, o su valor por defecto y ajustamos las dimensiones de
+copiamos a variables globales los parámetros de la línea de comando, o su valor por defecto, y ajustamos las dimensiones de
 las matrices ('reshape') cuando corresponde, ya que en la línea de comandos solo podemos incluir vectores, además se
-realizan algunas comprobaciones de la consistencia de los valores reecibidos
+realizan algunas comprobaciones de la consistencia de los valores especificados
 '''
 NSAM                = args.NSAM
 DECIMALES           = args.DECIMALES
@@ -482,7 +482,16 @@ if len(args.VAR_FACTORES) != ndem * nfac:
         errores_diferidos.append('')
 else:
     VAR_FACTORES  = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
-
+if SAL_GRAFICOS_EVOL and GE_SOLUCIONES == 0:
+    if __name__ == 'MEGA':
+        errores_diferidos.append('Se ha especificado gráfico de soluciones (SAL_GRAFICOS_EVOL=True) pero no el registro de las mismas (GE_SOLUCIONES={})'.format(GE_SOLUCIONES))
+    else:
+        errores_diferidos.append('')
+if SAL_GRAFICOS_EVOL and SAL_AUXILIARES == False:
+    if __name__ == 'MEGA':
+        errores_diferidos.append('Se ha especificado gráfico de soluciones (SAL_GRAFICOS_EVOL=True) pero no salidas auxiliares (SAL_AUXILIARES=False))')
+    else:
+        errores_diferidos.append('')
 SENDA_DATOS       = args.SENDA_DATOS
 SENDA_SALIDAS     = args.SENDA_SALIDAS
 SENDA_GRAFICOS    = args.SENDA_GRAFICOS
@@ -731,7 +740,7 @@ mfun.ini(FICHERO_LOG)
 def imprime(texto, rc=True):
     mfun.imprime(texto, rc)
 
-# ya que sabemos el nombre del fichero de log, podemos escribir los mensajes de error y avisos
+# ya que sabemos el nombre del fichero log, podemos escribir los mensajes de error y avisos
 if len(avisos_diferidos) > 0:
     imprime('')
     imprime('....................................................................................................................................')
@@ -1652,7 +1661,7 @@ if __name__ == '__main__':
 
 # leemos la Matriz de Contabilidad Social (MCS o SAM) de esta economía
 xls = pandas.ExcelFile(FICHERO_SAM)
-if NSAM == 5:
+if   NSAM == 5:
     # 'dsam' las filas a procesar a partir de la fila con las cabeceras de las columnas 
     # el 8 = 7 cuentas + la suma (recursos)
     dsam = nsec + nfac + ndem + 8
@@ -1857,23 +1866,40 @@ if USAR_DLL:
     dll.envia_opciones  (libc)
     dll.envia_datos     (libc, datos)
     dll.envia_parametros(libc, parametros)
+
     # si la DLL está compilada para comprobar desviaciones (lo que no es probable), necesitamos llamar explicitamente a
     # 'indice_desviaciones' porque llamaremos a las funciones de merito antes de llamar a 'soluciona'
     #libc.indice_desviaciones()
 
+    # 'merito_s' y 'meriro_sol' se llaman internamente dentro de la DLL y no es imprescindible llamarlas desde la aplicación Python, salvo
+    # porque las llamamos exprofeso para realizar comprobaciones al empezar y al terminar, cosa que se podría eliminar, aunque mejor
+    # dejarlo porque permite comprobar que el valor de la función objetivo calculado por las dos funciones de la  DLL es el mismo e igual al calculado por Python.
+
+    # 'merido_s' es la función que la DLL llamará para calcular el valor de la función objetivo, por lo que hay que definir:
+    #       Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá para calcular el valor de la función objetivo
+    #       El tipo de su resultado, que es un double, el valor de la función objetivo calculado a partir del vector de prueba que se le ha pasado a esta función
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_s.restype = ct.c_double
+
     if DESV_RELATIVA == 1:
         libc.merito_s_relativa.argtypes = [ct.POINTER(ct.c_double)]
         libc.merito_s_relativa.restype = ct.c_double
         libc.merito_sol_relativa.argtypes = [ct.POINTER(ct.c_double)]
         libc.merito_sol_relativa.restype = ct.POINTER(ct.c_double)
+
+    # 'merido_sol' es la función de la DLL que calcula el valor de la función objetivo y el vector de desviaciones de todas las variables
+    # hay que definir el tipo de los argumentos y el de su resultado:
+    #       Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá
+    #       El tipo de su resultado 'ct.POINTER(ct.c_double)', que es un puntero a double, es un vector donde están concatenadas todos los valores que devuelve esta función:
+    #           el valor de la función objetivo
+    #           el vector de desviaciones
+    #           el vector solución, o el de los valores de todas la variables, dependiendo del parámetro 'extendida' que se haya pasado a la función 'soluciona' de la DLL
     libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_sol.restype = ct.POINTER(ct.c_double)
 
 if __name__ == '__main__':
-    # sin el precio del último factor ya que su valor se fija de forma exógena, esto es realmente incorrecto
-    # porque según las opciones, el precio del factor que se incluirá en el vector de prueba pueser el del
+    # sin el precio del último factor '[0:nfac-1]' ya que su valor se fija de forma exógena, esto es realmente incorrecto
+    # porque según las opciones, el precio del factor que se incluirá en el vector de prueba puede ser el del
     # capital o el del trabajo, pero inicialmente ambos están puestos a 1.0 en 'datos.pF0'
     pf0 = datos.pF0[0:nfac-1].flatten()
     # sólución inicial para la función minimizar
@@ -1883,11 +1909,11 @@ if __name__ == '__main__':
                 datos.pQ0.flatten(),        # precio del producto de Armington
                 datos.pD0.flatten(),        # precio de los sectores para la demanda
                 np.array([datos.epsilon]),  # tipo de cambio
-                np.array([datos.Apz0]),     # ajuste pseudo impuestos
-                datos.F0.flatten(),
-                datos.E0.flatten(),
-                datos.M0.flatten(),
-                datos.D0.flatten(),
+                np.array([datos.Apz0]),     # holgura pseudo impuestos
+                datos.F0.flatten(),         # utilización de factores por cada sector
+                datos.E0.flatten(),         # exportaciones de cada sector
+                datos.M0.flatten(),         # importaciones de cada sector
+                datos.D0.flatten(),         # demanda local, es decir, la producción para el consumo local, de cada sector
     ))
     if GE_INCLUYE_XP:
         vec_opt = np.concatenate((vec_opt, datos.Xp0.flatten()))
@@ -1907,9 +1933,12 @@ if __name__ == '__main__':
     pzi = copy.deepcopy(datos.pZ0)
     vec_opt_ini = copy.deepcopy(vec_opt)
 
-    # 'vigila' función que 'differential_evolution' llamará después de probar cada posible solución 
+    # para guardar el historial de los valores del error (función objetivo) durante la minimización
     historial   = []
+    # para guardar el historial del vector de soluciones
     soluciones  = []
+
+    # 'vigila' función que 'differential_evolution' llamará después de probar cada posible solución, no se usa cuando se utiliza el algoritmo genético de la DLL  
     mensaje_fin = []
     vfa         = 1.0e+18
     def vigila(intermediate_result):
@@ -2095,6 +2124,7 @@ if __name__ == '__main__':
                                                 'MCS primera valoración. Importes', True
                                               )
             infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS primera valoración. Importes', True)
+
     if SALIDA_VEC_OPT:
         imprime('    L.INF         V0          L.SUP')
         imprime('------------ ------------ ------------')
@@ -2110,19 +2140,26 @@ if __name__ == '__main__':
     
     if GE_RESTRICCIONES:
         # restricciones para 'differential_evolution', estás son un ejemplo
+        # se pueden definir otras restricciones, incluso no lineales, aunque no he encontrado utilidad a esto hasta ahora, además solo funciona sin la DLL
         restricciones = restri.restricciones_M_E(nvec_opt, ind_pvec_desde, datos,GE_TIPO_RE)
     else:
         restricciones = []
+
     if USAR_ALGE_DLL:
         imprime('No se muestra en pantalla la evolución de los cálculos. Ver el fichero {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
     else:
         imprime('Evolución de la minimización')
+
     imprime('')
     res_ecuaciones = sec_ecuaciones(vec_opt)
     dist = calcula_desvios(res_ecuaciones, False)
     imprime('{:>9} {:12.5e}'.format('Python ', dist))
     if USAR_DLL:
         '''
+        las función 'abre_salida' y 'cierra_salida' de la DLL se llaman explícitamente para abrir y cerrar el fichero de salida donde la DLL escribe, lo
+        que ha sido útil durante la depuración cunado no se llama a la función 'soluciona' que es quien abre y cierra este fichero, cuando ya se ha llamado a 'soluciona'
+        no es necesario llamar a estas funciones explícitamente, las dejamos por si acaso.
+
         libc.abre_salida.argtypes = [ct.c_char_p]
         libc.abre_salida.restype = ct.c_bool
         v5 = ct.c_char_p(SENDA_SALIDAS.encode('utf-8'))
@@ -2152,7 +2189,10 @@ if __name__ == '__main__':
     t_inicio = timer()
 
     # minimizar el error de la función objetivo
+    #---------------------------------------------------------------------
+
     if GE_WORKERS != 1:
+        # Python
         rmin = differential_evolution(func=fo,
                 x0=vec_opt,
                 bounds=bnds,
@@ -2173,10 +2213,13 @@ if __name__ == '__main__':
         )
     else:
         if USAR_ALGE_DLL:
-            # llamar al procedimiento en la DLL pasandole como vectores:
-            #   los parámetros de configuración del algoritmo
-            #   los cotas de variación de las variables
-            #   el vector solución inicial
+            # llamar al procedimiento 'soluciona' de la DLL, a traves de la función 'soluciona' en el módulo dll, pasándole los parámetros:
+            #   'par' un vector con los parámetros de configuración del algoritmo
+            #   'cotas_inf' un vector con las cotas inferiores de las variables
+            #   'cotas_sup' un vector con las cotas superiores de las variables
+            #   'vec_opt' el vector solución inicial
+            #   'ALGE_RES_EXTENSA' el tipo de retorno de la función
+            #   'SENDA_SALIDAS' la senda donde la DLL escribirá sus salidas
             par = []
             par.append(np.float64(ALGE_MAX_INTENTOS))
             par.append(np.float64(ALGE_N_HILOS))
@@ -2208,8 +2251,9 @@ if __name__ == '__main__':
             for i in range(nvec_opt):
                 cotas_inf.append(np.float64(bnds[i][0]))
                 cotas_sup.append(np.float64(bnds[i][1]))
+            r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA, SENDA_SALIDAS)
             '''
-            'dll.soluciona' devuelve un vector double donde los primeros 5 datos del vector son:
+            'dll.soluciona' devuelve un vector double donde los primeros 7 datos del vector son:
                 0. el código de terminación (si es menor que 0 es finalización con error)
                 1. el número de datos de la solución (aicionales a los 7 de cabecera)
                 2. el número de intentos utilizados para encontrar la solución, si el algoritmo no progresa se hace
@@ -2221,7 +2265,6 @@ if __name__ == '__main__':
                 6. el índice de la variable con la máxima desviación
             '''
             cabecera = 7
-            r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA, SENDA_SALIDAS)
             r_res   = int(r_sol[0])
             r_datos = int(r_sol[1])
             imprime('')
@@ -2408,7 +2451,7 @@ if __name__ == '__main__':
                         Xr[i,j] = r_sol[n];n += 1
                 Tir = np.array(r_sol[n],dtype=np.float64);n += 1
                 
-                # la DLL las devuelve transpuestas
+                # la DLL las devuelve traspuestas
                 X  = X.T
                 Xr = Xr.T
 
@@ -2429,6 +2472,7 @@ if __name__ == '__main__':
                                     Di.flatten(),
                 ))
             else:
+                # la DLL devuelve el vector solución y el vector desviaciones
                 rot_des = [
                         'ebp/Sf',
                         'Qeq',
@@ -2546,9 +2590,14 @@ if __name__ == '__main__':
                         imprime('{:8.0f} {:12.6e}'.format(r_sol[ne], r_sol[ne + 1]))
                         ne += 2
                     imprime('-------- ------------')
+            # 'rmin' es una clase con los atributos:
+            #   'x' el vector solución 
+            #   'nit' el número de iteraciones
+            #  para simular el objeto que devuelve 'differential_evolution' y que la aplicación continue igual si se ha usado la DLL o 'differential_evolution'
             rmin = rmin_dll(sol, int(sol[3]))
             imprime('')
         else:
+            # Python sin especificar el número de 'workers' que por defecto es 1
             rmin = differential_evolution(func=fo,
                     x0=vec_opt,
                     bounds=bnds,
@@ -2567,6 +2616,8 @@ if __name__ == '__main__':
                     constraints=restricciones,
             )
 
+    # la minimización ha terminado
+    #---------------------------------------------------------------------
     t_fin = timer()
 
     sol = rmin.x
@@ -2576,13 +2627,21 @@ if __name__ == '__main__':
                 log.write('{}\n'.format(sol[i]))
 
     if USAR_ALGE_DLL and ALGE_RES_EXTENSA == 1:
+        # la minimización de la DLL ha aportado el valor de todas las variables, excepto el de Zl que se supone es igual a Z
+        Zl = copy.deepcopy(Z)
         res_ecuaciones = (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Z,pz,
+            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
             Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
             Ti,Tir
         )
     else:
+        # hay que calcular el valor de todas las variables porque la minimización solo ha aportado el vector solución 'sol'
         res_ecuaciones = sec_ecuaciones(sol)
+        (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
+            Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
+            Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Srf,AgEr,AgHr,CssEr,CssHr,ebpr,
+            Ti,Tir
+        ) = res_ecuaciones
     imprime('-----------------------------------------------------------')
     imprime('VALORES FINALES')
     imprime('-----------------------------------------------------------')
@@ -2592,11 +2651,7 @@ if __name__ == '__main__':
         imprime('')
     dist = calcula_desvios(res_ecuaciones, SALIDA_DESVIOS)
     infor.salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, sol, npre_sol, etq_precios, res_ecuaciones)
-    (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
-        Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
-        Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Srf,AgEr,AgHr,CssEr,CssHr,ebpr,
-        Ti,Tir
-    ) = res_ecuaciones
+
     if SAL_MCS:
         pf = extrae_var(sol,'pF', 0, nfac - 1)
         pf = completa_pf(pf, F)
@@ -2631,11 +2686,11 @@ if __name__ == '__main__':
     if GE_HISTORIAL > 0:
         # guardar el valor del error que, al final, se escribirá en un fichero CSV
         historial.append([rmin.nit,dist])
-    if GE_SOLUCIONES > 0:
+    if GE_SOLUCIONES > 0 or GE_SOLUCIONES == -1:
         # guardar el vector solución que, al final, se escribirá en un fichero CSV
         soluciones.append([rmin.nit,sol])
-    if SAL_GRAFICOS_EVOL:
-        infor.parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IMG, GE_IMG_COL, GE_IMG_FIL, GE_SOLUCIONES, soluciones, Z, Xp, Da, E, M)
+        if SAL_GRAFICOS_EVOL:
+            infor.parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IMG, GE_IMG_COL, GE_IMG_FIL, GE_SOLUCIONES, soluciones, Z, Xp, Da, E, M)
     if SAL_AUXILIARES:
         # escribir el fichero con el historial 
         with open(FI_HISTORIAL, "w", encoding="utf-8") as sal:

@@ -497,11 +497,14 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     nfac = len(h)
     nsec = len(ind)
     ndem = len(dem)
+
+    # las variables 'Apz,Fi, ..., Tir' no son globales para este módulo, por lo que hay que extraerlas del vector 'res_ecuaciones'
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
         Alp, F, FF, Yp, Yd ,Z ,X ,Xp ,Xg ,Xv ,Q ,M ,Da ,Dt, E ,Td ,Tz ,Tm ,Sp ,Sg ,Sf ,AgE ,AgH ,CssE ,CssH,ebp,Zl,pz,
         Alpr,Fr,FFr,Ypr,Ydr,Zr,Xr,Xpr,Xgr,Xvr,Qr,Mr,Dar,Dtr,Er,Tdr,Tzr,Tmr,Spr,Sgr,Sfr,AgEr,AgHr,CssEr,CssHr,ebpr,
         Ti,Tir
     ) = res_ecuaciones
+
     pf = prin.extrae_var(vec_opt, 'pF', 0, nfac - 1)
     # el precio del otro factor se añade al principio o al final de 'pf'
     pf = prin.completa_pf(pf, F)
@@ -1063,12 +1066,13 @@ def datos_grafico_solucion(datos, parametros, ind, dem, h, v):
         pq.flatten(),
         [epsilon]
     ))
-    # consumos
+    # variación de los consumos de los hogares uno tras otro. cantidad (_dcam) e importe (_dimp)
     y_dcan =  (Xp[0] - datos.Xp0[0]      ).flatten()
     y_dimp = ((Xp[0] - datos.Xp0[0]) * pq).flatten()
     for i in range(1, Xp.shape[0]):
         y_dcan = np.concatenate((y_dcan,  (Xp[i] - datos.Xp0[i]      ).flatten()))
         y_dimp = np.concatenate((y_dimp, ((Xp[i] - datos.Xp0[i]) * pq).flatten()))
+    # variación del consumo del gobierno
     y_dcan = np.concatenate((y_dcan,  (Xg - datos.Xg0      ).flatten()))
     y_dimp = np.concatenate((y_dimp, ((Xg - datos.Xg0) * pq).flatten()))
     # producciones
@@ -1086,31 +1090,33 @@ def datos_grafico_solucion(datos, parametros, ind, dem, h, v):
         (M  * pm).flatten(),
         (Q  * pq).flatten()
     ))
-    # factores suministrados por los hogares
-    y_sfc_c = FF[0] - datos.FF0[0]
-    y_sfc_i = (FF[0] - datos.FF0[0]) * pf
+    # variación de los factores suministrados (_sf) por los hogares
+    #   _c antidad
+    #   _i importe
+    y_sf_c = FF[0] - datos.FF0[0]
+    y_sf_i = (FF[0] - datos.FF0[0]) * pf
     for i in range(1, ndem):
-        y_sfc_c = np.concatenate((
-            y_sfc_c,
+        y_sf_c = np.concatenate((
+            y_sf_c,
             FF[i] - datos.FF0[i]
         )) 
-        y_sfc_i = np.concatenate((
-            y_sfc_i,
+        y_sf_i = np.concatenate((
+            y_sf_i,
             (FF[i] - datos.FF0[i]) * pf
         )) 
-    # factores utilizados por los sectores
-    y_ufc_c = F[0] - datos.F0[0]
-    y_ufc_i = (F[0] - datos.F0[0]) * pf
+    #variación de los factores utilizados (_uf) por los sectores
+    y_uf_c = F[0] - datos.F0[0]
+    y_uf_i = (F[0] - datos.F0[0]) * pf
     for i in range(1, nsec):
-        y_ufc_c = np.concatenate((
-            y_ufc_c,
+        y_uf_c = np.concatenate((
+            y_uf_c,
             F[i] - datos.F0[i]
         )) 
-        y_ufc_i = np.concatenate((
-            y_ufc_i,
+        y_uf_i = np.concatenate((
+            y_uf_i,
             (F[i] - datos.F0[i]) * pf
         )) 
-    return (y_pre, y_dcan, y_dimp, y_can, y_imp, y_sfc_c, y_ufc_c, y_sfc_i, y_ufc_i)
+    return (y_pre, y_dcan, y_dimp, y_can, y_imp, y_sf_c, y_uf_c, y_sf_i, y_uf_i)
 
 def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IMG, GE_IMG_COL, GE_IMG_FIL, GE_SOLUCIONES, soluciones, Z, Xp, Da, E, M):
     # generar gráficos de evolución
@@ -1137,10 +1143,10 @@ def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IM
     y_dimp  = []
     y_can   = []
     y_imp   = []
-    y_sfc_c = []
-    y_ufc_c = []
-    y_sfc_i = []
-    y_ufc_i = []
+    y_sf_c  = []
+    y_uf_c  = []
+    y_sf_i  = []
+    y_uf_i  = []
     n       = 0
     for v in soluciones[0:nimg_real]:
         titulo.append(n * GE_SOLUCIONES)
@@ -1151,10 +1157,10 @@ def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IM
         y_dimp.append(y3)
         y_can.append(y4)
         y_imp.append(y5)
-        y_sfc_c.append(y6)
-        y_ufc_c.append(y7)
-        y_sfc_i.append(y8)
-        y_ufc_i.append(y9)
+        y_sf_c.append(y6)
+        y_uf_c.append(y7)
+        y_sf_i.append(y8)
+        y_uf_i.append(y9)
     x_sol   = []
     ref_sol = []
     vli_sol = []
@@ -1253,7 +1259,7 @@ def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IM
     # parrillas (mosaico de graficos) variaciones en el suministro de factores
     etq_x = dem
     x  = []
-    for i in range(len(y_sfc_c[0])):
+    for i in range(len(y_sf_c[0])):
         x.append(i + 1)
     ref_y = np.zeros((ndem * nfac),dtype=np.float64)
     v_marca_x = []
@@ -1261,13 +1267,13 @@ def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IM
     for i in range(ndem):
         v_marca_x.append(p)
         p += nfac
-    grafico_evolucion(nfil, ncol, x, y_sfc_c, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_apor_Fac_Ctd')
-    grafico_evolucion(nfil, ncol, x, y_sfc_i, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_apor_Fac_Imp')
+    grafico_evolucion(nfil, ncol, x, y_sf_c, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_apor_Fac_Ctd')
+    grafico_evolucion(nfil, ncol, x, y_sf_i, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_apor_Fac_Imp')
 
     # parrillas (mosaico de graficos) variaciones en el uso de factores
     etq_x = ind
     x  = []
-    for i in range(len(y_ufc_c[0])):
+    for i in range(len(y_uf_c[0])):
         x.append(i + 1)
     v_marca_x = []
     p = 0.5
@@ -1275,8 +1281,8 @@ def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IM
         v_marca_x.append(p)
         p += nfac
     ref_y = np.zeros((nsec * nfac),dtype=np.float64)
-    grafico_evolucion(nfil, ncol, x, y_ufc_c, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_uso_Fac_Ctd')
-    grafico_evolucion(nfil, ncol, x, y_ufc_i, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_uso_Fac_Imp')
+    grafico_evolucion(nfil, ncol, x, y_uf_c, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_uso_Fac_Ctd')
+    grafico_evolucion(nfil, ncol, x, y_uf_i, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_uso_Fac_Imp')
 
     # gráfico de la última solución
     titulo = ['Precios', 'Cantidades', 'Importes']
@@ -1285,7 +1291,26 @@ def parrilla_graficos(datos, parametros, ind, dem, h, SENDA_GRAFICOS, FICHERO_IM
     y_sol = [y1, y4, y5]
     grafico_resumen(SENDA_GRAFICOS, FICHERO_IMG, x_sol, y_sol, ref_sol, vli_sol, eli_sol, titulo)
 
-def grafico_evolucion(n_filas_img, n_cols_img, x, y, y_ref, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, sufijo):
+    # gráfico de la evolución del uso de factores por los hogares
+    x = []
+    y = []
+    titulo = []
+    ref_y = np.zeros((nimg_real * nsec * nfac),dtype=np.float64)
+    for n in range(nimg_real):
+        xn = []
+        yn = []
+        titulo.append(n * GE_SOLUCIONES)
+        k = 0
+        for i in range(nsec):
+            xn.append(y_uf_i[n][k])
+            k += 1
+            yn.append(y_uf_i[n][k])
+            k += 1
+        x.append(xn)
+        y.append(yn)
+    grafico_evolucion_var(nfil, ncol, x, y, SENDA_GRAFICOS, FICHERO_IMG, titulo, 'V_uso_Fac_Sec_Imp')
+
+def grafico_evolucion_var(n_filas_img, n_cols_img, x, y, SENDA_GRAFICOS, FICHERO_IMG, titulo, sufijo):
     if n_filas_img == 1:
         # asegurar un mosaico de gráficos con dos dimensiones
         n_filas_img = 2
@@ -1293,8 +1318,57 @@ def grafico_evolucion(n_filas_img, n_cols_img, x, y, y_ref, v_marca_x, etq_x, SE
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
     plt.rcParams.update({'font.size': 12})
     nimg = len(y)
-    ymax = max(np.max(y), np.max(y_ref)) * 1.05
-    yt = min(np.min(y), np.min(y_ref))
+    xmax = np.max(x) * 1.05
+    xmin = np.min(x) - 0.05 * (np.max(x) - np.min(x))
+    ymax = np.max(y) * 1.05
+    yt = np.min(y)
+    franja = (ymax - yt) / 12.
+    ymin = yt - franja
+    if ymin == ymax:
+        # normalmente será porque todos los valores son cero
+        ymin = -0.5
+        ymax =  0.5
+    m = 0
+    mu = nimg - 1
+    for fil in range(n_filas_img):
+        for col in range(n_cols_img):
+            if m >= nimg:
+                axes[fil, col].set_xticks([])
+            else:
+                axes[fil, col].scatter(x[mu], y[mu] , s=44, c='aquamarine', marker='s')
+                axes[fil, col].scatter(x[m] , y[m]  , s=16, c='0'         , marker='o')
+                vmin = np.min(y[m])
+                vmax = np.max(y[m])
+                if abs(vmin) > 100:
+                    vmin = '{:d}'.format(round(vmin))
+                else:
+                    vmin = '{:.3f}'.format(round(vmin,3))
+                if abs(vmax) > 100:
+                    vmax = '{:d}'.format(round(vmax))
+                else:
+                    vmax = '{:.3f}'.format(round(vmax,3))
+                axes[fil, col].title.set_text('{}   [{}  {}]'.format(titulo[m], vmin, vmax))
+                axes[fil, col].set_xlim(xmin, xmax)
+                axes[fil, col].set_ylim(ymin, ymax)
+                axes[fil, col].set_xticks([])
+                axes[fil, col].title.set_size(16)
+                axes[fil, col].tick_params(axis='both', which='major', labelsize=12)
+                axes[fil, col].yaxis.get_major_formatter().set_scientific(False)
+            m += 1
+    fig.tight_layout()
+    plt.savefig('{}/{}_{}.png'.format(SENDA_GRAFICOS, FICHERO_IMG, sufijo),dpi=300,facecolor='w',edgecolor='w',orientation='portrait',format='png',transparent=False,bbox_inches=None,pad_inches=0.1,metadata=None)
+    plt.close()
+
+def grafico_evolucion(n_filas_img, n_cols_img, x, y, ref_y, v_marca_x, etq_x, SENDA_GRAFICOS, FICHERO_IMG, titulo, sufijo):
+    if n_filas_img == 1:
+        # asegurar un mosaico de gráficos con dos dimensiones
+        n_filas_img = 2
+    fig,axes = plt.subplots(nrows=n_filas_img, ncols=n_cols_img, figsize=(24, 12), sharey=True)
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+    plt.rcParams.update({'font.size': 12})
+    nimg = len(y)
+    ymax = max(np.max(y), np.max(ref_y)) * 1.05
+    yt = min(np.min(y), np.min(ref_y))
     franja = (ymax - yt) / 12.
     ymin = yt - franja
     if ymin == ymax:
@@ -1305,7 +1379,7 @@ def grafico_evolucion(n_filas_img, n_cols_img, x, y, y_ref, v_marca_x, etq_x, SE
     m = 0
     for fil in range(n_filas_img):
         for col in range(n_cols_img):
-            axes[fil, col].scatter(x, y_ref , s=44, c='aquamarine', marker='s')
+            axes[fil, col].scatter(x, ref_y , s=44, c='aquamarine', marker='s')
             axes[fil, col].scatter(x, y[m], s=16, c='0'         , marker='o')
             vmin = np.min(y[m])
             vmax = np.max(y[m])
@@ -1318,7 +1392,8 @@ def grafico_evolucion(n_filas_img, n_cols_img, x, y, y_ref, v_marca_x, etq_x, SE
             else:
                 vmax = '{:.3f}'.format(round(vmax,3))
             axes[fil, col].title.set_text('{}   [{}  {}]'.format(titulo[m], vmin, vmax))
-            axes[fil, col].vlines(x=v_marca_x, ymax=ymax, ymin=ymin, colors='black', linewidth=1)
+            if len(v_marca_x) > 0:
+                axes[fil, col].vlines(x=v_marca_x, ymax=ymax, ymin=ymin, colors='black', linewidth=1)
             if ymin < 0:
                 axes[fil, col].axhline(y=0, xmin=0, xmax=1, c='grey', linewidth=1)
             for i in range(len(etq_x)):
