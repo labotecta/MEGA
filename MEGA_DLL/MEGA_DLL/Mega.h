@@ -4,8 +4,11 @@
 
 using namespace std;
 
-#define MEGA6
+// para disponer de una DLL para cada modelo, hay que cambiar el '#define' siguiente antes de compilar la solución
+// además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'general->Nombre de destino' y una vez compilada la solución copiar
+// desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 
+#define MEGA5
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -15,6 +18,7 @@ const int NSEC = 2;
 const int NDEM = 2;
 const int NSEC = 2;
 #elif defined(MEGA2)
+// es idéntica a MEGA1
 const int NDEM = 2;
 const int NSEC = 2;
 #elif defined(MEGA3)
@@ -31,19 +35,25 @@ const int NDEM = 2;
 const int NSEC = 31;
 #endif
 
+// dar un peso distinto de 1 a PESO_YDP, ya sea mayor o menor, dificulta o imposibilita encontrar una solución
+//#define USAR_PESO_YDP
+#ifdef USAR_PESO_YDP
+double PESO_YDP = 10.;
+#endif
+
 // añade estadísticas de los cruces a las salidas
 //#define ESTA_CRUCES
 
-// se pueden usar desviaciones relativas en lugar de absolutas al calcular la función de error, las desviaciones relativas son inútiles
-//#define DESVIACONES_RELATIVAS
+// calcula el número de individuos que mejoran
+//#define NUM_MEJORAS
 
 // para comprobar que la variable con la desviación máxima se está determinando correctamente, fue útil durante el desarrollo, pero ahora es inútil
 //#define COMPROBAR_MAX_DESVIACION
 
-// la función de merito termina cuando la desviación supera un cierto liston, no ahorra ningún tiempo
+// la función de merito termina cuando la desviación supera un cierto listón, no ahorra ningún tiempo
 //#define FIN_MERITO_ANTICIPADO
 
-// no ahorra tiempo, quizás el compilador ya lo hace.
+// usar instrucciones AX2, no ahorra tiempo, quizás el compilador ya lo hace.
 //#define CONSUMO_INTERMEDIO_AX
 
 // como puede haber alrededor de una tercera parte de valores 'ax' iguales a 0
@@ -51,8 +61,8 @@ const int NSEC = 31;
 // no ahorra tiempo, es inútil.
 //#define CONSUMO_INTERMEDIO_INDESADO
 
+// para utilizar la función 'std::copy' para copiar un 'vector' a otro, en lugar de un 'for', no hay un ahorro de tiempo significativo, si es que lo hay
 #define COPIAR_CON_COPY
-
 
 typedef struct
 {
@@ -73,6 +83,7 @@ public:
 	double AYD_ADICIONAL[NDEM][NSEC];
 	bool RENTA_FICTICIA;
 	int MODO_PSEUDOIMPTOS;
+	int OPT_DESVIOS;
 	bool EQ_BAL_PAGOS;
 } OPCIONES;
 
@@ -135,12 +146,15 @@ public:
 	double tai;
 } PARAMETROS;
 
+// funciones de la DLL que pueden ser llamadas desde otra aplicación
 extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
 
+// estas dos funciones fueron útiles durante el desarrollo  pero se podrían eliminar
 extern "C" MEGA_DLL_API bool abre_salida(const char* senda);
 extern "C" MEGA_DLL_API bool cierra_salida();
 
@@ -155,7 +169,7 @@ double merito_d(double* vec_opt, double liston);
 extern "C" MEGA_DLL_API void indice_desviaciones();
 #endif
 
-extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
+// para reiniciar la población centrada en 'vec_ini' (MODO_REINICIO=0) o en la media de 'vec_ini' y la mejor solución encontrada (MODO_REINICIO=1)
 
 #pragma region Merito
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
@@ -186,28 +200,24 @@ void produccion_para_exportacion_E(double* E, double* teta, double* xie, double*
 void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
 double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double* pWm, double* M, double Sf);
 double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, double pF0L, double F0[NSEC][NFAC], double F[NSEC][NFAC]);
-#ifdef COMPROBAR_MAX_DESVIACION
-void indice_desviaciones();
-#endif 
 #pragma endregion
 
 #pragma region Genetico
-
 void cancelar(int sig);
 int parametros_alge(double* par);
 bool inicia_cotas();
 bool fija_cotas(double* cotasInf, double* cotasSup);
 bool inicia_poblacion(double ajuste);
-static bool genera_poblacion();
+static bool genera_poblacion(double * vec_central, int modo, double modulacion);
 void recolocar_al_mejor(int ind_mejor_merito);
 int avanza();
 void mutacion_cruze(int desde, int hasta, int hilo);
 void mutacion_cruzeH(int desde, int hasta, int hilo);
 void seleccion(int desde);
+void seleccionH(int desde, int hasta);
 void seleccionH(int desde, int hasta, int hilo);
 int comprobar_final();
 double distancia_clonacion();
-
 int PreparaMP();
 bool Arranque();
 int ProcesoMP(int gh);

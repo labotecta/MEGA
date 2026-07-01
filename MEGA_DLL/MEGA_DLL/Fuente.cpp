@@ -83,6 +83,8 @@ NSEC*NFAC Fi
 
 NDEM*NSEC Xpi
 
+primer pase
+
 	 NSEC pz
 	 NSEC pe
 	 NSEC pm
@@ -140,14 +142,20 @@ NDEM*NFAC Alpr;
 NSEC*NSEC Xr;
 		1 Tir
 */
-const int LVAR =
+
+// longitud cabecera
+const int LCAB =
 1 +
 1 +
 1 +
 1 +
 1 +
 1 +
-1 +
+1
+;
+
+const int LSOL =
+// longitud vector solución, incluidos 2 factores y incluida Xpi
 NFAC +
 NSEC +
 NSEC +
@@ -158,8 +166,11 @@ NSEC * NFAC +
 NSEC +
 NSEC +
 NSEC +
-NDEM * NSEC +
-// segundo pase
+// Xpi
+NDEM * NSEC;
+
+// longitud variables primer pase
+const int LVARS_PP =
 NSEC +
 NSEC +
 NSEC +
@@ -190,8 +201,10 @@ NDEM * NSEC +
 NDEM * NFAC +
 NDEM * NFAC +
 NSEC * NSEC +
-1 +
-
+1
+;
+// longitud variables recalculadas
+const int LVARS_SP =
 NSEC * NFAC +
 NSEC +
 NSEC +
@@ -224,6 +237,15 @@ NDEM * NFAC +
 NSEC * NSEC +
 1
 ;
+const int LVAR =
+// cabecera
+LCAB +
+// vector solución
+LSOL +
+// variables primer pase
+LVARS_PP +
+// variables recalculadas
+LVARS_SP;
 
 double me_sol[LVAR]{};
 
@@ -232,24 +254,10 @@ double me_sol[LVAR]{};
 de las variables se puede obtener a partir del vector solución mediante las ecuaciones del modelo
 */
 const int LVSOL =
-1 +
-1 +
-1 +
-1 +
-1 +
-1 +
-1 +
-NFAC +
-NSEC +
-NSEC +
-NSEC +
-1 +
-1 +
-NSEC * NFAC +
-NSEC +
-NSEC +
-NSEC +
-NDEM * NSEC +
+// cabecera
+LCAB +
+// vector solución
+LSOL +
 // desviaciones por bloque (un máximo de 64 para futuras ampliaciones)
 64 +
 // evolución del mérito y de la desviación máxima
@@ -263,7 +271,7 @@ double desvios_bloque[MAX_DESVIOS_BLOQUE];
 
 // MAX_ROT_DESVIOS_BLOQUE debería ser igual a MAX_DESVIOS_BLOQUE, pero este último lo tenemos sobredimensionado para facilitar su ampliación si fuera necesario
 // MAX_ROT_DESVIOS_BLOQUE está ajustado porque hay que definir los rótulos de los bloques de forma exacta
-const int MAX_ROT_DESVIOS_BLOQUE = 33;
+const int MAX_ROT_DESVIOS_BLOQUE = 37;
 const char* rot_desvios[MAX_ROT_DESVIOS_BLOQUE] = {
 "ebp",
 "Qeq",
@@ -297,6 +305,10 @@ const char* rot_desvios[MAX_ROT_DESVIOS_BLOQUE] = {
 "F",
 "X",
 "Ti",
+"Yp",
+"Yd",
+"Da",
+"Dt",
 "fin"
 };
 int puntero_bloque_desviacion = 0;
@@ -334,7 +346,9 @@ long long num_cruces_no[MAX_HILOS]{};
 long long num_cruces_fj[MAX_HILOS]{};
 #endif
 long long num_var_hijo[MAX_HILOS]{};
+#ifdef NUM_MEJORAS
 long long num_mejoras[MAX_HILOS]{};
+#endif
 
 double** cotas = NULL;
 int* fijo = NULL;
@@ -362,11 +376,19 @@ int max_intentos;
 int intentos;
 int max_generaciones;
 int modo_poblacion_inicial;
-double factor_inicio;
-double sigma_inicio;
+int modo_reinicio_poblacion;
+double factor_dispersion;
+double factor_sigma;
+double variacion_dispersion;
 int num_tramos_lhs;
+// parámetro F que pondera la diferencia entre dos individuos al azar, que se suma al mejor individuo para
+// obtener un mutante.
+// va camviando a cada generación por un valor comprendido entre los dos valores de 'par_mutacion'
+double par_mutacion[2]{};
 double factor_mutacion;
-double recombinacion[2]{};
+// parámetro CR (probabilidad de cruce), cuanto más cerca de 1. más probable es que se produzca la recombinación, es
+// decir, que el 'descendiente' tome el valor del mutante y no el del mejor individuo. Si es 1., el 
+// 'descendiente' siempre toma el valor del mutante
 double cte_recombinacion;
 double tolerancia;
 double tol_aceptable;
@@ -375,7 +397,7 @@ double min_progreso;
 int histo_int;
 int histo_sol;
 bool control_factibilidad;
-int semilla;
+unsigned int semilla;
 bool poner_el_mejor_primero;
 bool incluir_x0;
 int NVEC;
@@ -386,6 +408,9 @@ int NSEC4;
 int id_salida;
 char senda_salidas[128];
 int desviaciones_relativas;
+
+const int N_MODOS_INICIO = 15;
+double factor_dispersion_actualizado = 1.0;
 
 FILE* salida{};
 FILE* sal_sol{};
@@ -475,7 +500,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	char fichero[128];
-	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla);
+	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla);
 	if (salida != 0) {
 		fclose(salida);
 	}
@@ -498,7 +523,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	auto inicio = chrono::system_clock::to_time_t(t_inicio);
 	char tmBuff[30];
 	ctime_s(tmBuff, sizeof(tmBuff), &inicio);
-	fprintf(salida, "inicio: %s\n\n", tmBuff);
+	fprintf(salida, "inicio: %s\n", tmBuff);
 	fflush(salida);
 #ifdef CONSUMO_INTERMEDIO_INDESADO
 	/*
@@ -607,22 +632,47 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
-	fprintf(salida, "Intentos (reinicios)   : %12d\n", max_intentos);
+	fprintf(salida, "Número factores        : %12d\n", NFAC);
+	fprintf(salida, "Número hogares         : %12d\n", NDEM);
+	fprintf(salida, "Número sectores        : %12d\n\n", NSEC);
 	fprintf(salida, "Número procesos        : %12d\n", n_hilos);
+	fprintf(salida, "Intentos (reinicios)   : %12d\n", max_intentos);
 	fprintf(salida, "Población              : %12d\n", NPOB);
 	fprintf(salida, "Modo población inicial : %12d\n", modo_poblacion_inicial);
-	fprintf(salida, "Factor dispersión      : %12.5e\n", factor_inicio);
-	fprintf(salida, "Variables sol + 2 pases: %12d\n", LVAR);
-	fprintf(salida, "Variables solución     : %12d\n", NVEC);
+	fprintf(salida, "Factor dispersión unif.: %12.5e\n", factor_dispersion);
+	fprintf(salida, "Sigma dispersión normal: %12.5e\n", factor_sigma);
+	fprintf(salida, "Modo reinicio población: %12d\n", modo_reinicio_poblacion);
+	if (modo_reinicio_poblacion == 0) {
+		fprintf(salida, "Factor dispersión reini: %12.5e\n", 1.0);
+	}
+	else {
+		fprintf(salida, "Factor dispersión reini: %12.5e\n", variacion_dispersion);
+	}
+	fprintf(salida, "Factor mutación (F)    : %12.5e %12.5e\n", par_mutacion[0], par_mutacion[1]);
+	fprintf(salida, "Recombinación (CR)     : %12.5e\n", cte_recombinacion);
+	fprintf(salida, "Opción cálculo desvios : %12d\n", op.OPT_DESVIOS);
+	fprintf(salida, "Semilla num.aleatorios : %12d\n\n", (unsigned int)semilla);
+	fprintf(salida, "-------------------------------------\n");
+	fprintf(salida, "Variables cabecera     : %12d\n", LCAB);
+	int lsol = LSOL - 1;
+	// no restamos 1 a LVAR porque en la solución no se incluye el precio de uno de los factores, por
+	// eso se lo sumamos a LVARS_PP para obtener el total de variables del modelo
+	int lvar = LVAR;
+	if (op.GE_INCLUYE_XP == false) {
+		lsol -= NDEM * NSEC;
+		lvar -= NDEM * NSEC;
+	}
+	fprintf(salida, "Variables solución     : %12d\n", lsol);
+	fprintf(salida, "Resto variables modelo : %12d\n", LVARS_PP + 1);
+	fprintf(salida, "Variables recalculadas : %12d\n", LVARS_SP);
+	fprintf(salida, "-------------------------------------\n");
+	fprintf(salida, "Total                  : %12d\n\n", lvar);
 	fprintf(salida, "Variables fijas en sol : %12d\n", nvar_fijas);
 #ifdef DESVIACONES_RELATIVAS
 	fprintf(salida, "Desviaciones relativas : %12d\n", desviaciones_relativas);
 #endif
-	fprintf(salida, "Factor mutación        : %12.5e\n", factor_mutacion);
-	fprintf(salida, "Recombinación          : %12.5e %12.5e\n", recombinacion[0], recombinacion[1]);
-	fprintf(salida, "Semilla num.aleatorios : %12d\n\n", semilla);
 	if (nvar_fijas > 0) {
-		fprintf(salida, "Variables con valores fijos\n\n");
+		fprintf(salida, "Variables con valores fijos\n");
 		int p;
 		int d;
 		for (int i = 0; i < NVEC; i++) {
@@ -639,8 +689,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 				fprintf(salida, "%6d %-8s %5d %12.6e\n", i, rot_blo_vec[p], d, cotasInf[i]);
 			}
 		}
-		fprintf(salida, "\n");
 	}
+	fprintf(salida, "\n");
+	fprintf(salida, "n.gen.pro2 máximo,tramo:%13lld\n\n", (unsigned long long)((unsigned long long)(lsol - nvar_fijas)) * (unsigned long long)NPOB * (unsigned long long)histo_int);
 	fflush(salida);
 #ifdef COMPROBAR_MAX_DESVIACION
 	// 'indice_desviaciones' es totalmente prescindible, solo se usa para comprobar la variable con la máxima desviación
@@ -652,13 +703,13 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fflush(salida);
 #endif
 #ifdef ESTA_CRUCES
-	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras\n");
+	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras\n");
 	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ---------- ---------- ----------\n");
 #else
-	fprintf(salida, "generacio d. clonacion      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras\n");
+	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras\n");
 	fprintf(salida, "--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------\n");
 #endif
-	if (inicia_poblacion(factor_inicio) == false) {
+	if (inicia_poblacion(factor_dispersion) == false) {
 		// Error al reservar memoria para la poblacion
 		fin_soluciona(t_inicio);
 		if (extendida == 1) {
@@ -677,9 +728,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	for (int i = 0; i < NVEC; i++) {
 		vec_ini[i] = vec[i];
 	}
-	gen.seed(semilla);
+	gen.seed((unsigned int)semilla);
 	dis_entero = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
-	if (genera_poblacion() == false) {
+	if (genera_poblacion(vec_ini, modo_poblacion_inicial, 1.0) == false) {
 		// Error al generar la poblacion
 		fin_soluciona(t_inicio);
 		if (extendida == 1) {
@@ -796,18 +847,28 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	mejor_merito_anterior = 1.0e+99;
 	generacion = 0;
 	intentos = 0;
-	hgen[0][0] = mt19937(semilla);
-	hgen[1][0] = mt19937(semilla);
-	hgen[2][0] = mt19937(semilla);
-	if (poner_el_mejor_primero) {
-		hdis_entero[0] = uniform_int_distribution<int>{ 1, ((int)NPOB - 1) };
-	}
-	else {
-		hdis_entero[0] = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
-	}
-	hdis_entero_ivec[0] = uniform_int_distribution<int>{ 0, ((int)NVEC - 1) };
-	hdis_double[0] = uniform_real_distribution<double>{ 0.0, 1.0 };
 	if (n_hilos > 0) {
+		for (int i = 0; i < n_hilos; i++) {
+			hgen[0][i] = mt19937((unsigned int)(semilla + i));
+			hgen[1][i] = mt19937(((unsigned int)semilla + i));
+			hgen[2][i] = mt19937(((unsigned int)semilla + i));
+			if (poner_el_mejor_primero) {
+				hdis_entero[i] = uniform_int_distribution<int>{ 1, ((int)NPOB - 1) };
+			}
+			else {
+				hdis_entero[i] = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
+			}
+			hdis_entero_ivec[i] = uniform_int_distribution<int>{ 0, ((int)NVEC - 1) };
+			hdis_double[i] = uniform_real_distribution<double>{ 0.0, 1.0 };
+#ifdef ESTA_CRUCES
+			num_cruces_si[i] = 0;
+			num_cruces_ok[i] = 0;
+			num_cruces_no[i] = 0;
+			num_cruces_fj[i] = 0;
+#else
+			num_var_hijo[i] = 0;
+#endif
+		}
 		if (PreparaMP() == -1) {
 			fin_soluciona(t_inicio);
 			if (extendida == 1) {
@@ -825,6 +886,17 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	else {
+		hgen[0][0] = mt19937((unsigned int)semilla);
+		hgen[1][0] = mt19937((unsigned int)semilla);
+		hgen[2][0] = mt19937((unsigned int)semilla);
+		if (poner_el_mejor_primero) {
+			hdis_entero[0] = uniform_int_distribution<int>{ 1, ((int)NPOB - 1) };
+		}
+		else {
+			hdis_entero[0] = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
+		}
+		hdis_entero_ivec[0] = uniform_int_distribution<int>{ 0, ((int)NVEC - 1) };
+		hdis_double[0] = uniform_real_distribution<double>{ 0.0, 1.0 };
 		res_Simulacion = avanza();
 	}
 #ifdef ESTA_CRUCES
@@ -949,6 +1021,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 }
+
 void fin_soluciona(auto t_inicio) {
 #ifdef DESVIACONES_RELATIVAS
 	merito_sol_relativa(poblacion[ind_mejor_merito]);
@@ -988,7 +1061,7 @@ void fin_soluciona(auto t_inicio) {
 	if (histo_sol != 0) {
 		// se guarda el vector solución final, incluido cuando histo_sol = -1, solo se omite si histo_sol = 0
 		char fichero[128];
-		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_fin_sol.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla);
+		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_sol_fin.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla);
 		sal_sol = _fsopen(fichero, "wt", _SH_DENYWR);
 		if (sal_sol != 0) {
 			for (int j = 0; j < NVEC; j++) {
@@ -1013,15 +1086,17 @@ int parametros_alge(double* par) {
 	histo_int = (int)par[ipar++];
 	histo_sol = (int)par[ipar++];
 	modo_poblacion_inicial = (int)par[ipar++];
-	factor_inicio = par[ipar++];
-	sigma_inicio = par[ipar++];
+	modo_reinicio_poblacion = (int)par[ipar++];
+	factor_dispersion = par[ipar++];
+	factor_sigma = par[ipar++];
+	variacion_dispersion = par[ipar++];
 	num_tramos_lhs = (int)par[ipar++];
 	NPOB = (int)par[ipar++];
-	factor_mutacion = par[ipar++];
-	recombinacion[0] = par[ipar++];
-	recombinacion[1] = par[ipar++];
+	par_mutacion[0] = par[ipar++];
+	par_mutacion[1] = par[ipar++];
+	cte_recombinacion = par[ipar++];
 	control_factibilidad = (int)par[ipar++] == 1;
-	semilla = (int)par[ipar++];
+	semilla = (unsigned int)par[ipar++];
 	poner_el_mejor_primero = (int)par[ipar++] == 1;
 	incluir_x0 = (int)par[ipar++] == 1;
 	NVEC = (int)par[ipar++];
@@ -1034,6 +1109,19 @@ int parametros_alge(double* par) {
 	RESTO_NSEC4 = NSEC % 4;
 	NSEC4 = NSEC - RESTO_NSEC4;
 #endif
+	if (modo_reinicio_poblacion == 0) {
+		variacion_dispersion = 1.0;
+	}
+	if (modo_poblacion_inicial < 0 || modo_poblacion_inicial > N_MODOS_INICIO) {
+		return -1;
+	}
+	int lsol = LSOL - 1;
+	if (op.GE_INCLUYE_XP == false) {
+		lsol -= NDEM * NSEC;
+	}
+	if (NVEC != lsol) {
+		return -1;
+	}
 	return 0;
 }
 /*
@@ -1098,24 +1186,41 @@ genera la población inicial de individuos, dependiendo del valor de 'modo_pobla
 han incluido para valorar si pueden mejorar el rendimiento del algoritmo, aunque NO se ha observado que esto ocurra, y en
 algunos casos incluso empeora el rendimiento
 */
-bool genera_poblacion() {
+bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 	double semi_izq;
 	double semi_dch;
 	double semi_intervalo;
 	double desplazamiento;
 	double v;
 	double f;
-	if (modo_poblacion_inicial == 0) {
-		// intérvalo simétrico centrado en 'vec_ini' con distribución uniforme
+	/*
+	---------------------------------------------------------------------------------------------------------------------------------
+	Estrategía inutil
+
+	En caso de reinicio, tratamos de partir de un vector que no coincida con el mínimo local en el que se ha caido
+
+	en cualquier caso, 'vec_ini' no cambiará de valor cuando se pasa como parámetro a esta función, en caso de reinicios con
+	el mejor individuo de la población, será este el que cambie, lo cual es intrancendente para la generación de la población inicial
+	*/
+	/*
+	for (int j = 0; j < NVEC; j++) {
+		vec_central[j] = (vec_central[j] + vec_ini[j]) / 2.;
+	}
+	---------------------------------------------------------------------------------------------------------------------------------
+	A cada reinicio se va ampliando el coeficiete 'modulación', no afecta los modos 4 a 7
+
+	*/
+	if (modo == 0) {
+		// intérvalo simétrico centrado en 'vec_central' con distribución uniforme
 
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					poblacion[i][j] = vec_ini[j];
+					poblacion[i][j] = cotas[0][j];
 				}
 				else {
-					semi_izq = vec_ini[j] - cotas[0][j];
-					semi_dch = cotas[1][j] - vec_ini[j];
+					semi_izq = vec_central[j] - cotas[0][j];
+					semi_dch = cotas[1][j] - vec_central[j];
 					if (semi_izq < semi_dch) {
 						semi_intervalo = semi_izq;
 					}
@@ -1123,12 +1228,12 @@ bool genera_poblacion() {
 						semi_intervalo = semi_dch;
 					}
 					f = (semi_izq + semi_dch) / (2. * semi_intervalo);
-					desplazamiento = f * factor_inicio * dis_double(gen) * semi_intervalo;
+					desplazamiento = f * modulacion * factor_dispersion * dis_double(gen) * semi_intervalo;
 					if (dis_double(gen) < 0.5) {
-						v = vec_ini[j] - desplazamiento;
+						v = vec_central[j] - desplazamiento;
 					}
 					else {
-						v = vec_ini[j] + desplazamiento;
+						v = vec_central[j] + desplazamiento;
 					}
 					if (v < cotas[0][j]) {
 						v = cotas[0][j] + 0.000001;
@@ -1141,17 +1246,17 @@ bool genera_poblacion() {
 			}
 		}
 	}
-	else if (modo_poblacion_inicial == 1) {
-		// centrado en el centro de intervalo de validez de la variable con distribución uniforme
+	else if (modo == 1) {
+		// centrado en el centro del intervalo de validez de la variable con distribución uniforme
 
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					poblacion[i][j] = vec_ini[j];
+					poblacion[i][j] = cotas[0][j];
 				}
 				else {
 					semi_intervalo = (cotas[1][j] - cotas[0][j]) / 2.;
-					desplazamiento = factor_inicio * dis_double(gen) * semi_intervalo;
+					desplazamiento = modulacion * factor_dispersion * dis_double(gen) * semi_intervalo;
 					if (dis_double(gen) < 0.5) {
 						v = cotas[0][j] + semi_intervalo - desplazamiento;
 					}
@@ -1169,19 +1274,19 @@ bool genera_poblacion() {
 			}
 		}
 	}
-	else if (modo_poblacion_inicial == 2) {
-		// intérvalo simétrico centrado en 'vec_ini' con distribución normal
+	else if (modo == 2) {
+		// intérvalo simétrico centrado en 'vec_central' con distribución normal
 
-		mt19937 gent(semilla);
-		normal_distribution<double> dis_normal{ 0.0, sigma_inicio };
+		mt19937 gent((unsigned int)semilla);
+		normal_distribution<double> dis_normal{ 0.0, modulacion * factor_sigma };
 		for (int i = 2; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					poblacion[i][j] = vec_ini[j];
+					poblacion[i][j] = cotas[0][j];
 				}
 				else {
-					semi_izq = vec_ini[j] - cotas[0][j];
-					semi_dch = cotas[1][j] - vec_ini[j];
+					semi_izq = vec_central[j] - cotas[0][j];
+					semi_dch = cotas[1][j] - vec_central[j];
 					if (semi_izq < semi_dch) {
 						semi_intervalo = semi_izq;
 					}
@@ -1190,10 +1295,10 @@ bool genera_poblacion() {
 					}
 					desplazamiento = dis_normal(gent) * semi_intervalo;
 					if (dis_double(gen) < 0.5) {
-						v = vec_ini[j] - desplazamiento;
+						v = vec_central[j] - desplazamiento;
 					}
 					else {
-						v = vec_ini[j] + desplazamiento;
+						v = vec_central[j] + desplazamiento;
 					}
 					if (v < cotas[0][j]) {
 						v = cotas[0][j] + 0.000001;
@@ -1206,15 +1311,15 @@ bool genera_poblacion() {
 			}
 		}
 	}
-	else if (modo_poblacion_inicial == 3) {
-		// intérvalo simétrico centrado en 'vec_ini' con distribución normal
+	else if (modo == 3) {
+		// centrado en el centro del intervalo de validez de la variable con distribución normal
 
-		mt19937 gent(semilla);
-		normal_distribution<double> dis_normal{ 0.0, sigma_inicio };
+		mt19937 gent((unsigned int)semilla);
+		normal_distribution<double> dis_normal{ 0.0, modulacion * factor_sigma };
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					poblacion[i][j] = vec_ini[j];
+					poblacion[i][j] = cotas[0][j];
 				}
 				else {
 					semi_intervalo = (cotas[1][j] - cotas[0][j]) / 2.;
@@ -1236,7 +1341,7 @@ bool genera_poblacion() {
 			}
 		}
 	}
-	else if (modo_poblacion_inicial == 4) {
+	else if (modo == 4) {
 		/*
 		Latin Hypercube Sampling con permutaciones distintas para cada variable
 		distrubuye uniformemente los valores de las variables en sus rangos de variación
@@ -1254,7 +1359,7 @@ bool genera_poblacion() {
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 1) {
 				for (int i = 0; i < NPOB; i++) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 			}
 			else {
@@ -1273,7 +1378,7 @@ bool genera_poblacion() {
 
 						// 'factor_inicio' debe ser 1.0 para que la distribución sea realmente uniforme
 
-						desplazamiento = factor_inicio * dis_double(gen) * semi_intervalo;
+						desplazamiento = factor_dispersion * dis_double(gen) * semi_intervalo;
 						if (dis_double(gen) < 0.5) {
 							v = cota_desde + semi_intervalo - desplazamiento;
 						}
@@ -1312,7 +1417,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1325,7 +1430,7 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 5) {
+	else if (modo == 5) {
 		/*
 		Latin Hypercube Sampling con la misma permutación para todas las variables
 		distrubuye uniformemente los valores de las variables en sus rangos de variación
@@ -1349,7 +1454,7 @@ bool genera_poblacion() {
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 1) {
 				for (int i = 0; i < NPOB; i++) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 			}
 			else {
@@ -1366,7 +1471,7 @@ bool genera_poblacion() {
 
 						// 'factor_inicio' debe ser 1.0 para que la distribución sea realmente uniforme
 
-						desplazamiento = factor_inicio * dis_double(gen) * semi_intervalo;
+						desplazamiento = factor_dispersion * dis_double(gen) * semi_intervalo;
 						if (dis_double(gen) < 0.5) {
 							v = cota_desde + semi_intervalo - desplazamiento;
 						}
@@ -1417,7 +1522,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 		// creamos una permutación de 'p'
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 		std::shuffle(p, p + NPOB, rng);
 
 		// aplicamos la misma permutación a todas las variables
@@ -1430,7 +1535,7 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 6) {
+	else if (modo == 6) {
 		// secuencia de valores uniformemente espacionados entre cotas y permutaciones distintas para cada variable
 
 		double v;
@@ -1439,7 +1544,7 @@ bool genera_poblacion() {
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 1) {
 				for (int i = 0; i < NPOB; i++) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 			}
 			else {
@@ -1465,7 +1570,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 		// creamos una permutación de 'p'
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1478,14 +1583,14 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 7) {
+	else if (modo == 7) {
 		double v;
 		double incremento;
 		// recorremos las variables (NVEC), para determinar la secuencia de valores de cada una de ellas
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 1) {
 				for (int i = 0; i < NPOB; i++) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 			}
 			else {
@@ -1511,7 +1616,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 		// creamos una permutación de 'p'
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 		std::shuffle(p, p + NPOB, rng);
 
 		// aplicamos la misma permutación a todas las variables
@@ -1524,18 +1629,18 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 8) {
+	else if (modo == 8) {
 		// valores próximos al extremo inferior del entorno de existencia de las variables
 		// con permutaciones distintas de los valores obtenidos para cada una
 		double intervalo;
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
 					intervalo = cotas[1][j] - cotas[0][j];
-					desplazamiento = factor_inicio * intervalo * dis_double(gen);
+					desplazamiento = modulacion * factor_dispersion * intervalo * dis_double(gen);
 					v = cotas[0][j] + desplazamiento;
 					descendiente[i][j] = v;
 				}
@@ -1554,7 +1659,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1567,18 +1672,18 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 9) {
+	else if (modo == 9) {
 		// valores próximos al extremo inferior del entorno de existencia de las variables
 		// la misma permutación a todas las variables
 		double intervalo;
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
 					intervalo = cotas[1][j] - cotas[0][j];
-					desplazamiento = factor_inicio * intervalo * dis_double(gen);
+					desplazamiento = modulacion * factor_dispersion * intervalo * dis_double(gen);
 					v = cotas[0][j] + desplazamiento;
 					descendiente[i][j] = v;
 				}
@@ -1597,7 +1702,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 		// creamos una permutación de 'p'
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 		std::shuffle(p, p + NPOB, rng);
 
 		// aplicamos la misma permutación a todas las variables
@@ -1610,18 +1715,18 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 10) {
+	else if (modo == 10) {
 		// valores próximos al extremo superior del entorno de existencia de las variables
 		// con permutaciones distintas de los valores obtenidos para cada una
 		double intervalo;
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
 					intervalo = cotas[1][j] - cotas[0][j];
-					desplazamiento = factor_inicio * intervalo * dis_double(gen);
+					desplazamiento = factor_dispersion * intervalo * dis_double(gen);
 					v = cotas[1][j] - desplazamiento;
 					descendiente[i][j] = v;
 				}
@@ -1640,7 +1745,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1653,7 +1758,7 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 11) {
+	else if (modo == 11) {
 		// valores próximos a los extremos de los entornos de existencia de las variables
 		// con permutaciones distintas de los valores obtenidos para cada una
 
@@ -1661,11 +1766,11 @@ bool genera_poblacion() {
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
 					intervalo = cotas[1][j] - cotas[0][j];
-					desplazamiento = factor_inicio * dis_double(gen) * intervalo;
+					desplazamiento = modulacion * factor_dispersion * dis_double(gen) * intervalo;
 					if (dis_double(gen) > 0.5) {
 						v = cotas[0][j] + desplazamiento;
 					}
@@ -1689,7 +1794,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1702,7 +1807,7 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 12) {
+	else if (modo == 12) {
 		/*
 		valores próximos o iguales al extremo inferior del entorno de existencia de las variables
 		con permutaciones distintas de los valores obtenidos para cada una
@@ -1714,17 +1819,17 @@ bool genera_poblacion() {
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
-					if (dis_double(gen) < sigma_inicio) {
+					if (dis_double(gen) < factor_sigma) {
 						v = cotas[0][j];
 						ci++;
 						if (v <= 0.000001) cic++;
 					}
 					else {
 						intervalo = cotas[1][j] - cotas[0][j];
-						desplazamiento = factor_inicio * intervalo * dis_double(gen);
+						desplazamiento = modulacion * factor_dispersion * intervalo * dis_double(gen);
 						v = cotas[0][j] + desplazamiento;
 						if (v <= 0.000001) ceros++;
 					}
@@ -1748,7 +1853,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1761,7 +1866,7 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 13) {
+	else if (modo == 13) {
 		/*
 		valores próximos o iguales al extremo inferior del entorno de existencia de las variables
 		*/
@@ -1772,17 +1877,17 @@ bool genera_poblacion() {
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					poblacion[i][j] = vec_ini[j];
+					poblacion[i][j] = cotas[0][j];
 				}
 				else {
-					if (dis_double(gen) < sigma_inicio) {
+					if (dis_double(gen) < factor_sigma) {
 						v = cotas[0][j];
 						ci++;
 						if (v <= 0.000001) cic++;
 					}
 					else {
 						intervalo = cotas[1][j] - cotas[0][j];
-						desplazamiento = factor_inicio * intervalo * dis_double(gen);
+						desplazamiento = factor_dispersion * intervalo * dis_double(gen);
 						v = cotas[0][j] + desplazamiento;
 						if (v <= 0.000001) ceros++;
 					}
@@ -1794,7 +1899,7 @@ bool genera_poblacion() {
 		fprintf(salida, "elementos cota inferior cero: %9ld [media vector: %5ld %6.1f%%]\n", cic, (long)((double)cic / NPOB), 100. * (double)cic / NPOB / NVEC);
 		fprintf(salida, "elementos a cero            : %9ld [media vector: %5ld %6.1f%%]\n\n", ceros + cic, (long)((double)(ceros + cic) / NPOB), 100. * (double)(ceros + cic) / NPOB / NVEC);
 	}
-	else if (modo_poblacion_inicial == 14) {
+	else if (modo == 14) {
 		/*
 		valores próximos o iguales al extremo superior del entorno de existencia de las variables
 		con permutaciones distintas de los valores obtenidos para cada una
@@ -1804,16 +1909,16 @@ bool genera_poblacion() {
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
-					if (dis_double(gen) < sigma_inicio) {
+					if (dis_double(gen) < factor_sigma) {
 						v = cotas[1][j];
 						cs++;
 					}
 					else {
 						intervalo = cotas[1][j] - cotas[0][j];
-						desplazamiento = factor_inicio * intervalo * dis_double(gen);
+						desplazamiento = modulacion * factor_dispersion * intervalo * dis_double(gen);
 						v = cotas[1][j] - desplazamiento;
 					}
 					descendiente[i][j] = v;
@@ -1834,7 +1939,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1847,7 +1952,7 @@ bool genera_poblacion() {
 		}
 		free(p);
 	}
-	else if (modo_poblacion_inicial == 15) {
+	else if (modo == 15) {
 		/*
 		valores próximos o iguales al extremo inferior del entorno de existencia de las variables
 		con permutaciones distintas de los valores obtenidos para cada una
@@ -1859,16 +1964,16 @@ bool genera_poblacion() {
 		for (int i = 0; i < NPOB; i++) {
 			for (int j = 0; j < NVEC; j++) {
 				if (fijo[j] == 1) {
-					descendiente[i][j] = vec_ini[j];
+					descendiente[i][j] = cotas[0][j];
 				}
 				else {
-					if (dis_double(gen) < sigma_inicio) {
+					if (dis_double(gen) < factor_sigma) {
 						v = cotas[0][j];
 						ci++;
 						if (v <= 0.000001) cic++;
 					}
 					else {
-						desplazamiento = factor_inicio * dis_double(gen);
+						desplazamiento = factor_dispersion * dis_double(gen);
 						v = cotas[0][j] + desplazamiento;
 						if (v <= 0.000001) ceros++;
 					}
@@ -1892,7 +1997,7 @@ bool genera_poblacion() {
 			p[i] = i;
 		}
 
-		std::mt19937 rng(semilla);
+		std::mt19937 rng((unsigned int)semilla);
 
 		int k;
 		// rellenamos la población variable a variable con permutaciones distintas de los valores obtenidos para cada una
@@ -1912,7 +2017,7 @@ bool genera_poblacion() {
 	if (incluir_x0) {
 		// incluir en la población el vector de prueba inicial 'vec' como primer individuo
 		for (int j = 0; j < NVEC; j++) {
-			poblacion[0][j] = vec_ini[j];
+			poblacion[0][j] = vec_central[j];
 		}
 	}
 
@@ -1960,7 +2065,7 @@ inicia la ejecuciín en mono proceso (sin hilos), tiene poca utilidad o ninguna
 */
 int avanza() {
 	int desde = poner_el_mejor_primero ? 1 : 0;
-	cte_recombinacion = (recombinacion[0] + recombinacion[1]) / 2.;
+	factor_mutacion = (par_mutacion[0] + par_mutacion[1]) / 2.;
 	while (generacion < max_generaciones) {
 		mutacion_cruze(desde, NPOB, 0);
 		/*
@@ -1972,7 +2077,7 @@ int avanza() {
 		if (res_Simulacion < 0) {
 			return res_Simulacion;
 		}
-		cte_recombinacion = recombinacion[0] + dis_double(gen) * (recombinacion[1] - recombinacion[0]);
+		factor_mutacion = par_mutacion[0] + dis_double(gen) * (par_mutacion[1] - par_mutacion[0]);
 		generacion++;
 	}
 	if (generacion == max_generaciones) {
@@ -1999,7 +2104,7 @@ void mutacion_cruze(int desde, int hasta, int hilo) {
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 0 && (hdis_double[hilo](hgen[2][hilo]) <= cte_recombinacion || j == i3)) {
 				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
-				//  recombinación, o si setrata de la variable (i3) que se debe cruzar obligatoriamente
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
 
 				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
 				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
@@ -2114,6 +2219,33 @@ void seleccion(int desde) {
 /*
 versión multiproceso, cada hilo se encarga de seleccionar una parte de la población, determinada por los parámetros 'desde' y 'hasta'
 */
+void seleccionH(int desde, int hasta) {
+	double me_descendiente;
+	for (int i = desde; i < hasta; i++) {
+		if (!control_factibilidad || factible[i]) {
+#ifdef DESVIACONES_RELATIVAS
+			me_descendiente = merito_s_relativa(descendiente[i]);
+#else
+#ifdef FIN_MERITO_ANTICIPADO
+			me_descendiente = merito_d(descendiente[i], merito_individuo[i]);
+#else
+			me_descendiente = merito_s(descendiente[i]);
+#endif
+#endif
+			if (me_descendiente < merito_individuo[i]) {
+#ifdef COPIAR_CON_COPY
+				std::copy(descendiente[i], descendiente[i] + NVEC, poblacion[i]);
+#else
+				for (int j = 0; j < NVEC; j++) {
+					poblacion[i][j] = descendiente[i][j];
+				}
+#endif
+				merito_individuo[i] = me_descendiente;
+			}
+		}
+	}
+}
+
 void seleccionH(int desde, int hasta, int hilo) {
 	double me_descendiente;
 	for (int i = desde; i < hasta; i++) {
@@ -2136,7 +2268,9 @@ void seleccionH(int desde, int hasta, int hilo) {
 				}
 #endif
 				merito_individuo[i] = me_descendiente;
+#ifdef NUM_MEJORAS
 				num_mejoras[hilo]++;
+#endif
 			}
 		}
 	}
@@ -2149,7 +2283,7 @@ int comprobar_final() {
 	if (histo_sol > 0 && (generacion % histo_sol) == 0) {
 		char fichero[128];
 		int n_sol = (int)(generacion / histo_sol);
-		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_%03d_sol.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, semilla, n_sol);
+		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_sol_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, n_sol);
 		sal_sol = _fsopen(fichero, "w", _SH_DENYWR);
 		if (sal_sol != 0) {
 			for (int j = 0; j < NVEC; j++) {
@@ -2199,10 +2333,12 @@ int comprobar_final() {
 			// tiempo total desde el inicio del proceso en minutos
 			dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
 			long long n_mej = 0;
+#ifdef NUM_MEJORAS
 			for (int i = 0; i < n_hilos; i++) {
 				n_mej += num_mejoras[i];
 				num_mejoras[i] = 0;
 			}
+#endif
 #ifdef ESTA_CRUCES
 			long long n_c_s = 0;
 			long long n_c_o = 0;
@@ -2251,6 +2387,21 @@ int comprobar_final() {
 			}
 			intentos++;
 			if (intentos < max_intentos) {
+				if (histo_sol != 0) {
+					// salvar la mejor solución obtenida hasta ahora
+					char fichero[128];
+					sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_gen_%08d_iter_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, generacion, intentos - 1);
+					sal_sol = _fsopen(fichero, "w", _SH_DENYWR);
+					if (sal_sol != 0) {
+						for (int j = 0; j < NVEC; j++) {
+							fprintf(sal_sol, "%15.7e\n", poblacion[ind_mejor_merito][j]);
+						}
+						fclose(sal_sol);
+					}
+					else {
+						fprintf(salida, "*--* No se pudo abrir el fichero para salvar la solución antes de reiniciar la población %d-%d\n", generacion, intentos - 1);
+					}
+				}
 				histogenera[histo_n] = generacion;
 				histograma[histo_n] = mejor_merito;
 				histo_n++;
@@ -2258,8 +2409,15 @@ int comprobar_final() {
 					// registro circular
 					histo_n = 0;
 				}
-				fprintf(salida, "\n");
-				genera_poblacion();
+				if (modo_reinicio_poblacion == 0) {
+					genera_poblacion(vec_ini, modo_poblacion_inicial, 1.0);
+					fprintf(salida, "\n");
+				}
+				else {
+					factor_dispersion_actualizado *= variacion_dispersion;
+					genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
+					fprintf(salida, "           Factor dispersión   : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+				}
 				double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
 				merito_sol_relativa(poblacion[ind_mejor_merito]);
@@ -2312,6 +2470,21 @@ int comprobar_final() {
 				if (dist > 1.e+32) {
 					intentos++;
 					if (intentos < max_intentos) {
+						if (histo_sol != 0) {
+							// salvar la mejor solución obtenida hasta ahora
+							char fichero[128];
+							sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_gen_%08d_iter_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, generacion, intentos - 1);
+							sal_sol = _fsopen(fichero, "w", _SH_DENYWR);
+							if (sal_sol != 0) {
+								for (int j = 0; j < NVEC; j++) {
+									fprintf(sal_sol, "%15.7e\n", poblacion[ind_mejor_merito][j]);
+								}
+								fclose(sal_sol);
+							}
+							else {
+								fprintf(salida, "*--* No se pudo abrir el fichero para salvar la solución antes de reiniciar la población %d-%d\n", generacion, intentos - 1);
+							}
+						}
 						histogenera[histo_n] = generacion;
 						histograma[histo_n] = mejor_merito;
 						histo_n++;
@@ -2319,8 +2492,15 @@ int comprobar_final() {
 							// registro circular
 							histo_n = 0;
 						}
-						fprintf(salida, "\n");
-						genera_poblacion();
+						if (modo_reinicio_poblacion == 0) {
+							genera_poblacion(vec_ini, modo_poblacion_inicial, 1.0);
+							fprintf(salida, "\n");
+						}
+						else {
+							factor_dispersion_actualizado *= variacion_dispersion;
+							genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
+							fprintf(salida, "           Factor dispersión   : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+						}
 						double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
 						merito_sol_relativa(poblacion[ind_mejor_merito]);
@@ -2387,6 +2567,7 @@ int comprobar_final() {
 mide lo proximo que estan todos los individuos de la población, en relación al mejor individuo, para tener una idea de la diversidad de la población
 */
 double distancia_clonacion() {
+	// desviación estándar de la población respecto al mejor individuo
 	double d;
 	double des = 0.;
 	for (int i = 0; i < NPOB; i++) {
@@ -2395,7 +2576,7 @@ double distancia_clonacion() {
 			des += d * d;
 		}
 	}
-	return des / (NPOB * NVEC);
+	return sqrt(des / ((NPOB - 1) * NVEC));
 }
 /*
 **********************************************************************************************************************************************************************************
@@ -2403,28 +2584,7 @@ Multi proceso con hilos cerrados. Cada hilo calcula un tramo de la población y 
 **********************************************************************************************************************************************************************************
 */
 bool Arranque() {
-	for (int i = 1; i < n_hilos; i++) {
-		hgen[0][i] = mt19937(semilla + i);
-		hgen[1][i] = mt19937(semilla + i);
-		hgen[2][i] = mt19937(semilla + i);
-		if (poner_el_mejor_primero) {
-			hdis_entero[i] = uniform_int_distribution<int>{ 1, ((int)NPOB - 1) };
-		}
-		else {
-			hdis_entero[i] = uniform_int_distribution<int>{ 0, ((int)NPOB - 1) };
-		}
-		hdis_entero_ivec[i] = uniform_int_distribution<int>{ 0, ((int)NVEC - 1) };
-		hdis_double[i] = uniform_real_distribution<double>{ 0.0, 1.0 };
-#ifdef ESTA_CRUCES
-		num_cruces_si[i] = 0;
-		num_cruces_ok[i] = 0;
-		num_cruces_no[i] = 0;
-		num_cruces_fj[i] = 0;
-#else
-		num_var_hijo[i] = 0;
-#endif
-	}
-	cte_recombinacion = (recombinacion[0] + recombinacion[1]) / 2.;
+	factor_mutacion = (par_mutacion[0] + par_mutacion[1]) / 2.;
 	CANCELADO = false;
 	return true;
 }
@@ -2550,7 +2710,7 @@ int ProcesoMP(int bloques) {
 				CANCELADO = true;
 				break;
 			}
-			cte_recombinacion = recombinacion[0] + dis_double(gen) * (recombinacion[1] - recombinacion[0]);
+			factor_mutacion = par_mutacion[0] + dis_double(gen) * (par_mutacion[1] - par_mutacion[0]);
 			if (!CANCELADO) {
 
 				// Libera los hilos
@@ -2565,7 +2725,7 @@ int ProcesoMP(int bloques) {
 			}
 			break;
 		case WAIT_TIMEOUT:
-			fprintf(salida, "El hilo %d: supero el tiempo de espera\n", GetCurrentThreadId());
+			fprintf(salida, "El hilo %d: superó el tiempo de espera\n", GetCurrentThreadId());
 			break;
 		}
 		if (CANCELADO) break;
@@ -2636,7 +2796,11 @@ función que hace que cada hilo procese un tramo de la población, realizando mu
 */
 void ProcesarTramo(int hilo, int desde, int hasta) {
 	mutacion_cruzeH(desde, hasta, hilo);
+#ifdef NUM_MEJORAS
 	seleccionH(desde, hasta, hilo);
+#else
+	seleccionH(desde, hasta);
+#endif
 }
 #pragma endregion
 
@@ -2779,8 +2943,8 @@ double merito_s(double* vec_opt) {
 	double exceso;
 	double suma_F;
 	double suma_FF;
-	double sum_Xpr;
-	double sum_Xr;
+	double sum_Xp;
+	double sum_X;
 
 	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
 	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
@@ -3019,16 +3183,32 @@ double merito_s(double* vec_opt) {
 	}
 	dist += dd * dd;
 
+	// se calcula solo para los valores del segundo pase
+	/*
 	for (int i = 0; i < NSEC; i++) {
-		sum_Xpr = 0.;
+		sum_Xp = 0.;
 		for (int j = 0; j < NDEM; j++) {
-			sum_Xpr += Xpr[j][i];
+			sum_Xp += Xp[j][i];
 		}
-		sum_Xr = 0.;
+		sum_X = 0.;
 		for (int j = 0; j < NSEC; j++) {
-			sum_Xr += Xr[j][i];
+			sum_X += X[j][i];
 		}
-		dd = Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr);
+		dd = Q[i] - (sum_Xp + Xg[i] + Xv[i] + sum_X);
+		dist += dd * dd;
+	}
+	*/
+
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xp = 0.;
+		for (int j = 0; j < NDEM; j++) {
+			sum_Xp += Xpr[j][i];
+		}
+		sum_X = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_X += Xr[j][i];
+		}
+		dd = Qr[i] - (sum_Xp + Xgr[i] + Xvr[i] + sum_X);
 		dist += dd * dd;
 	}
 	if (op.FF_ENDOGENA) {
@@ -3042,6 +3222,22 @@ double merito_s(double* vec_opt) {
 		}
 	}
 	else {
+		// se calcula solo para los valores del segundo pase
+		/*
+		for (int i = 0; i < NFAC; i++) {
+			suma_F = 0.;
+			for (int j = 0; j < NSEC; j++) {
+				suma_F += abs(F[j][i]);
+			}
+			suma_FF = 0.;
+			for (int j = 0; j < NDEM; j++) {
+				suma_FF += abs(FF[j][i]);
+			}
+			dd = suma_F - suma_FF;
+			dist += dd * dd;
+		}
+		*/
+
 		for (int i = 0; i < NFAC; i++) {
 			suma_F = 0.;
 			for (int j = 0; j < NSEC; j++) {
@@ -3090,7 +3286,11 @@ double merito_s(double* vec_opt) {
 		dist += dd * dd;
 		dd = Mr[i] - M[i];
 		dist += dd * dd;
+#ifdef USAR_PESO_YDP
+		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
+#else
 		dd = Ydr[i] - Ypr[i];
+#endif
 		dist += dd * dd;
 		dd = Dar[i] - Dtr[i];
 		dist += dd * dd;
@@ -3123,7 +3323,18 @@ double merito_s(double* vec_opt) {
 	}
 	dd = Tir - Ti;
 	dist += dd * dd;
-
+	if (op.OPT_DESVIOS == 0) {
+		for (int i = 0; i < NSEC; i++) {
+			dd = Ypr[i] - Yp[i];
+			dist += dd * dd;
+			dd = Ydr[i] - Yd[i];
+			dist += dd * dd;
+			dd = Dar[i] - Da[i];
+			dist += dd * dd;
+			dd = Dtr[i] - Dt[i];
+			dist += dd * dd;
+		}
+	}
 	/*
 	fprintf(salida, "MERITO S\n");
 	fprintf(salida, "--------\n");
@@ -3487,7 +3698,11 @@ double merito_d(double* vec_opt, double liston) {
 	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
+#ifdef USAR_PESO_YDP
+		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
+#else
 		dd = Ydr[i] - Ypr[i];
+#endif
 		dist += dd * dd;
 	}
 	if (dist > liston) return dist;
@@ -3739,6 +3954,18 @@ double merito_d(double* vec_opt, double liston) {
 		dd = Sfr - Sf;
 	}
 	dist += dd * dd;
+	if (op.OPT_DESVIOS == 0) {
+		for (int i = 0; i < NSEC; i++) {
+			dd = Ypr[i] - Yp[i];
+			dist += dd * dd;
+			dd = Ydr[i] - Yd[i];
+			dist += dd * dd;
+			dd = Dar[i] - Da[i];
+			dist += dd * dd;
+			dd = Dtr[i] - Dt[i];
+			dist += dd * dd;
+		}
+	}
 	return dist;
 }
 #endif
@@ -3779,7 +4006,6 @@ double* merito_sol(double* vec_opt) {
 	double Td[NDEM];
 	double Tz[NSEC];
 	double Tm[NSEC];
-	double Ti;
 	double Sp[NDEM];
 	double AgE[NSEC];
 	double AgH[NDEM];
@@ -3804,7 +4030,6 @@ double* merito_sol(double* vec_opt) {
 	double Tdr[NDEM];
 	double Tzr[NSEC];
 	double Tmr[NSEC];
-	double Tir;
 	double Spr[NDEM];
 	double AgEr[NSEC];
 	double AgHr[NDEM];
@@ -3818,11 +4043,13 @@ double* merito_sol(double* vec_opt) {
 	double epsilon;
 	double Apz;
 
+	double Ti;
 	double Sg;
 	double Sc;
 	double Sf;
 	double ebp;
 
+	double Tir;
 	double Sgr;
 	double Scr;
 	double Sfr;
@@ -3831,8 +4058,8 @@ double* merito_sol(double* vec_opt) {
 	double exceso;
 	double suma_F;
 	double suma_FF;
-	double sum_Xpr;
-	double sum_Xr;
+	double sum_Xp;
+	double sum_X;
 
 	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
 	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
@@ -4061,7 +4288,7 @@ double* merito_sol(double* vec_opt) {
 		ebpr = 0.;
 	}
 
-	// calculo de desvios
+	// cálculo de desvios
 	double dd;
 	double dist = 0.;
 	double dist_max = -1.;
@@ -4089,16 +4316,18 @@ double* merito_sol(double* vec_opt) {
 	dist += dd * dd;
 	desvios_bloque[ndv++] = dist;
 	// Q eq
+	// se calcula solo para los valores del segundo pase
+	/*
 	for (int i = 0; i < NSEC; i++) {
-		sum_Xpr = 0.;
+		sum_Xp = 0.;
 		for (int j = 0; j < NDEM; j++) {
-			sum_Xpr += Xpr[j][i];
+			sum_Xp += Xp[j][i];
 		}
-		sum_Xr = 0.;
+		sum_X = 0.;
 		for (int j = 0; j < NSEC; j++) {
-			sum_Xr += Xr[j][i];
+			sum_X += X[j][i];
 		}
-		dd = abs(Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr));
+		dd = abs(Q[i] - (sum_Xp + Xg[i] + Xv[i] + sum_X));
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -4108,6 +4337,28 @@ double* merito_sol(double* vec_opt) {
 		ndm++;
 		dist += dd * dd;
 	}
+	*/
+
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xp = 0.;
+		for (int j = 0; j < NDEM; j++) {
+			sum_Xp += Xpr[j][i];
+		}
+		sum_X = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_X += Xr[j][i];
+		}
+		dd = abs(Qr[i] - (sum_Xp + Xgr[i] + Xvr[i] + sum_X));
+		if (dd > dist_max) {
+			dist_max = dd;
+			idm = ndm;
+			pdm = 1;
+			ddm = i;
+		};
+		ndm++;
+		dist += dd * dd;
+	}
+
 	desvios_bloque[ndv++] = dist;
 	if (op.FF_ENDOGENA) {
 		// desvio en factores
@@ -4136,6 +4387,29 @@ double* merito_sol(double* vec_opt) {
 	}
 	else {
 		// desvio en factores
+		// se calcula solo para los valores del segundo pase
+		/*
+		for (int i = 0; i < NFAC; i++) {
+			suma_F = 0.;
+			for (int j = 0; j < NSEC; j++) {
+				suma_F += abs(F[j][i]);
+			}
+			suma_FF = 0.;
+			for (int j = 0; j < NDEM; j++) {
+				suma_FF += abs(FF[j][i]);
+			}
+			dd = abs(suma_F - suma_FF);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 2;
+				ddm = i;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+		*/
+
 		for (int i = 0; i < NFAC; i++) {
 			suma_F = 0.;
 			for (int j = 0; j < NSEC; j++) {
@@ -4344,7 +4618,11 @@ double* merito_sol(double* vec_opt) {
 	desvios_bloque[ndv++] = dist;
 	// Ydp
 	for (int i = 0; i < NSEC; i++) {
+#ifdef USAR_PESO_YDP
+		dd = abs(Ydr[i] - Ypr[i]) * PESO_YDP;
+#else
 		dd = abs(Ydr[i] - Ypr[i]);
+#endif
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -4517,6 +4795,7 @@ double* merito_sol(double* vec_opt) {
 		}
 	}
 	desvios_bloque[ndv++] = dist;
+	// Ti
 	dd = abs(Tir - Ti);
 	if (dd > dist_max) {
 		dist_max = dd;
@@ -4527,7 +4806,60 @@ double* merito_sol(double* vec_opt) {
 	ndm++;
 	dist += dd * dd;
 	desvios_bloque[ndv++] = dist;
-
+	if (op.OPT_DESVIOS == 0) {
+		// Yp
+		for (int i = 0; i < NSEC; i++) {
+			dd = abs(Ypr[i] - Yp[i]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 32;
+				ddm = i;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+		desvios_bloque[ndv++] = dist;
+		// Yd
+		for (int i = 0; i < NSEC; i++) {
+			dd = abs(Ydr[i] - Yd[i]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 33;
+				ddm = i;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+		desvios_bloque[ndv++] = dist;
+		// Da
+		for (int i = 0; i < NSEC; i++) {
+			dd = abs(Dar[i] - Da[i]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 34;
+				ddm = i;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+		desvios_bloque[ndv++] = dist;
+		// Dt
+		for (int i = 0; i < NSEC; i++) {
+			dd = abs(Dtr[i] - Dt[i]);
+			if (dd > dist_max) {
+				dist_max = dd;
+				idm = ndm;
+				pdm = 35;
+				ddm = i;
+			};
+			ndm++;
+			dist += dd * dd;
+		}
+		desvios_bloque[ndv++] = dist;
+	}
 	puntero_bloque_desviacion = pdm;
 	desplazamiento_desviacion = ddm;
 #ifdef COMPROBAR_MAX_DESVIACION
@@ -5265,7 +5597,11 @@ double merito_s_relativa(double* vec_opt) {
 		dd = Mr[i] - M[i];
 		dd = dd / (abs(Mr[i]) + 0.000001);
 		dist += dd * dd;
+#ifdef USAR_PESO_YDP
+		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
+#else
 		dd = Ydr[i] - Ypr[i];
+#endif
 		dd = dd / (abs(Ydr[i]) + 0.000001);
 		dist += dd * dd;
 		dd = Dar[i] - Dtr[i];
@@ -5312,6 +5648,18 @@ double merito_s_relativa(double* vec_opt) {
 	dd = Tir - Ti;
 	dd = dd / (abs(Tir) + 0.000001);
 	dist += dd * dd;
+	if (op.OPT_DESVIOS == 0) {
+		for (int i = 0; i < NSEC; i++) {
+			dd = Ypr[i] - Yp[i];
+			dist += dd * dd;
+			dd = Ydr[i] - Yd[i];
+			dist += dd * dd;
+			dd = Dar[i] - Da[i];
+			dist += dd * dd;
+			dd = Dtr[i] - Dt[i];
+			dist += dd * dd;
+		}
+	}
 	return dist;
 }
 
@@ -5930,7 +6278,11 @@ double* merito_sol_relativa(double* vec_opt) {
 	desvios[ndv++] = dist;
 	// Ydp
 	for (int i = 0; i < NSEC; i++) {
+#ifdef USAR_PESO_YDP
+		dd = abs(Ydr[i] - Ypr[i]) * PESO_YDP;
+#else
 		dd = abs(Ydr[i] - Ypr[i]);
+#endif
 		dd = dd / (abs(Ypr[i]) + 0.000001);
 		if (dd > dist_max) {
 			dist_max = dd;
@@ -6353,7 +6705,12 @@ void indice_desviaciones() {
 	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Fi
 	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NFAC;	// F
 	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NFAC;	// X
-	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NSEC;	// fin
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC * NSEC;	// Ti
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + 1;				// Yp
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Yd
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Da
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// Dt
+	ind_bloque_desviacion[idm++] = ind_bloque_desviacion[idm - 1] + NSEC;			// fin
 }
 #endif
 /*
@@ -6363,6 +6720,7 @@ void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[
 	for (int i = 0; i < NSEC; i++) {
 		Y[i] = b[i];
 		for (int j = 0; j < NFAC; j++) {
+			// cero elevado a cero es 1, por eso no hay problema si F[i][j] es cero porque beta[i][j] tambien es cero
 			Y[i] *= copysign(1.0, F[i][j]) * pow(abs(F[i][j]), beta[i][j]);
 		}
 	}
