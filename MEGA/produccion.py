@@ -17,6 +17,7 @@ def produccion_factor_compuesto_Y(F, beta, b):
     for i in range(nsec):
         Y[i] = b[i]
         for j in range(nfac):
+            # cero elevado a cero es 1, por eso no hay problema si F[i,j] es cero porque beta[i,j] tambien es cero
             Y[i] *= np.copysign(1, F[i,j]) * (np.abs(F[i,j])) ** beta[i,j]
     return Y
 

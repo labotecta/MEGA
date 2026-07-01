@@ -153,20 +153,24 @@ def tabla_2D(etq, valores, DECIMALES=6):
 def tabla_2De(etq, valores, DECIMALES=2):
     if len(valores.shape) == 0:
         imprime('{:10} '.format(etq[0]), False)
-        imprime('{:9.{prec}e} '.format(valores, prec=DECIMALES))
+        imprime('S:{:9.{prec}e} '.format(valores, prec=DECIMALES), False)
+        imprime(' {:9.{prec}e}'.format(valores, prec=DECIMALES))
     elif len(valores.shape) == 1:
         cols = valores.shape[0]
         imprime('{:10} '.format(etq[0]), False)
+        imprime('S:{:9.{prec}e} '.format(valores.sum(), prec=DECIMALES), False)
         for j in range(cols):
-            imprime('{:9.{prec}e} '.format(valores[j], prec=DECIMALES), False)
+            imprime(' {:9.{prec}e}'.format(valores[j], prec=DECIMALES), False)
         imprime('')
     else:
         filas = valores.shape[0]
         cols = valores.shape[1]
+        suma = valores.sum(axis=1)
         for i in range(filas):
             imprime('{:10} '.format(etq[i]), False)
+            imprime('S:{:9.{prec}e} '.format(suma[i], prec=DECIMALES), False)
             for j in range(cols):
-                imprime('{:9.{prec}e} '.format(valores[i,j], prec=DECIMALES), False)
+                imprime(' {:9.{prec}e}'.format(valores[i,j], prec=DECIMALES), False)
             imprime('')
 
 

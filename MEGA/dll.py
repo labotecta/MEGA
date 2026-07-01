@@ -16,23 +16,24 @@ nsec2 = nsec * nsec
 
 class OPCIONES(ct.Structure):
     _fields_ = (
-        ('OR_PRE_EXCLUIDO',  ct.c_int),
-        ('PRECIO_F_EXCLUIDO',ct.c_double),
-        ('VALOR_F_TRA',        ct.c_double),
-        ('ALFA_PHILLIPS',      ct.c_double),
-        ('GE_INCLUYE_XP',      ct.c_bool),
-        ('FF_ENDOGENA',        ct.c_bool),
-        ('ALP_FACTOR',         ct.c_double),
-        ('INDICE_F_TRA',       ct.c_int),
-        ('UTILIDAD_DEMANDA',   ct.c_int),
-        ('DEM_ESENCIALES',     ct.c_bool),
+        ('OR_PRE_EXCLUIDO'   , ct.c_int),
+        ('PRECIO_F_EXCLUIDO' , ct.c_double),
+        ('VALOR_F_TRA'       , ct.c_double),
+        ('ALFA_PHILLIPS'     , ct.c_double),
+        ('GE_INCLUYE_XP'     , ct.c_bool),
+        ('FF_ENDOGENA'       , ct.c_bool),
+        ('ALP_FACTOR'        , ct.c_double),
+        ('INDICE_F_TRA'      , ct.c_int),
+        ('UTILIDAD_DEMANDA'  , ct.c_int),
+        ('DEM_ESENCIALES'    , ct.c_bool),
         ('DEM_ADICIONAL_TIPO', ct.c_int),
-        ('DEM_ADICIONAL',     (ct.c_double * nds )),
-        ('CON_ESENCIALES',    (ct.c_double * nds )),
-        ('AYD_ADICIONAL',     (ct.c_double * nds )),
-        ('RENTA_FICTICIA',     ct.c_bool),
-        ('MODO_PSEUDOIMPTOS',  ct.c_int),
-        ('EQ_BAL_PAGOS',       ct.c_bool),
+        ('DEM_ADICIONAL'     ,(ct.c_double * nds )),
+        ('CON_ESENCIALES'    ,(ct.c_double * nds )),
+        ('AYD_ADICIONAL'     ,(ct.c_double * nds )),
+        ('RENTA_FICTICIA'    , ct.c_bool),
+        ('MODO_PSEUDOIMPTOS' , ct.c_int),
+        ('OPT_DESVIOS'       , ct.c_int),
+        ('EQ_BAL_PAGOS'      , ct.c_bool),
     )
 
 class DATOS(ct.Structure):
@@ -114,6 +115,7 @@ def envia_opciones(libc):
             (ct.c_double * nds) (*(prin.AYD_ADICIONAL .flatten())),
             ct.c_bool(prin.RENTA_FICTICIA),
             ct.c_int(prin.MODO_PSEUDOIMPTOS),
+            ct.c_int(prin.OPT_DESVIOS),
             ct.c_bool(prin.EQ_BAL_PAGOS),
     )
     libc.recibe_opciones.argtypes = [OPCIONES]

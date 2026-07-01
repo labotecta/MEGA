@@ -138,17 +138,15 @@ def salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES):
     imprime('')
     imprime('TMS. Tasa Marginal de Sustitución local/importación (CES)')
     mfun.cabecera('Sector', ['TMS',])
-
     deno1 = copy.deepcopy(parametros.deltad)
     deno1[deno1 == 0] = 1.
     deno2 = copy.deepcopy(datos.D0)
     deno2[deno2 == 0] = 1.
-    base = parametros.deltad / deno1 * (datos.M0 / deno2)
+    base = parametros.deltam / deno1 * (datos.M0 / deno2)
     TMS = np.copysign(1, base) * (abs(base) ** (1 - parametros.eta))
     mfun.cuerpo2D(ind, TMS.reshape(nsec,1))
     mfun.cierre(['TMS',])
     imprime('')
-
     imprime('phi. parámetro de transformación entre local y exportación (CET)')
     mfun.cabecera('', ind)
     mfun.cuerpo2D(['phi',], parametros.phi)
@@ -176,7 +174,14 @@ def salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES):
     imprime('')
     imprime('TMS. Tasa Marginal de Transformación local/exportación (CET)')
     mfun.cabecera('Sector', ['TMS',])
-    TMS = parametros.xid / parametros.xie * ((datos.E0 / datos.D0) ** (1 - parametros.phi))
+    deno1 = copy.deepcopy(parametros.xid)
+    deno1[deno1 == 0] = 1.
+    deno2 = copy.deepcopy(datos.D0)
+    deno2[deno2 == 0] = 1.
+    base = datos.E0 / deno2
+    expo = 1 - parametros.phi
+    expo[(base == 0) & (expo < 0)] = 1.
+    TMS = parametros.xie / deno1 * (base ** expo)
     mfun.cuerpo2D(ind, TMS.reshape(nsec,1))
     mfun.cierre(['TMS',])
     imprime('')
@@ -495,8 +500,8 @@ def veri_solucion(datos, parametros, ind, dem, h,
 
 def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALOR_F_TRA, vec_opt, npre_sol, etq_precios, res_ecuaciones):
     nfac = len(h)
-    nsec = len(ind)
     ndem = len(dem)
+    nsec = len(ind)
 
     # las variables 'Apz,Fi, ..., Tir' no son globales para este módulo, por lo que hay que extraerlas del vector 'res_ecuaciones'
     (Apz,Fi,Ei,Mi,Di,Xpi,pf,pq,pe,pm,
@@ -625,11 +630,6 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         des_Mi  = des_Mi ** 2
         des_Di  = des_Di ** 2
         des_Xpi = des_Xpi ** 2
-        if OPT_DESVIOS == 0:
-            des_Yp = des_Yp ** 2
-            des_Yd = des_Yd ** 2
-            des_Da = des_Da ** 2
-            des_Dt = des_Dt ** 2
         des_Alp  = des_Alp ** 2
         des_F    = des_F ** 2
         des_FF   = des_FF ** 2
@@ -655,6 +655,11 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         des_CssE = des_CssE ** 2
         des_CssH = des_CssH ** 2
         des_ebp  = des_ebp ** 2
+        if OPT_DESVIOS == 0:
+            des_Yp = des_Yp ** 2
+            des_Yd = des_Yd ** 2
+            des_Da = des_Da ** 2
+            des_Dt = des_Dt ** 2
 
         suma = des_produccion.sum()
         suma += des_factores.sum()
@@ -663,11 +668,6 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         suma += des_Mi.sum()
         suma += des_Di.sum()
         suma += des_Xpi.sum()
-        if OPT_DESVIOS == 0:
-            suma += des_Yp.sum()
-            suma += des_Yd.sum()
-            suma += des_Da.sum()
-            suma += des_Dt.sum()
         suma += des_Alp.sum()
         suma += des_F.sum()
         suma += des_FF.sum()
@@ -693,6 +693,11 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         suma += des_CssE.sum()
         suma += des_CssH.sum()
         suma += des_ebp.sum()
+        if OPT_DESVIOS == 0:
+            suma += des_Yp.sum()
+            suma += des_Yd.sum()
+            suma += des_Da.sum()
+            suma += des_Dt.sum()
 
         mfun.tabla_2De(['equilib Q',] , des_produccion, 6)
         mfun.tabla_2De(['equilib F',] , des_factores, 6)
@@ -701,12 +706,6 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         mfun.tabla_2De(['des Mi',]    , des_Mi, 6)
         mfun.tabla_2De(['des Di',]    , des_Di, 6)
         mfun.tabla_2De(['des Xpi',]   , des_Xpi, 6)
-        if OPT_DESVIOS == 0:
-            mfun.tabla_2De(['des Yp',]    , des_Yp)
-            mfun.tabla_2De(['des Yd',]    , des_Yd)
-            mfun.tabla_2De(['des Da',]    , des_Da)
-            mfun.tabla_2De(['des Dt',]    , des_Dt)
-
         mfun.tabla_2De(['des Alp',]   , des_Alp, 6)
         mfun.tabla_2De(['des F',]     , des_F, 6)
         mfun.tabla_2De(['des FF',]    , des_FF, 6)
@@ -732,10 +731,16 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         mfun.tabla_2De(['des CssE',]  , des_CssE, 6)
         mfun.tabla_2De(['des CssH',]  , des_CssH, 6)
         mfun.tabla_2De(['des b.pag',] , des_ebp, 6)
+        if OPT_DESVIOS == 0:
+            mfun.tabla_2De(['des Yp',]    , des_Yp, 6)
+            mfun.tabla_2De(['des Yd',]    , des_Yd, 6)
+            mfun.tabla_2De(['des Da',]    , des_Da, 6)
+            mfun.tabla_2De(['des Dt',]    , des_Dt, 6)
         imprime('')
         imprime('{:10} {:9.{prec}e} '.format       ('Errdesvios', dist, prec=5))
         imprime('')
-        imprime('---------- --------- ---------')
+        imprime('            suma bloque   % media')
+        imprime('---------- ------------ ---------')
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('desvios Q', des_produccion.sum(), 100. * des_produccion.sum() / (1 if np.mean(Q) ==0   else np.mean(Q))    , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('desvios F', des_factores.sum()  , 100. * des_factores.sum()   / (1 if np.mean(Fi)==0   else np.mean(Fi))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Fi'   , des_Fi.sum()        , 100. * des_Fi.sum()         / (1 if np.mean(Fi)==0   else np.mean(Fi))   , prec=6))
@@ -743,14 +748,6 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Mi'   , des_Mi.sum()        , 100. * des_Mi.sum()         / (1 if np.mean(Mi)==0   else np.mean(Mi))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Di'   , des_Di.sum()        , 100. * des_Di.sum()         / (1 if np.mean(Di)==0   else np.mean(Di))   , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Xpi'  , des_Xpi.sum()       , 100. * des_Xpi.sum()        / (1 if np.mean(Xpi)==0  else np.mean(Xpi))  , prec=6))
-
-        if OPT_DESVIOS == 0:
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Di'   , des_Di.sum()        , 100. * des_Di.sum()         / (1 if np.mean(Di)==0   else np.mean(Di))   , prec=6))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yp'   , des_Yp.sum()        , 100. * des_Yp.sum()         / (1 if np.mean(Yp)==0   else np.mean(Yp))   , prec=6))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yd'   , des_Yd.sum()        , 100. * des_Yd.sum()         / (1 if np.mean(Yd)==0   else np.mean(Yd))   , prec=6))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Da '  , des_Da.sum()        , 100. * des_Da.sum()         / (1 if np.mean(Da)==0   else np.mean(Da))   , prec=6))
-            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Dt'   , des_Dt.sum()        , 100. * des_Dt.sum()         / (1 if np.mean(Dt)==0   else np.mean(Dt))   , prec=6))
-
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Alp'  , des_Alp.sum()       , 100. * des_Alp.sum()        / (1 if np.mean(Alp)==0  else np.mean(Alp))  , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des F'    , des_F .sum()        , 100. * des_F.sum()          / (1 if np.mean(F)==0    else np.mean(F))    , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des FF'   , des_FF.sum()        , 100. * des_FF.sum()         / (1 if np.mean(FF)==0   else np.mean(FF))   , prec=6))
@@ -776,10 +773,412 @@ def salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS,
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssE' , des_CssE.sum()      , 100. * des_CssE.sum()       / (1 if np.mean(CssE)==0 else np.mean(CssE)) , prec=6))
         imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des CssH' , des_CssH.sum()      , 100. * des_CssH.sum()       / (1 if np.mean(CssH)==0 else np.mean(CssH)) , prec=6))
         imprime('{:10} {:9.{prec}e} '.format       ('des b.pag', des_ebp.sum(), prec=6))
-        imprime('---------- --------- ---------')
+        if OPT_DESVIOS == 0:
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yp'   , des_Yp.sum()        , 100. * des_Yp.sum()         / (1 if np.mean(Yp)==0   else np.mean(Yp))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Yd'   , des_Yd.sum()        , 100. * des_Yd.sum()         / (1 if np.mean(Yd)==0   else np.mean(Yd))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Da '  , des_Da.sum()        , 100. * des_Da.sum()         / (1 if np.mean(Da)==0   else np.mean(Da))   , prec=6))
+            imprime('{:10} {:9.{prec}e} {:9.2f}'.format('des Dt'   , des_Dt.sum()        , 100. * des_Dt.sum()         / (1 if np.mean(Dt)==0   else np.mean(Dt))   , prec=6))
+        imprime('---------- ------------ ---------')
         imprime('{:10} {:9.{prec}e} '.format       ('Suma      ', suma, prec=6))
         imprime('')
-    
+
+def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
+                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,Y,X,F,Z,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Ti,Te,Tm,E,Sf,tolerancia,titulo,infor_cuadre):
+
+    Sf = (M.dot(pm) - E.dot(pe))
+
+    fil_col_ind = 0
+    nfac = len(h)
+    nsec = len(ind)
+    ndem = len(dem)
+    fil_col_fac = fil_col_ind  + nsec
+    fil_col_dem = fil_col_fac  + nfac
+    fil_col_inv = fil_col_dem  + ndem
+    fil_col_css = fil_col_inv  + len(inv)
+    fil_col_idt = fil_col_css  + len(css)
+    fil_col_trf = fil_col_idt  + len(idt)
+    fil_col_gov = fil_col_trf  + len(trf)
+    fil_col_ext = fil_col_gov  + len(gov)
+    fil_col_ayd = fil_col_ext  + len(ext)
+    fil_col_alp = fil_col_ayd  + len(ayd)
+    n_fil_cols  = fil_col_alp  + len(alp)
+
+    rot = []
+    rot.extend(list(ind))
+    rot.extend(list(h))
+    rot.extend(list(dem))
+    rot.extend(list(inv))
+    rot.extend(list(css))
+    rot.extend(list(idt))
+    rot.extend(list(trf))
+    rot.extend(list(gov))
+    rot.extend(list(ext))
+    rot.extend(list(ayd))
+    rot.extend(list(alp))
+
+    mcs  = np.zeros((n_fil_cols, n_fil_cols), dtype=np.float64)
+
+    # rellenamos cada columna 'col' con los pagos (cantidades/importes) correspondientes a las sucesivas filas, de menor a mayor, 
+    # la MCS de cantidades no cuadra, salvo que todos los precios sean 1, porque la que debe cuadrar es la de importes, por eso
+    # cuanso se calcule la de cantidades 'cuadre' debe ser False para que no comprueba el cuadre.
+
+    #------------------------------------------------------------------------------------------------
+    # sectores. Las primeras 'nsec' columnas
+    #------------------------------------------------------------------------------------------------
+    # pagos por los consumos intermedios a otros sectores
+    col = fil_col_ind
+    for i in range(nsec):
+        # sector 'i'
+        fil = fil_col_ind
+        for j in range(nsec):
+            # rellenamos las filas (compras a j) de la columna (sector i)
+
+            # X[j,i] compras al sector 'j' por el sector 'i' al precio de 'j'.
+            # las filas 'i' de X son las ventas del sector 'i' al 'j' y las columnas 'j' las compras del sector 'i' al sector 'j'
+            mcs[fil,col] = X[j,i] * pq[j]
+            fil += 1
+        col += 1
+    # pagos por el uso de los factores de producción (F incluye Alp)
+    imF = F * pf
+    col = fil_col_ind
+    for i in range(nsec):
+        fil = fil_col_fac
+        for j in range(nfac):
+            mcs[fil,col] = imF[i,j]
+            fil += 1
+        col += 1
+    # pago de las cotizaciones de las empresas a la seguridad social
+    col = fil_col_ind
+    fil = fil_col_css
+    for i in range(nsec):
+        mcs[fil,col] = CssE[i]  # ya está calculada al precio del factor trabajo (pf)
+        col += 1
+    # pago de los impuestos a la producción
+    col = fil_col_ind
+    fil = fil_col_idt
+    for i in range(nsec):
+        mcs[fil,col] = Tz[i]    # ya están calculados al precio de Z (pz)
+        col += 1
+    # pago de aranceles a la cuenta 'trf'
+    col = fil_col_ind
+    fil = fil_col_trf
+    for i in range(nsec):
+        mcs[fil,col] = Tm[i]   # ya está calculado al precio de importaión (pm)
+        col += 1
+    # pago por las importaciones de las empresas
+    col = fil_col_ind
+    fil = fil_col_ext
+    imM = M * pm
+    for i in range(nsec):
+        mcs[fil,col] = imM[i]
+        col += 1
+    #------------------------------------------------------------------------------------------------
+    # columnas factores de producción. Las iguientes 'nfac' columnas
+    #------------------------------------------------------------------------------------------------
+    # pagos de los sectores por los factores de produccion = ingresos de los hogares por los factores de produccion
+    imFF = FF * pf
+    # FF no contiene los Alp
+    imAlp = Alp * pf
+    col = fil_col_fac
+    for i in range(nfac):
+        fil = fil_col_dem
+        for j in range(ndem):
+            mcs[fil,col] = imFF[j,i] + imAlp[j,i]
+            fil += 1
+        col += 1
+    #------------------------------------------------------------------------------------------------
+    # hogares. Las siguientes 'ndem' columnas
+    #------------------------------------------------------------------------------------------------
+    # pagos de los hogares por sus consumos
+    imXp = Xp * pq
+    col = fil_col_dem
+    for i in range(ndem):
+        fil = fil_col_ind
+        for j in range(nsec):
+            mcs[fil,col] = imXp[i,j]
+            fil += 1
+        col += 1
+    # transferencia de los ahorros (a corto) de los hogares a la cuenta de inversiones para que esta las
+    # transfiera luego a los sectores como inversiones
+    col = fil_col_dem
+    for i in range(ndem):
+        fil = fil_col_inv
+        mcs[fil,col] = Sp[i]
+        col += 1
+    # transferencia a la cuenta de ahorro a largo plazo 
+    imAlp = Alp * pf
+    col = fil_col_dem
+    fil = fil_col_alp
+    for i in range(ndem):
+        # cada hogar su ahorro a largo plazo
+        mcs[fil,col] = imAlp.sum(axis=1)[i] # sumados los factores
+        col += 1
+    # pagos de la cotización de los hogares a la seguridad social
+    col = fil_col_dem
+    fil = fil_col_css
+    for i in range(ndem):
+        mcs[fil,col] = CssH[i]
+        col += 1
+    # como 'Td' es el total de impuestos directos lo repartimos en la misma relación
+    # que tenían los impuestos directos y los ottros impuestos en la MCS
+    # pagos de impuestos directos por los hogares
+    col = fil_col_dem
+    fil = fil_col_idt
+    Td_id = 0.
+    for i in range(ndem):
+        if datos.Td0[i] > 0:
+            v = Td[i] * datos.Toi0[i] / datos.Td0[i]
+            mcs[fil,col] = v
+            Td_id += v
+            col += 1
+    # añadimos los pagos de los otros impuestos sobre los productos pagados por los hogares.
+    col = fil_col_dem
+    fil = fil_col_idt
+    Td_oi = 0.
+    for i in range(ndem):
+        if datos.Td0[i] > 0:
+            v = Td[i] * datos.Tid0[i] / datos.Td0[i]
+            mcs[fil,col] += v
+            Td_oi += v
+            col += 1
+    #------------------------------------------------------------------------------------------------
+    # ahorro + inversion´. Las siguientes 'len(inv)' columnas (una)
+    #------------------------------------------------------------------------------------------------
+    # ahorro que se invierte en cada sector (todos los ahorros: hogares, gobierno, css, exterior)
+    imXv = Xv * pq
+    col = fil_col_inv
+    fil = fil_col_ind
+    for i in range(nsec):
+        mcs[fil,col] = imXv[i]
+        fil += 1
+    #------------------------------------------------------------------------------------------------
+    # seguridad social. Las siguientes 'len(css)' columnas (una)
+    #------------------------------------------------------------------------------------------------
+    if len(css) > 0:
+        if PssH.sum() == 0:
+            # si no paga pensiones es que las paga el gobierno, po lo tanto
+            # transferimos todos sus ingreso al gobierno
+            col = fil_col_css
+            fil = fil_col_gov
+            mcs[fil,col] = CssH.sum() + CssE.sum()
+        else:
+            # es una cuenta autónoma (desligada del gobierno): ingresa, paga y ahorra
+            # paga las pensiones
+            col = fil_col_css
+            fil = fil_col_dem
+            for i in range(ndem):
+                mcs[fil,col] = PssH[i]
+                fil += 1
+            # ahorro + inversión = todo lo recaudado menos las pensiones
+            # transfiere a la cuenta de inversiones el ahorro
+            col = fil_col_css
+            fil = fil_col_inv
+            mcs[fil,col] = CssH.sum() + CssE.sum() - PssH.sum()
+    #------------------------------------------------------------------------------------------------
+    # Las siguientes 'len(idt)' columnas (una)
+    # transferencias al gobierno de lo recaudado por 'idt' en conepto de
+    # impuestos a la producción 
+    # impuestos sobre los productos pagados por los hogares.
+    # impuestos pagados por el gobierno
+    #------------------------------------------------------------------------------------------------
+    if len(idt) > 0:
+        col = fil_col_idt
+        fil = fil_col_gov
+        mcs[fil,col] = Tz.sum() + Td_id + Td_oi + Tg + Ti + Te
+    #------------------------------------------------------------------------------------------------
+    # aranceles. Las siguientes 'len(trf)' columnas  (una)
+    # transferencia de los aranceles, recaudados de los sectores por 'trf', al gobierno
+    #------------------------------------------------------------------------------------------------
+    if len(trf) > 0:
+        col = fil_col_trf
+        fil = fil_col_gov
+        mcs[fil,col] = Tm.sum()
+    #------------------------------------------------------------------------------------------------
+    # sector público (gobierno). Las siguientes 'len(gov)' columnas  (una)
+    #------------------------------------------------------------------------------------------------
+    # consumos
+    imXg = Xg * pq
+    col = fil_col_gov
+    fil = fil_col_ind
+    for j in range(nsec):
+        mcs[fil,col] = imXg[j]
+        fil += 1
+    # ahorro + inversión
+    col = fil_col_gov
+    fil = fil_col_inv
+    mcs[fil,col] = Sg
+    # impuestos gobierno
+    col = fil_col_gov
+    fil = fil_col_idt
+    mcs[fil,col] = Tg
+    # impuestos ahorro
+    col = fil_col_inv
+    fil = fil_col_idt
+    mcs[fil,col] = Ti
+    # impuestos sector exterior
+    col = fil_col_ext
+    fil = fil_col_idt
+    mcs[fil,col] = Te
+    # ayudas
+    col = fil_col_gov
+    fil = fil_col_ayd
+    mcs[fil,col] = AgE.sum() + AgH.sum()
+
+    #------------------------------------------------------------------------------------------------
+    # sector exterior. Las siguientes 'len(ext)' columnas  (una)
+    #------------------------------------------------------------------------------------------------
+    # exportaciones
+    imE = E * pe
+    col = fil_col_ext
+    fil = fil_col_ind
+    for i in range(nsec):
+        mcs[fil,col] = imE[i]
+        fil += 1
+    # ahorro + inversión
+    col = fil_col_ext
+    fil = fil_col_inv
+    #mcs[fil,col] = Sf * epsilon
+    mcs[fil,col] = Sf
+    #------------------------------------------------------------------------------------------------
+    # ayudas. Las siguientes 'len(ayd)' columnas  (una)
+    #------------------------------------------------------------------------------------------------
+    # a las empresas
+    if len(ayd) > 0:
+        col = fil_col_ayd
+        fil = fil_col_ind
+        for i in range(nsec):
+            mcs[fil,col] = AgE[i]
+            fil += 1
+        # a los hogares
+        col = fil_col_ayd
+        fil = fil_col_dem
+        for i in range(ndem):
+            mcs[fil,col] = AgH[i]
+            fil += 1
+
+    #------------------------------------------------------------------------------------------------
+    # Ajuste de los Alp
+    # Conceptualmente los Alp hacen que no se cierre el círculo económico y que la MCS se descuadre
+    # los sectores las pagan y los hogares las cobran, pero no hacen nada con ellas por lo que las filas
+    # de los sectores se descuadran, no tienen un ingreso que las respalde, que debería provenir de la
+    # circularidad de las relaciones económicas. Nosotros las vamos a tratar como el ahorro a corto plazo
+    # que en un modelo estático no tiene otro papel (no se hace nada con ellas) que el de cuadrar la MCS:
+    #   los hogares las transfieren a la cuenta ALP, igual que los ahorros a corto a la cuenta INV
+    #   la cuenta Alp las asigna a lo sectores tal como como se hace con los otros ahorrros, salvo
+    #   por la forma de reparto, la única forma que el modelo tiene se saber cuanto corresponde a
+    #   cada sector es por el descuadre entre la suma de la fila y columna del sector, pero esto
+    #   es peligroso porque puede esconder errores, empíricamente se observa que el reparto correcto
+    #   es proporcionalmente a la producción bruta Z de cada sector.
+    #------------------------------------------------------------------------------------------------
+    # repartir el total de Alp entre sectores en proporción a su producción bruta
+    if len(alp) > 0 and abs(Alp).sum() > 0:
+        imAlp  = Alp * pf
+        totAlp = imAlp.sum()
+        totZ   = 0.
+        for i in range(nsec):
+            totZ += Z[i] * pz[i]
+        col = fil_col_alp
+        fil = fil_col_ind
+        for i in range(nsec):
+            mcs[fil,col] = totAlp * Z[i] * pz[i] / totZ
+            fil += 1
+
+    #------------------------------------------------------------------------------------------------
+    # comprobar cuadre de filas y columnas
+    #------------------------------------------------------------------------------------------------
+    recursos    = mcs.sum(axis=1) # suma de las filas
+    empleos     = mcs.sum(axis=0) # suma de las columnas
+    diferencias = empleos - recursos
+    if infor_cuadre and (np.any(abs(diferencias) > tolerancia)):
+        # al menos una cuenta difiere ( abs(columna - fila) ) en más que 'tolerancia'
+        imprime('')
+        imprime('ERROR. ' + titulo + '. No cuadra. La suma de fila y columna de al menos una cuenta no coincide.')
+        imprime('                 empleos     recursos   diferencia')
+        imprime('------------ ------------ ------------ ------------')
+        for i in range(len(empleos)):
+            imprime('{:<12} {:12.{prec}f} {:12.{prec}f} {:12.{prec}f}'.format(rot[i], empleos[i], recursos[i], empleos[i] - recursos[i], prec=prin.DECIMALES))
+        imprime('------------ ------------ ------------ ------------')
+        imprime('{:<12}                           {:12.{prec}f}'.format('suma', diferencias.sum(), prec=prin.DECIMALES))
+        imprime('')
+    return (rot, mcs)
+
+def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo, infor_cuadre):
+    if DECIMALES == 0:
+        ESPA = 8
+        subraya = '--------'
+    else:
+        ESPA = 9
+        subraya = '---------'
+    imprime(titulo)
+    imprime('')
+    n = len(rot)
+    # 'recursos' y 'empleos' sumaran valores redondeados a DECIMALES
+    empleos  = np.zeros(n, dtype=np.float64)
+    recursos = np.zeros(n, dtype=np.float64)
+    imprime('{:12}'.format(''), False)
+    for i in range(n):
+        imprime(' {:>{espa}}'.format(rot[i], espa=ESPA), False)
+    imprime(' {:>{espa}}'.format('Recursos', espa=ESPA))
+    imprime('{:12}'.format('------------'), False)
+    for i in range(n):
+        if i == prin.nsec:
+            imprime('  ', False)
+        imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
+    imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
+    # para cada fila
+    for i in range(n):
+        if i == prin.nsec:
+            imprime('{:12}'.format('------------'), False)
+            for k in range(n):
+                if k == prin.nsec:
+                    imprime('  ', False)
+                imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
+            imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
+            imprime('{:12}'.format(''), False)
+            for k in range(n):
+                if k == prin.nsec:
+                    imprime('  ', False)
+                imprime(' {:>{espa}}'.format(rot[k], espa=ESPA), False)
+            imprime(' {:>{espa}}'.format('Recursos', espa=ESPA))
+            imprime('{:12}'.format('------------'), False)
+            for k in range(n):
+                if k == prin.nsec:
+                    imprime('  ', False)
+                imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
+            imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
+        imprime('{:12}'.format(rot[i]), False)
+        # para cada columna de la fila
+        for j in range(n):
+            if j == prin.nsec:
+                imprime('  ', False)
+            v = np.round(mcs[i,j], DECIMALES) 
+            imprime(' {:{espa}.{prec}f}'.format(v, espa=ESPA, prec=DECIMALES), False)
+            recursos[i] += v    # suma de la fila 'i'
+            empleos[j]  += v    # suma de la columna 'j'
+        imprime(' {:{espa}.{prec}f}'.format(recursos[i], espa=ESPA, prec=DECIMALES))
+    imprime('{:>{espa}}'.format('------------', espa=ESPA), False)
+    for i in range(n):
+        if i == prin.nsec:
+            imprime('  ', False)
+        imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
+    imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
+    imprime('{:12}'.format('Empleos'), False)
+    for i in range(n):
+        if i == prin.nsec:
+            imprime('  ', False)
+        imprime(' {:{espa}.{prec}f}'.format(empleos[i], espa=ESPA, prec=DECIMALES), False)
+    imprime('')
+    imprime('')
+    if infor_cuadre:
+        if np.any(abs(empleos - recursos) > tolerancia):
+            # al menos una cuenta difiere ( abs(columna - fila) redondeadas) en más que 'tolerancia'
+            if np.all(abs(mcs.sum(axis=0) - mcs.sum(axis=1)) < tolerancia) == True:
+                # las sumas de fila y columna, sin redondear, de todas las cuentas coinciden 
+                imprime('Las diferencias entre empleos y recursos se deben exclusivamente a los redondeos de impresión')
+            else:
+                imprime('ERROR en la impresión. ' + titulo + '. No cuadra.')
+            imprime('')
+
 def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, dem, h, vec_opt_ini, vec_opt, npre_sol, etq_precios, ebp_ini, res_ecuaciones, rot):
     nfac = len(h)
     nsec = len(ind)
@@ -1746,400 +2145,3 @@ def isocuanta_sector(i, SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h,
         return vQ, apuntos
     else:
         return vQ, np.array([])
-
-def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
-                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,Y,X,F,Z,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Ti,Te,Tm,E,Sf,tolerancia,titulo,infor_cuadre):
-
-    Sf = (M.dot(pm) - E.dot(pe))
-
-    fil_col_ind = 0
-    nfac = len(h)
-    nsec = len(ind)
-    ndem = len(dem)
-    fil_col_fac = fil_col_ind  + nsec
-    fil_col_dem = fil_col_fac  + nfac
-    fil_col_inv = fil_col_dem  + ndem
-    fil_col_css = fil_col_inv  + len(inv)
-    fil_col_idt = fil_col_css  + len(css)
-    fil_col_trf = fil_col_idt  + len(idt)
-    fil_col_gov = fil_col_trf  + len(trf)
-    fil_col_ext = fil_col_gov  + len(gov)
-    fil_col_ayd = fil_col_ext  + len(ext)
-    fil_col_alp = fil_col_ayd  + len(ayd)
-    n_fil_cols  = fil_col_alp  + len(alp)
-
-    rot = []
-    rot.extend(list(ind))
-    rot.extend(list(h))
-    rot.extend(list(dem))
-    rot.extend(list(inv))
-    rot.extend(list(css))
-    rot.extend(list(idt))
-    rot.extend(list(trf))
-    rot.extend(list(gov))
-    rot.extend(list(ext))
-    rot.extend(list(ayd))
-    rot.extend(list(alp))
-
-    mcs  = np.zeros((n_fil_cols, n_fil_cols), dtype=np.float64)
-
-    # rellenamos cada columna 'col' con los pagos (cantidades/importes) correspondientes a las sucesivas filas, de menor a mayor, 
-    # la MCS de cantidades no cuadra, salvo que todos los precios sean 1, porque la que debe cuadrar es la de importes, por eso
-    # cuanso se calcule la de cantidades 'cuadre' debe ser False para que no comprueba el cuadre.
-
-    #------------------------------------------------------------------------------------------------
-    # sectores. Las primeras 'nsec' columnas
-    #------------------------------------------------------------------------------------------------
-    # pagos por los consumos intermedios a otros sectores
-    col = fil_col_ind
-    for i in range(nsec):
-        # sector 'i'
-        fil = fil_col_ind
-        for j in range(nsec):
-            # rellenamos las filas (compras a j) de la columna (sector i)
-
-            # X[j,i] compras al sector 'j' por el sector 'i' al precio de 'j'.
-            # las filas 'i' de X son las ventas del sector 'i' al 'j' y las columnas 'j' las compras del sector 'i' al sector 'j'
-            mcs[fil,col] = X[j,i] * pq[j]
-            fil += 1
-        col += 1
-    # pagos por el uso de los factores de producción (F incluye Alp)
-    imF = F * pf
-    col = fil_col_ind
-    for i in range(nsec):
-        fil = fil_col_fac
-        for j in range(nfac):
-            mcs[fil,col] = imF[i,j]
-            fil += 1
-        col += 1
-    # pago de las cotizaciones de las empresas a la seguridad social
-    col = fil_col_ind
-    fil = fil_col_css
-    for i in range(nsec):
-        mcs[fil,col] = CssE[i]  # ya está calculada al precio del factor trabajo (pf)
-        col += 1
-    # pago de los impuestos a la producción
-    col = fil_col_ind
-    fil = fil_col_idt
-    for i in range(nsec):
-        mcs[fil,col] = Tz[i]    # ya están calculados al precio de Z (pz)
-        col += 1
-    # pago de aranceles a la cuenta 'trf'
-    col = fil_col_ind
-    fil = fil_col_trf
-    for i in range(nsec):
-        mcs[fil,col] = Tm[i]   # ya está calculado al precio de importaión (pm)
-        col += 1
-    # pago por las importaciones de las empresas
-    col = fil_col_ind
-    fil = fil_col_ext
-    imM = M * pm
-    for i in range(nsec):
-        mcs[fil,col] = imM[i]
-        col += 1
-    #------------------------------------------------------------------------------------------------
-    # columnas factores de producción. Las iguientes 'nfac' columnas
-    #------------------------------------------------------------------------------------------------
-    # pagos de los sectores por los factores de produccion = ingresos de los hogares por los factores de produccion
-    imFF = FF * pf
-    # FF no contiene los Alp
-    imAlp = Alp * pf
-    col = fil_col_fac
-    for i in range(nfac):
-        fil = fil_col_dem
-        for j in range(ndem):
-            mcs[fil,col] = imFF[j,i] + imAlp[j,i]
-            fil += 1
-        col += 1
-    #------------------------------------------------------------------------------------------------
-    # hogares. Las siguientes 'ndem' columnas
-    #------------------------------------------------------------------------------------------------
-    # pagos de los hogares por sus consumos
-    imXp = Xp * pq
-    col = fil_col_dem
-    for i in range(ndem):
-        fil = fil_col_ind
-        for j in range(nsec):
-            mcs[fil,col] = imXp[i,j]
-            fil += 1
-        col += 1
-    # transferencia de los ahorros (a corto) de los hogares a la cuenta de inversiones para que esta las
-    # transfiera luego a los sectores como inversiones
-    col = fil_col_dem
-    for i in range(ndem):
-        fil = fil_col_inv
-        mcs[fil,col] = Sp[i]
-        col += 1
-    # transferencia a la cuenta de ahorro a largo plazo 
-    imAlp = Alp * pf
-    col = fil_col_dem
-    fil = fil_col_alp
-    for i in range(ndem):
-        # cada hogar su ahorro a largo plazo
-        mcs[fil,col] = imAlp.sum(axis=1)[i] # sumados los factores
-        col += 1
-    # pagos de la cotización de los hogares a la seguridad social
-    col = fil_col_dem
-    fil = fil_col_css
-    for i in range(ndem):
-        mcs[fil,col] = CssH[i]
-        col += 1
-    # como 'Td' es el total de impuestos directos lo repartimos en la misma relación
-    # que tenían los impuestos directos y los ottros impuestos en la MCS
-    # pagos de impuestos directos por los hogares
-    col = fil_col_dem
-    fil = fil_col_idt
-    Td_id = 0.
-    for i in range(ndem):
-        if datos.Td0[i] > 0:
-            v = Td[i] * datos.Toi0[i] / datos.Td0[i]
-            mcs[fil,col] = v
-            Td_id += v
-            col += 1
-    # añadimos los pagos de los otros impuestos sobre los productos pagados por los hogares.
-    col = fil_col_dem
-    fil = fil_col_idt
-    Td_oi = 0.
-    for i in range(ndem):
-        if datos.Td0[i] > 0:
-            v = Td[i] * datos.Tid0[i] / datos.Td0[i]
-            mcs[fil,col] += v
-            Td_oi += v
-            col += 1
-    #------------------------------------------------------------------------------------------------
-    # ahorro + inversion´. Las siguientes 'len(inv)' columnas (una)
-    #------------------------------------------------------------------------------------------------
-    # ahorro que se invierte en cada sector (todos los ahorros: hogares, gobierno, css, exterior)
-    imXv = Xv * pq
-    col = fil_col_inv
-    fil = fil_col_ind
-    for i in range(nsec):
-        mcs[fil,col] = imXv[i]
-        fil += 1
-    #------------------------------------------------------------------------------------------------
-    # seguridad social. Las siguientes 'len(css)' columnas (una)
-    #------------------------------------------------------------------------------------------------
-    if len(css) > 0:
-        if PssH.sum() == 0:
-            # si no paga pensiones es que las paga el gobierno, po lo tanto
-            # transferimos todos sus ingreso al gobierno
-            col = fil_col_css
-            fil = fil_col_gov
-            mcs[fil,col] = CssH.sum() + CssE.sum()
-        else:
-            # es una cuenta autónoma (desligada del gobierno): ingresa, paga y ahorra
-            # paga las pensiones
-            col = fil_col_css
-            fil = fil_col_dem
-            for i in range(ndem):
-                mcs[fil,col] = PssH[i]
-                fil += 1
-            # ahorro + inversión = todo lo recaudado menos las pensiones
-            # transfiere a la cuenta de inversiones el ahorro
-            col = fil_col_css
-            fil = fil_col_inv
-            mcs[fil,col] = CssH.sum() + CssE.sum() - PssH.sum()
-    #------------------------------------------------------------------------------------------------
-    # Las siguientes 'len(idt)' columnas (una)
-    # transferencias al gobierno de lo recaudado por 'idt' en conepto de
-    # impuestos a la producción 
-    # impuestos sobre los productos pagados por los hogares.
-    # impuestos pagados por el gobierno
-    #------------------------------------------------------------------------------------------------
-    if len(idt) > 0:
-        col = fil_col_idt
-        fil = fil_col_gov
-        mcs[fil,col] = Tz.sum() + Td_id + Td_oi + Tg + Ti + Te
-    #------------------------------------------------------------------------------------------------
-    # aranceles. Las siguientes 'len(trf)' columnas  (una)
-    # transferencia de los aranceles, recaudados de los sectores por 'trf', al gobierno
-    #------------------------------------------------------------------------------------------------
-    if len(trf) > 0:
-        col = fil_col_trf
-        fil = fil_col_gov
-        mcs[fil,col] = Tm.sum()
-    #------------------------------------------------------------------------------------------------
-    # sector público (gobierno). Las siguientes 'len(gov)' columnas  (una)
-    #------------------------------------------------------------------------------------------------
-    # consumos
-    imXg = Xg * pq
-    col = fil_col_gov
-    fil = fil_col_ind
-    for j in range(nsec):
-        mcs[fil,col] = imXg[j]
-        fil += 1
-    # ahorro + inversión
-    col = fil_col_gov
-    fil = fil_col_inv
-    mcs[fil,col] = Sg
-    # impuestos gobierno
-    col = fil_col_gov
-    fil = fil_col_idt
-    mcs[fil,col] = Tg
-    # impuestos ahorro
-    col = fil_col_inv
-    fil = fil_col_idt
-    mcs[fil,col] = Ti
-    # impuestos sector exterior
-    col = fil_col_ext
-    fil = fil_col_idt
-    mcs[fil,col] = Te
-    # ayudas
-    col = fil_col_gov
-    fil = fil_col_ayd
-    mcs[fil,col] = AgE.sum() + AgH.sum()
-
-    #------------------------------------------------------------------------------------------------
-    # sector exterior. Las siguientes 'len(ext)' columnas  (una)
-    #------------------------------------------------------------------------------------------------
-    # exportaciones
-    imE = E * pe
-    col = fil_col_ext
-    fil = fil_col_ind
-    for i in range(nsec):
-        mcs[fil,col] = imE[i]
-        fil += 1
-    # ahorro + inversión
-    col = fil_col_ext
-    fil = fil_col_inv
-    #mcs[fil,col] = Sf * epsilon
-    mcs[fil,col] = Sf
-    #------------------------------------------------------------------------------------------------
-    # ayudas. Las siguientes 'len(ayd)' columnas  (una)
-    #------------------------------------------------------------------------------------------------
-    # a las empresas
-    if len(ayd) > 0:
-        col = fil_col_ayd
-        fil = fil_col_ind
-        for i in range(nsec):
-            mcs[fil,col] = AgE[i]
-            fil += 1
-        # a los hogares
-        col = fil_col_ayd
-        fil = fil_col_dem
-        for i in range(ndem):
-            mcs[fil,col] = AgH[i]
-            fil += 1
-
-    #------------------------------------------------------------------------------------------------
-    # Ajuste de los Alp
-    # Conceptualmente los Alp hacen que no se cierre el círculo económico y que la MCS se descuadre
-    # los sectores las pagan y los hogares las cobran, pero no hacen nada con ellas por lo que las filas
-    # de los sectores se descuadran, no tienen un ingreso que las respalde, que debería provenir de la
-    # circularidad de las relaciones económicas. Nosotros las vamos a tratar como el ahorro a corto plazo
-    # que en un modelo estático no tiene otro papel (no se hace nada con ellas) que el de cuadrar la MCS:
-    #   los hogares las transfieren a la cuenta ALP, igual que los ahorros a corto a la cuenta INV
-    #   la cuenta Alp las asigna a lo sectores tal como como se hace con los otros ahorrros, salvo
-    #   por la forma de reparto, la única forma que el modelo tiene se saber cuanto corresponde a
-    #   cada sector es por el descuadre entre la suma de la fila y columna del sector, pero esto
-    #   es peligroso porque puede esconder errores, empíricamente se observa que el reparto correcto
-    #   es proporcionalmente a la producción bruta Z de cada sector.
-    #------------------------------------------------------------------------------------------------
-    # repartir el total de Alp entre sectores en proporción a su producción bruta
-    if len(alp) > 0 and abs(Alp).sum() > 0:
-        imAlp  = Alp * pf
-        totAlp = imAlp.sum()
-        totZ   = 0.
-        for i in range(nsec):
-            totZ += Z[i] * pz[i]
-        col = fil_col_alp
-        fil = fil_col_ind
-        for i in range(nsec):
-            mcs[fil,col] = totAlp * Z[i] * pz[i] / totZ
-            fil += 1
-
-    #------------------------------------------------------------------------------------------------
-    # comprobar cuadre de filas y columnas
-    #------------------------------------------------------------------------------------------------
-    recursos    = mcs.sum(axis=1) # suma de las filas
-    empleos     = mcs.sum(axis=0) # suma de las columnas
-    diferencias = empleos - recursos
-    if infor_cuadre and (np.any(abs(diferencias) > tolerancia)):
-        # al menos una cuenta difiere ( abs(columna - fila) ) en más que 'tolerancia'
-        imprime('')
-        imprime('ERROR. ' + titulo + '. No cuadra. La suma de fila y columna de al menos una cuenta no coincide.')
-        imprime('                 empleos     recursos   diferencia')
-        imprime('------------ ------------ ------------ ------------')
-        for i in range(len(empleos)):
-            imprime('{:<12} {:12.{prec}f} {:12.{prec}f} {:12.{prec}f}'.format(rot[i], empleos[i], recursos[i], empleos[i] - recursos[i], prec=prin.DECIMALES))
-        imprime('------------ ------------ ------------ ------------')
-        imprime('{:<12}                           {:12.{prec}f}'.format('suma', diferencias.sum(), prec=prin.DECIMALES))
-        imprime('')
-    return (rot, mcs)
-
-def imprime_MCS(rot, mcs, DECIMALES, tolerancia, titulo, infor_cuadre):
-    if DECIMALES == 0:
-        ESPA = 8
-        subraya = '--------'
-    else:
-        ESPA = 9
-        subraya = '---------'
-    imprime(titulo)
-    imprime('')
-    n = len(rot)
-    # 'recursos' y 'empleos' sumaran valores redondeados a DECIMALES
-    empleos  = np.zeros(n, dtype=np.float64)
-    recursos = np.zeros(n, dtype=np.float64)
-    imprime('{:12}'.format(''), False)
-    for i in range(n):
-        imprime(' {:>{espa}}'.format(rot[i], espa=ESPA), False)
-    imprime(' {:>{espa}}'.format('Recursos', espa=ESPA))
-    imprime('{:12}'.format('------------'), False)
-    for i in range(n):
-        if i == prin.nsec:
-            imprime('  ', False)
-        imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
-    imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
-    # para cada fila
-    for i in range(n):
-        if i == prin.nsec:
-            imprime('{:12}'.format('------------'), False)
-            for k in range(n):
-                if k == prin.nsec:
-                    imprime('  ', False)
-                imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
-            imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
-            imprime('{:12}'.format(''), False)
-            for k in range(n):
-                if k == prin.nsec:
-                    imprime('  ', False)
-                imprime(' {:>{espa}}'.format(rot[k], espa=ESPA), False)
-            imprime(' {:>{espa}}'.format('Recursos', espa=ESPA))
-            imprime('{:12}'.format('------------'), False)
-            for k in range(n):
-                if k == prin.nsec:
-                    imprime('  ', False)
-                imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
-            imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
-        imprime('{:12}'.format(rot[i]), False)
-        # para cada columna de la fila
-        for j in range(n):
-            if j == prin.nsec:
-                imprime('  ', False)
-            v = np.round(mcs[i,j], DECIMALES) 
-            imprime(' {:{espa}.{prec}f}'.format(v, espa=ESPA, prec=DECIMALES), False)
-            recursos[i] += v    # suma de la fila 'i'
-            empleos[j]  += v    # suma de la columna 'j'
-        imprime(' {:{espa}.{prec}f}'.format(recursos[i], espa=ESPA, prec=DECIMALES))
-    imprime('{:>{espa}}'.format('------------', espa=ESPA), False)
-    for i in range(n):
-        if i == prin.nsec:
-            imprime('  ', False)
-        imprime(' {:>{espa}}'.format(subraya, espa=ESPA), False)
-    imprime(' {:>{espa}}'.format(subraya, espa=ESPA))
-    imprime('{:12}'.format('Empleos'), False)
-    for i in range(n):
-        if i == prin.nsec:
-            imprime('  ', False)
-        imprime(' {:{espa}.{prec}f}'.format(empleos[i], espa=ESPA, prec=DECIMALES), False)
-    imprime('')
-    imprime('')
-    if infor_cuadre:
-        if np.any(abs(empleos - recursos) > tolerancia):
-            # al menos una cuenta difiere ( abs(columna - fila) redondeadas) en más que 'tolerancia'
-            if np.all(abs(mcs.sum(axis=0) - mcs.sum(axis=1)) < tolerancia) == True:
-                # las sumas de fila y columna, sin redondear, de todas las cuentas coinciden 
-                imprime('Las diferencias entre empleos y recursos se deben exclusivamente a los redondeos de impresión')
-            else:
-                imprime('ERROR en la impresión. ' + titulo + '. No cuadra.')
-            imprime('')
