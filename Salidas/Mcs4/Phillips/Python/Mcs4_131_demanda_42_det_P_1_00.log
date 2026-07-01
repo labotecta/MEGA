@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs4_131_demanda_42_det_P_1_00
@@ -39,14 +39,15 @@ C2          0.019048  0.035472  0.210512  0.008847  0.721716  0.004406
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/Python/v_vars_solucion_Mcs6.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
+Tolerancia en el objetivo               2.000e-10
 Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0500 %
 Tolerancia en las verificaciones        1.000e-08
-Iteraciones para historial                  1,000
+Iteraciones para historial                    100
 Iteraciones para soluciones                    -1
 Balanza de pagos                       Mantenerla constante
 Función de utilidad de la demanda      Cobb-Douglas
@@ -57,13 +58,16 @@ Aportación de factores por los hogares ENDOGENA
 Factor ahorro a largo plazo                100.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
+Peso de las desviaciones Ydp               1.0000
 Usar DLL                               No
-Recombinación                               0.900
-Estrategia                             best1bin
-Tamaño de la población                          5        240 individuos
-Número de workers                              32
-Periodicidad actualización             deferred
 Usar genético DLL                      No
+SCIPY
+    Estrategia                                          best1bin
+    Factor de mutación                                  [0.500,1.000]
+    Factor de recombinación                                0.99950
+    Número de workers                                           32
+    Tamaño de la población                                      30       1440 individuos
+    Periodicidad actualización                          deferred
 
 Rango de validez de los precios en % -     90.0 +     99.0
 Rango de validez de las variables  % -     90.0 +     90.0
@@ -86,11 +90,24 @@ Evolución de la minimización
   Python   1.83844e+06
 
         1  1.83844e+06
-     1000  4.37888e+01
-     2000  5.91581e-03
-     3000  3.06804e-06
-     4000  1.20975e-09
-     5000  5.83040e-11
+      100  1.83844e+06
+      200  1.83844e+06
+      300  1.83844e+06
+      400  1.83844e+06
+      500  1.05680e+06
+      600  7.24212e+03
+      700  2.84630e+02
+      800  1.16615e+01
+      900  2.72162e-01
+     1000  4.15533e-03
+     1100  5.16847e-04
+     1200  5.04303e-05
+     1300  9.88287e-06
+     1400  1.30589e-06
+     1500  3.53566e-08
+     1600  8.97578e-10
+
+
 -----------------------------------------------------------
 VALORES FINALES
 -----------------------------------------------------------
@@ -210,7 +227,7 @@ Déficit por cuenta corriente. M - E
 Sf Ind             -202.6      27728.6      59963.6        -72.1     -19695.5        -39.0 S=     67683.0
 Sf                67683.0
 Equilibrio de la balanza de pagos
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
 Apz              -0.00013
 
@@ -228,10 +245,10 @@ AP4              273763.1     273762.2          0.9
 AP5              821341.8     821342.0         -0.2
 AP6              147773.5     147774.8         -1.3
 K                379076.5     379076.5          0.0
-L                334611.9     334611.9         -0.0
-C1               713688.3     713688.3         -0.0
+L                334611.9     334611.9          0.0
+C1               713688.3     713688.3          0.0
 C2                96804.0      96804.0          0.0
-A-I              245422.1     245422.1         -0.0
+A-I              245422.1     245422.1          0.0
 CSS              117520.8     117520.8          0.0
 INP              201756.1     201756.1          0.0
 TRF                   0.0          0.0          0.0
@@ -300,7 +317,7 @@ ALP                0.0       0.0       0.0       0.0       0.0       0.0        
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        50835.7  117148.1  638339.0  273796.1  821369.0  147768.1    379076.5  334551.7  713760.7   96813.9  245477.0  117520.8  201756.1       0.0  201766.9  275017.1    3622.9     227.2
 
-La distancia (error de la función objetivo) es 5.82998e-11
+La distancia (error de la función objetivo) es 1.99309e-10
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -309,19 +326,19 @@ Número de variables endógenas :181 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   1.18938e+05   3.84350e-06   1.28700e-06         0.000
- 2.F   6. 2   5.94690e+04   7.66258e-06   1.22884e-06         0.000
- 4.Yd  6. 4   1.18938e+05   1.15324e-05   3.20311e-06         0.000
- 6.Td  6. 6   8.80723e+04   4.12809e-07   4.12809e-07         0.000
-11.Sp  6.11   6.53603e+04   2.99755e-07   2.99755e-07         0.000
-13.Xp  6.13   4.02030e+04   1.89632e-06   1.37492e-06         0.000
-14.ebp 6.16   3.85859e-07   3.85859e-07   3.85859e-07            --
-15.Q   6.17   3.06380e+05   5.66275e-06   1.77060e-06         0.000
-18.Z   6.20   2.75441e+05   9.74935e-06   3.02663e-06         0.000
-20.Dtr 6.22   2.60544e+05   5.16132e-06   1.59294e-06         0.000
-21.Css E      1.60791e+04   5.46863e-07   2.45069e-07         0.000
-22.Css H      1.05231e+04   1.19300e-07   1.19300e-07         0.000
-25.Qeq 6.23   3.06380e+05   8.93724e-06   2.04804e-06         0.000
+ 1.Yp  6. 1   1.18938e+05   1.20013e-05   2.67486e-06         0.000
+ 2.F   6. 2   5.94690e+04   8.55026e-06   1.95972e-06         0.000
+ 4.Yd  6. 4   1.18938e+05   1.72109e-05   4.82660e-06         0.000
+ 6.Td  6. 6   8.80723e+04   1.22440e-07   1.22440e-07         0.000
+11.Sp  6.11   6.53603e+04   8.88977e-08   8.88977e-08         0.000
+13.Xp  6.13   4.02030e+04   5.62443e-07   4.07803e-07         0.000
+14.ebp 6.16   1.24579e-06   1.24579e-06   1.24579e-06            --
+15.Q   6.17   3.06380e+05   1.01818e-05   4.12826e-06         0.000
+18.Z   6.20   2.75441e+05   1.27533e-05   4.26440e-06         0.000
+20.Dtr 6.22   2.60544e+05   9.57266e-06   3.68577e-06         0.000
+21.Css E      1.60791e+04   1.62201e-07   7.26868e-08         0.000
+22.Css H      1.05231e+04   3.53830e-08   3.53830e-08         0.000
+25.Qeq 6.23   3.06380e+05   1.37892e-05   4.87972e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -331,21 +348,20 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   9.06206e-11
+Ecm.total desvios   2.36937e-10
 -------------------------------
 
-***********************************************************************
-nit:     6000 mejora: 4.20147e-15 no progresa más
-No se alcanzó el mínimo deseado 1.000e-11 [5.830e-11]
-***********************************************************************
+******************************************************************************
+nit:     1643 fo: 1.99309e-10 valor función objetivo inferior a la tolerancia 
+******************************************************************************
 
-Tiempo de cálculo de la aplicación:         76 s
+Tiempo de cálculo de la aplicación:        142 s
 
 callback function requested stop early
-Número de generaciones 6000
+Número de generaciones 1643
 
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_K                      1.0000000
 pF_L                      1.0001799
 pY_AP1       1.0000000    1.0000319 
@@ -367,7 +383,7 @@ pD_AP4       1.0000000    0.9997497
 pD_AP5       1.0000000    0.9998290 
 pD_AP6       1.0000000    0.9999558 
 epsilon      1.0000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_AP1       pZ_AP2       pZ_AP3       pZ_AP4       pZ_AP5       pZ_AP6       pE_AP1       pE_AP2       pE_AP3       pE_AP4       pE_AP5       pE_AP6       pM_AP1       pM_AP2       pM_AP3       pM_AP4       pM_AP5       pM_AP6
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=  18.0000000
@@ -497,10 +513,10 @@ AgH                   0.0          0.0 S=         0.0
 AgE                   0.5          0.0          0.4          0.0          0.0          0.0 S=         0.9
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente. (M - E) - (M0 - E0)
-Sf sectores          -4.6         -4.4         26.6         -0.1        -17.5         -0.0 S=         0.0
-Sf                    0.0
+Sf sectores          -4.6         -4.4         26.6         -0.1        -17.5         -0.0 S=        -0.0
+Sf                   -0.0
 Equilibrio de la balanza de pagos
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
 Apz              -0.00013
 
@@ -561,7 +577,7 @@ compras X            35.9         40.3       1297.0         29.5       -287.6   
              ------------ ------------ ------------ ------------ ------------ ------------
 Consumo de los hogares. Xp
 C1                   -0.5         -0.9         -5.0         -0.2        -17.5         -0.1 S=       -24.1
-C2                  -24.1        -44.9       1000.0        -11.2       -914.2         -5.6 S=        -0.0
+C2                  -24.1        -44.9       1000.0        -11.2       -914.2         -5.6 S=         0.0
 suma Xp             -24.6        -45.8        995.0        -11.4       -931.6         -5.7 S=       -24.1
              ------------ ------------ ------------ ------------ ------------ ------------
 Consumo del gobierno. Xg
@@ -612,13 +628,13 @@ AgH                   0.0          0.0 S=         0.0
 AgE                   0.3          0.0          0.1          0.0          0.0          0.0 S=         0.4
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente en "divisa"
-Sf sectores          -4.6         -4.4         26.6         -0.1        -17.5         -0.0 S=         0.0
-Sf                    0.0
+Sf sectores          -4.6         -4.4         26.6         -0.1        -17.5         -0.0 S=        -0.0
+Sf                   -0.0
 Déficit por cuenta corriente en moneda local. (M - E) * cotización - (M0 - E0) * cotización base
-Sf sectores          -4.6         -4.4         26.6         -0.1        -17.5         -0.0 S=         0.0
-Sf                    0.0
+Sf sectores          -4.6         -4.4         26.6         -0.1        -17.5         -0.0 S=        -0.0
+Sf                   -0.0
 Equilibrio de la balanza de pagos en "divisas"
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
 Apz              -0.00013
 

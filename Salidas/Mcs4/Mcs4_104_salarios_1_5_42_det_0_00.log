@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs4_104_salarios_1_5_42_det_0_00
@@ -20,10 +20,11 @@ Fichero Matriz Contabilidad Social (MCS) C:/MEGA/Datos/MCA-ESP-05_ajustada_imp_f
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/v_vars_solucion_Mcs6.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
+Tolerancia en el objetivo               2.000e-10
 Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0010 %
 Tolerancia en las verificaciones        1.000e-08
@@ -38,19 +39,22 @@ Aportación de factores por los hogares ENDOGENA
 Factor ahorro a largo plazo                  0.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
+Peso de las desviaciones Ydp               1.0000
 Usar DLL                               Si
-    Factor de recombinación                                 [ 0.99,  1.1]
 Usar genético DLL                      Si
-    Fichero log de la DLL                               saDLL_104.log
+    Factor de mutación                                  [0.750,0.850]
+    Factor de recombinación                                0.99950
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs4/104_2010_0_42_dll.log
     Número de hilos multiproceso                                30
     Número máximo de reinicios por falta de progreso            15
     Error máximo para calificar aceptable una solución       1e-05
     Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
-    Factor de alcance para generar la población inicial       0.05
+    Modo reinicio de la población inicial                        0
+    Factor de alcance para generar la población inicial      0.001
+    Variación del factor de alcance                            1.0
     Sigma para generar población inicial normal                0.1
-    Número de tramos para generar población inicial LHS        100
+    Número de tramos para generar población inicial LHS        400
     Número de individuos de la población inicial              2010
-    Factor de mutación                                        0.72
     Control de factibilidad                             Si
     Solución en formato extenso                         No
     El mejor primero                                    No
@@ -84,54 +88,55 @@ No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA
 respuesta (  0) Solución encontrada
 número de datos         :             59
 intentos                :              1
-generaciones            :           1622
-merito                  :    9.87920e-12
-máxima desviación       :    1.01324e-06
-variable max desviación :            145
+generaciones            :           2622
+merito                  :    1.94321e-10
+máxima desviación       :    4.64381e-06
+variable max desviación :             85
 *****************************************************************
 
 bloque    desvio
 ------ ------------
-Qeq    5.712094e-13
+Qeq    3.900890e-12
 Feq    0.000000e+00
-Fi     3.527528e-12
-Ei     1.677517e-12
-Mi     8.433973e-13
-Dai    5.472869e-13
+Fi     3.874819e-11
+Ei     1.382204e-11
+Mi     2.150301e-11
+Dai    1.386175e-11
 Sf     0.000000e+00
 Xpi    0.000000e+00
 Alp    0.000000e+00
-F      2.515884e-13
-FF     6.056070e-14
-Ydp    1.020692e-12
-Z      3.172779e-13
-X      3.036320e-14
-Xp     1.497506e-14
-Xg     1.075723e-15
-Xv     9.260787e-15
-Q      4.179266e-13
-M      5.638269e-15
-Dat    3.818662e-13
-E      1.014231e-14
-Td     3.979408e-15
-Tz     2.329943e-16
+F      3.542776e-12
+FF     2.702087e-12
+Ydp    4.261012e-11
+Z      9.999115e-12
+X      1.550734e-12
+Xp     1.224749e-16
+Xg     2.275072e-15
+Xv     1.070721e-13
+Q      2.091598e-11
+M      2.556182e-13
+Dat    1.258112e-11
+E      5.519347e-13
+Td     1.090208e-15
+Tz     3.009843e-15
 Tm     0.000000e+00
-Sp     2.101171e-15
-Sg     3.726527e-17
-AgE    3.545777e-19
+Sp     5.751150e-16
+Sg     7.866612e-17
+AgE    7.499177e-19
 AgH    0.000000e+00
-CssE   1.123667e-14
-CssH   2.590303e-16
-ebp/Sf 1.730500e-13
+CssE   2.103616e-13
+CssH   6.355124e-15
+ebp/Sf 7.444484e-12
 Ti     0.000000e+00
 ------ ------------
-total  9.879203e-12
+total  1.943208e-10
 
 generac.    merito
 -------- ------------
        0 6.464384e+08
-    1000 1.626181e-02
-    1622 9.879203e-12
+    1000 1.383764e+02
+    2000 4.727425e-06
+    2622 1.943208e-10
 -------- ------------
 
 -----------------------------------------------------------
@@ -268,8 +273,8 @@ AP3              497637.3     497434.8        202.5
 AP4              219718.4     219668.0         50.4
 AP5              666677.1     666573.0        104.1
 AP6              121696.8     122174.7       -477.9
-K                305005.6     305005.6         -0.0
-L                270349.1     270349.1          0.0
+K                305005.6     305005.6          0.0
+L                270349.1     270349.1         -0.0
 C1               575354.7     575354.7          0.0
 C2                96804.0      96804.0          0.0
 A-I              196452.3     196452.3          0.0
@@ -281,7 +286,7 @@ SE               221756.2     221756.2          0.0
 AYD                2995.5       2995.5          0.0
 ALP                   0.0          0.0          0.0
 ------------ ------------ ------------ ------------
-suma                                            0.0
+suma                                           -0.0
 
 MCS final. Importes
 
@@ -341,8 +346,8 @@ ALP                0.0       0.0       0.0       0.0       0.0       0.0        
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        39328.5   92002.1  491886.8  215521.9  656327.2  118377.7    305005.6  257475.3  569584.0   95824.8  192794.6   94940.7  166898.9       0.0  161944.1  221756.2    2995.5       0.0
 
-La distancia (error de la función objetivo) es 9.87922e-12
-                                           DLL 9.87920e-12
+La distancia (error de la función objetivo) es 1.94320e-10
+                                           DLL 1.94321e-10
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -351,14 +356,14 @@ Número de variables endógenas :181 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   9.37223e+04   2.86284e-06   1.47206e-06         0.000
- 2.F   6. 2   4.68734e+04   2.05764e-06   6.09172e-07         0.000
- 4.Yd  6. 4   9.37223e+04   4.11413e-06   2.19276e-06         0.000
-14.ebp 6.16   1.79658e-07   1.79658e-07   1.79658e-07            --
-15.Q   6.17   2.42314e+05   2.12951e-06   6.56000e-07         0.000
-18.Z   6.20   2.15540e+05   3.09672e-06   8.58010e-07         0.000
-20.Dtr 6.22   2.05366e+05   2.75806e-06   6.40364e-07         0.000
-25.Qeq 6.23   2.42314e+05   2.61177e-06   9.92557e-07         0.000
+ 1.Yp  6. 1   9.37223e+04   6.40721e-06   3.56010e-06         0.000
+ 2.F   6. 2   4.68734e+04   9.16782e-06   2.46515e-06         0.000
+ 4.Yd  6. 4   9.37223e+04   1.83314e-05   7.88807e-06         0.000
+14.ebp 6.16   1.65516e-06   1.65516e-06   1.65516e-06            --
+15.Q   6.17   2.42314e+05   7.15997e-06   2.98518e-06         0.000
+18.Z   6.20   2.15540e+05   1.15082e-05   5.20633e-06         0.000
+20.Dtr 6.22   2.05366e+05   1.17196e-05   3.32963e-06         0.000
+25.Qeq 6.23   2.42314e+05   1.17144e-05   4.07139e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -368,13 +373,13 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.51648e-11
+Ecm.total desvios   2.38511e-10
 -------------------------------
 
 Tiempo de cálculo de la aplicación:          3 s
 
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_K                      1.0000000
 pF_L                      1.0500000
 pY_AP1       1.0000000    1.0086804 
@@ -396,7 +401,7 @@ pD_AP4       1.0000000    1.0207470
 pD_AP5       1.0000000    1.0194343 
 pD_AP6       1.0000000    1.0396296 
 epsilon      1.0000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_AP1       pZ_AP2       pZ_AP3       pZ_AP4       pZ_AP5       pZ_AP6       pE_AP1       pE_AP2       pE_AP3       pE_AP4       pE_AP5       pE_AP6       pM_AP1       pM_AP2       pM_AP3       pM_AP4       pM_AP5       pM_AP6
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=  18.0000000

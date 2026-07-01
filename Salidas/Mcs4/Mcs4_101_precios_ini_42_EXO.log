@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs4_101_precios_ini_42_EXO
@@ -79,10 +79,11 @@ Precios
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/v_vars_solucion_Mcs6.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
+Tolerancia en el objetivo               2.000e-10
 Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0010 %
 Tolerancia en las verificaciones        1.000e-08
@@ -97,19 +98,22 @@ Aportación de factores por los hogares exógena
 Factor ahorro a largo plazo                  0.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
+Peso de las desviaciones Ydp               1.0000
 Usar DLL                               Si
-    Factor de recombinación                                 [ 0.99,  1.1]
 Usar genético DLL                      Si
-    Fichero log de la DLL                               saDLL_101.log
+    Factor de mutación                                  [0.750,0.850]
+    Factor de recombinación                                0.99950
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs4/101_2010_0_42_dll.log
     Número de hilos multiproceso                                30
     Número máximo de reinicios por falta de progreso            15
     Error máximo para calificar aceptable una solución       1e-05
     Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
-    Factor de alcance para generar la población inicial       0.05
+    Modo reinicio de la población inicial                        0
+    Factor de alcance para generar la población inicial      0.001
+    Variación del factor de alcance                            1.0
     Sigma para generar población inicial normal                0.1
-    Número de tramos para generar población inicial LHS        100
+    Número de tramos para generar población inicial LHS        400
     Número de individuos de la población inicial              2010
-    Factor de mutación                                        0.72
     Control de factibilidad                             Si
     Solución en formato extenso                         No
     El mejor primero                                    No
@@ -137,54 +141,55 @@ No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA
 respuesta (  0) Solución encontrada
 número de datos         :             59
 intentos                :              1
-generaciones            :           1722
-merito                  :    9.99012e-12
-máxima desviación       :    1.09265e-06
-variable max desviación :            150
+generaciones            :           2898
+merito                  :    1.96771e-10
+máxima desviación       :    4.21465e-06
+variable max desviación :            145
 *****************************************************************
 
 bloque    desvio
 ------ ------------
-Qeq    1.382760e-12
-Feq    6.676014e-13
-Fi     2.122490e-12
-Ei     1.354377e-12
-Mi     3.551387e-13
-Dai    8.484365e-13
+Qeq    1.253280e-11
+Feq    1.180035e-11
+Fi     4.330441e-11
+Ei     2.736230e-11
+Mi     1.025896e-11
+Dai    1.931033e-11
 Sf     0.000000e+00
 Xpi    0.000000e+00
 Alp    0.000000e+00
-F      1.421858e-13
+F      8.742714e-12
 FF     0.000000e+00
-Ydp    7.795371e-13
-Z      4.332775e-13
-X      6.222323e-14
+Ydp    1.466978e-11
+Z      1.479165e-11
+X      3.079550e-12
 Xp     0.000000e+00
-Xg     3.747752e-16
-Xv     7.011654e-16
-Q      6.349071e-13
-M      5.712364e-14
-Dat    1.041028e-12
-E      5.345417e-15
+Xg     5.506593e-15
+Xv     3.247907e-13
+Q      7.133658e-12
+M      4.641511e-13
+Dat    2.185554e-11
+E      3.166963e-13
 Td     0.000000e+00
-Tz     2.354911e-16
+Tz     5.536861e-15
 Tm     0.000000e+00
 Sp     0.000000e+00
-Sg     1.199483e-17
-AgE    1.142569e-19
+Sg     1.764184e-16
+AgE    1.679599e-18
 AgH    0.000000e+00
-CssE   5.966880e-15
+CssE   6.419726e-13
 CssH   0.000000e+00
-ebp/Sf 9.639395e-14
+ebp/Sf 1.704906e-13
 Ti     0.000000e+00
 ------ ------------
-total  9.990115e-12
+total  1.967714e-10
 
 generac.    merito
 -------- ------------
-       0 1.448112e+11
-    1000 7.762983e-02
-    1722 9.990115e-12
+       0 1.318484e+11
+    1000 7.474855e+03
+    2000 3.282284e-04
+    2898 1.967714e-10
 -------- ------------
 
 -----------------------------------------------------------
@@ -306,9 +311,9 @@ Déficit por cuenta corriente. M - E
 Sf Ind             -198.0      27733.0      59937.0        -72.0     -19678.0        -39.0 S=     67683.0
 Sf                67683.0
 Equilibrio de la balanza de pagos
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
-Apz               0.00000
+Apz              -0.00000
 
 
 MCS final. Importes
@@ -367,8 +372,8 @@ ALP                0.0       0.0       0.0       0.0       0.0       0.0        
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        29679.0   78243.5  422188.5  144406.5  460263.0   86723.5    189491.5  167209.0  501242.5   67773.5  122666.0  117447.0  201704.0       0.0  116057.5  274404.0    3622.0       0.0
 
-La distancia (error de la función objetivo) es 9.99012e-12
-                                           DLL 9.99012e-12
+La distancia (error de la función objetivo) es 1.96771e-10
+                                           DLL 1.96771e-10
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -377,15 +382,14 @@ Número de variables endógenas :181 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   1.18900e+05   1.18418e-06   5.71716e-07         0.000
- 2.F   6. 2   5.94501e+04   1.15160e-06   4.56057e-07         0.000
- 4.Yd  6. 4   1.18900e+05   2.30323e-06   1.48715e-06         0.000
-14.ebp 6.16   1.83354e-07   1.83354e-07   1.83354e-07            --
-15.Q   6.17   3.06120e+05   1.87295e-06   8.88816e-07         0.000
-18.Z   6.20   2.75186e+05   3.64585e-06   1.09768e-06         0.000
-20.Dtr 6.22   2.60386e+05   2.78293e-06   9.41684e-07         0.000
-25.Qeq 6.23   3.06120e+05   3.84113e-06   1.34140e-06         0.000
-26.Feq 6.24   3.56700e+05   8.22649e-07   6.20843e-07         0.000
+ 1.Yp  6. 1   1.18900e+05   7.45029e-06   2.39459e-06         0.000
+ 2.F   6. 2   5.94501e+04   3.28301e-06   1.56368e-06         0.000
+ 4.Yd  6. 4   1.18900e+05   6.56608e-06   3.85133e-06         0.000
+15.Q   6.17   3.06120e+05   1.11566e-05   3.57348e-06         0.000
+18.Z   6.20   2.75186e+05   1.55600e-05   3.92937e-06         0.000
+20.Dtr 6.22   2.60386e+05   1.06790e-05   4.24020e-06         0.000
+25.Qeq 6.23   3.06120e+05   1.16535e-05   2.78877e-06         0.000
+26.Feq 6.24   3.56701e+05   1.70904e-06   1.05583e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -395,13 +399,13 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.29526e-11
+Ecm.total desvios   1.68754e-10
 -------------------------------
 
 Tiempo de cálculo de la aplicación:          3 s
 
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_K                      1.0000000
 pF_L                      1.0000000
 pY_AP1       0.5000000    1.0000000 
@@ -423,7 +427,7 @@ pD_AP4       0.5000000    1.0000000
 pD_AP5       0.5000000    1.0000000 
 pD_AP6       0.5000000    1.0000000 
 epsilon      0.5000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_AP1       pZ_AP2       pZ_AP3       pZ_AP4       pZ_AP5       pZ_AP6       pE_AP1       pE_AP2       pE_AP3       pE_AP4       pE_AP5       pE_AP6       pM_AP1       pM_AP2       pM_AP3       pM_AP4       pM_AP5       pM_AP6
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
     0.5000000    0.5000000    0.5000000    0.5000000    0.5000000    0.5000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=  15.0000000
@@ -434,7 +438,7 @@ epsilon      0.5000000    1.0000000
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
 
 --------------------------------------------
-Variación del bienestar económico  8.274e-07
+Variación del bienestar económico  6.531e-06
 --------------------------------------------
                        C1           C2
              ------------ ------------
@@ -476,46 +480,46 @@ suma FF+Alp           0.0          0.0 S=         0.0
              ------------ ------------
 Factores utilizados por los sectores. F
 AP1                  -0.0         -0.0 S=        -0.0
-AP2                   0.0          0.0 S=         0.0
-AP3                  -0.0         -0.0 S=        -0.0
-AP4                  -0.0         -0.0 S=        -0.0
-AP5                   0.0         -0.0 S=        -0.0
+AP2                  -0.0         -0.0 S=        -0.0
+AP3                   0.0         -0.0 S=         0.0
+AP4                  -0.0          0.0 S=         0.0
+AP5                   0.0          0.0 S=         0.0
 AP6                   0.0          0.0 S=         0.0
-suma F                0.0         -0.0 S=        -0.0
+suma F                0.0         -0.0 S=         0.0
              ------------ ------------
 Factor compuesto. Y (Valor Añadido Bruto)
                       AP1          AP2          AP3          AP4          AP5          AP6
              ------------ ------------ ------------ ------------ ------------ ------------
-Y                    -0.0          0.0         -0.0         -0.0         -0.0          0.0 S=        -0.0
+Y                    -0.0         -0.0          0.0          0.0          0.0          0.0 S=         0.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Consumo intermedio filas: ventas, columnas: compras. X
-AP1                  -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-AP2                  -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-AP3                  -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-AP4                  -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-AP5                  -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
+AP1                  -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
+AP2                  -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
+AP3                  -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
+AP4                  -0.0          0.0          0.0         -0.0          0.0          0.0 S=        -0.0
+AP5                  -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
 AP6                   0.0          0.0          0.0          0.0          0.0          0.0 S=         0.0
-compras X            -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
+compras X            -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Consumo de los hogares. Xp
-C1                    0.0          0.0          0.0          0.0          0.0          0.0 S=         0.0
-C2                    0.0          0.0          0.0          0.0          0.0          0.0 S=         0.0
-suma Xp               0.0          0.0          0.0          0.0          0.0          0.0 S=         0.0
+C1                   -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
+C2                   -0.0          0.0          0.0          0.0          0.0          0.0 S=         0.0
+suma Xp              -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Consumo del gobierno. Xg
 Xg                    0.0          0.0          0.0          0.0          0.0          0.0 S=         0.0
 Consumo de inversión. Xv
-Xv                    0.0          0.0         -0.0          0.0          0.0          0.0 S=         0.0
+Xv                   -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Consumo total
-X+Xp+Xg+Xv            0.0         -0.0         -0.0          0.0          0.0          0.0 S=         0.0
+X+Xp+Xg+Xv           -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
 Producción total
-Q                    -0.0         -0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
+Q                    -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
              ------------ ------------ ------------ ------------ ------------ ------------
-D                    -0.0         -0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-M                    -0.0         -0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-E                     0.0         -0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
-Z                    -0.0          0.0         -0.0         -0.0          0.0          0.0 S=        -0.0
+D                    -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
+M                     0.0         -0.0          0.0          0.0          0.0          0.0 S=         0.0
+E                    -0.0          0.0          0.0         -0.0         -0.0          0.0 S=         0.0
+Z                    -0.0          0.0          0.0         -0.0          0.0          0.0 S=         0.0
 ---------------------------------------------------------------------------------------------------------
 Importes
 ---------------------------------------------------------------------------------------------------------
@@ -531,7 +535,7 @@ Te                    0.0
 CssH                  0.0          0.0 S=         0.0
                       AP1          AP2          AP3          AP4          AP5          AP6
              ------------ ------------ ------------ ------------ ------------ ------------
-CssE                 -0.0          0.0         -0.0         -0.0         -0.0          0.0 S=        -0.0
+CssE                 -0.0         -0.0         -0.0          0.0         -0.0          0.0 S=        -0.0
              ------------ ------------ ------------ ------------ ------------ ------------
 def/sup ss           -0.0
 Ahorro-Inversión
@@ -553,12 +557,12 @@ AgH                   0.0          0.0 S=         0.0
 AgE                  -0.0          0.0         -0.0          0.0          0.0          0.0 S=        -0.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente. (M - E) - (M0 - E0)
-Sf sectores          -0.0         -0.0          0.0          0.0         -0.0         -0.0 S=        -0.0
-Sf                   -0.0
+Sf sectores           0.0         -0.0         -0.0          0.0          0.0         -0.0 S=         0.0
+Sf                    0.0
 Equilibrio de la balanza de pagos
-equi.bal.pag          0.0
+equi.bal.pag         -0.0
 
-Apz               0.00000
+Apz              -0.00000
 
 
 Diferencias entre los valores finales y los iniciales
@@ -631,8 +635,8 @@ Producción total
 Q                 20312.0      54001.5     251399.0     136797.0     382007.0      73843.5 S=    918360.0
              ------------ ------------ ------------ ------------ ------------ ------------
 D                 16323.5      35602.5     155747.5     136789.0     362852.0      73843.5 S=    781158.0
-M                    -0.0         -0.0         -0.0         -0.0         -0.0          0.0 S=        -0.0
-E                     0.0         -0.0         -0.0         -0.0         -0.0          0.0 S=        -0.0
+M                     0.0         -0.0         -0.0          0.0          0.0          0.0 S=        -0.0
+E                    -0.0          0.0         -0.0         -0.0         -0.0          0.0 S=        -0.0
 Z                 21048.0      38824.5     213669.5     129275.5     361739.0      61002.5 S=    825559.0
 Impuestos
 Tz                    0.0        628.5          0.0       1226.5       8475.5       2233.5 S=     12564.0
@@ -668,14 +672,14 @@ AgH                   0.0          0.0 S=         0.0
 AgE                 964.0          0.0        847.0          0.0          0.0          0.0 S=      1811.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente en "divisa"
-Sf sectores          -0.0         -0.0          0.0          0.0         -0.0         -0.0 S=        -0.0
-Sf                   -0.0
+Sf sectores           0.0         -0.0         -0.0          0.0          0.0         -0.0 S=         0.0
+Sf                    0.0
 Déficit por cuenta corriente en moneda local. (M - E) * cotización - (M0 - E0) * cotización base
-Sf sectores          -0.0         -0.0          0.0          0.0          0.0         -0.0 S=        -0.0
+Sf sectores           0.0         -0.0         -0.0          0.0          0.0         -0.0 S=        -0.0
 Sf                   -0.0
 Equilibrio de la balanza de pagos en "divisas"
-equi.bal.pag          0.0
+equi.bal.pag         -0.0
 
-Apz               0.00000
+Apz              -0.00000
 
 

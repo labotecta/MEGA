@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs4_102_demanda_42_exo
@@ -39,10 +39,11 @@ C2          0.019048  0.035472  0.210512  0.008847  0.721716  0.004406
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/v_vars_solucion_Mcs6.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
+Tolerancia en el objetivo               2.000e-10
 Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0010 %
 Tolerancia en las verificaciones        1.000e-08
@@ -57,19 +58,22 @@ Aportación de factores por los hogares exógena
 Factor ahorro a largo plazo                  0.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
+Peso de las desviaciones Ydp               1.0000
 Usar DLL                               Si
-    Factor de recombinación                                 [ 0.99,  1.1]
 Usar genético DLL                      Si
-    Fichero log de la DLL                               saDLL_102.log
+    Factor de mutación                                  [0.750,0.850]
+    Factor de recombinación                                0.99950
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs4/102_2010_0_42_dll.log
     Número de hilos multiproceso                                30
     Número máximo de reinicios por falta de progreso            15
     Error máximo para calificar aceptable una solución       1e-05
     Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
-    Factor de alcance para generar la población inicial       0.05
+    Modo reinicio de la población inicial                        0
+    Factor de alcance para generar la población inicial      0.001
+    Variación del factor de alcance                            1.0
     Sigma para generar población inicial normal                0.1
-    Número de tramos para generar población inicial LHS        100
+    Número de tramos para generar población inicial LHS        400
     Número de individuos de la población inicial              2010
-    Factor de mutación                                        0.72
     Control de factibilidad                             Si
     Solución en formato extenso                         No
     El mejor primero                                    No
@@ -97,54 +101,55 @@ No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA
 respuesta (  0) Solución encontrada
 número de datos         :             59
 intentos                :              1
-generaciones            :           1362
-merito                  :    9.40602e-12
-máxima desviación       :    8.88947e-07
-variable max desviación :             59
+generaciones            :           2220
+merito                  :    1.98010e-10
+máxima desviación       :    3.77088e-06
+variable max desviación :            152
 *****************************************************************
 
 bloque    desvio
 ------ ------------
-Qeq    6.591162e-13
-Feq    2.154482e-14
-Fi     2.019221e-12
-Ei     1.141492e-12
-Mi     1.700453e-12
-Dai    4.754997e-13
+Qeq    4.671645e-12
+Feq    1.734890e-12
+Fi     5.276013e-11
+Ei     2.861250e-11
+Mi     1.467379e-11
+Dai    2.036046e-11
 Sf     0.000000e+00
 Xpi    0.000000e+00
 Alp    0.000000e+00
-F      2.497818e-13
+F      3.915022e-12
 FF     0.000000e+00
-Ydp    1.051607e-12
-Z      3.923149e-13
-X      2.553718e-14
+Ydp    2.600464e-11
+Z      1.583005e-11
+X      3.958293e-12
 Xp     0.000000e+00
-Xg     2.983843e-16
-Xv     1.713606e-15
-Q      1.390947e-12
-M      9.564233e-14
-Dat    1.535678e-13
-E      4.007346e-15
+Xg     4.234123e-15
+Xv     8.903203e-14
+Q      1.622750e-11
+M      5.038201e-13
+Dat    4.349364e-12
+E      4.904486e-13
 Td     0.000000e+00
-Tz     3.485496e-16
+Tz     2.823987e-15
 Tm     0.000000e+00
 Sp     0.000000e+00
-Sg     9.562208e-18
-AgE    9.106147e-20
+Sg     1.356947e-16
+AgE    1.291613e-18
 AgH    0.000000e+00
-CssE   4.888913e-15
+CssE   1.794568e-13
 CssH   0.000000e+00
-ebp/Sf 1.802407e-14
+ebp/Sf 3.641704e-12
 Ti     0.000000e+00
 ------ ------------
-total  9.406015e-12
+total  1.980099e-10
 
 generac.    merito
 -------- ------------
        0 1.838440e+06
-    1000 3.781920e-07
-    1362 9.406015e-12
+    1000 7.933645e-02
+    2000 6.048569e-09
+    2220 1.980099e-10
 -------- ------------
 
 -----------------------------------------------------------
@@ -266,7 +271,7 @@ Déficit por cuenta corriente. M - E
 Sf Ind             -205.0      27722.8      59986.9        -72.0     -19710.6        -39.0 S=     67683.0
 Sf                67683.0
 Equilibrio de la balanza de pagos
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
 Apz               0.00001
 
@@ -282,10 +287,10 @@ AP4              273626.7     273627.0         -0.3
 AP5              821072.7     821070.8          1.9
 AP6              147689.1     147688.4          0.6
 K                378874.0     378874.0         -0.0
-L                334418.0     334418.0          0.0
+L                334418.0     334418.0         -0.0
 C1               713292.0     713292.0          0.0
 C2                96804.0      96804.0          0.0
-A-I              245320.1     245320.1         -0.0
+A-I              245320.1     245320.1          0.0
 CSS              117452.0     117452.0          0.0
 INP              201660.2     201660.2         -0.0
 TRF                   0.0          0.0          0.0
@@ -294,7 +299,7 @@ SE               274948.9     274948.9          0.0
 AYD                3621.2       3621.2          0.0
 ALP                   0.0          0.0          0.0
 ------------ ------------ ------------ ------------
-suma                                           -0.0
+suma                                            0.0
 
 MCS final. Importes
 
@@ -354,8 +359,8 @@ ALP                0.0       0.0       0.0       0.0       0.0       0.0        
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        50816.8  117102.6  638035.5  273656.5  821183.8  147697.6    378983.0  334418.0  713351.5   96812.1  245347.6  117452.0  201660.2       0.0  201673.8  274924.3    3621.2       0.0
 
-La distancia (error de la función objetivo) es 9.40601e-12
-                                           DLL 9.40602e-12
+La distancia (error de la función objetivo) es 1.98010e-10
+                                           DLL 1.98010e-10
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -364,15 +369,15 @@ Número de variables endógenas :181 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   1.18900e+05   1.97089e-06   5.55243e-07         0.000
- 2.F   6. 2   5.94501e+04   2.30471e-06   4.79762e-07         0.000
- 4.Yd  6. 4   1.18900e+05   4.60932e-06   1.11049e-06         0.000
-14.ebp 6.16   6.41739e-08   6.41739e-08   6.41739e-08            --
-15.Q   6.17   3.06273e+05   1.41090e-06   4.70143e-07         0.000
-18.Z   6.20   2.75340e+05   2.55631e-06   9.86533e-07         0.000
-20.Dtr 6.22   2.60452e+05   2.04470e-06   5.95581e-07         0.000
-25.Qeq 6.23   3.06273e+05   3.45092e-06   8.18749e-07         0.000
-26.Feq 6.24   3.56701e+05   5.33299e-07   3.99828e-07         0.000
+ 1.Yp  6. 1   1.18900e+05   8.76331e-06   3.45672e-06         0.000
+ 2.F   6. 2   5.94501e+04   9.82813e-06   2.51218e-06         0.000
+ 4.Yd  6. 4   1.18900e+05   1.96563e-05   5.81486e-06         0.000
+14.ebp 6.16   1.30694e-06   1.30694e-06   1.30694e-06            --
+15.Q   6.17   3.06273e+05   8.37956e-06   2.65078e-06         0.000
+18.Z   6.20   2.75340e+05   1.42300e-05   5.98778e-06         0.000
+20.Dtr 6.22   2.60452e+05   8.92259e-06   3.46485e-06         0.000
+25.Qeq 6.23   3.06273e+05   1.31054e-05   3.18856e-06         0.000
+26.Feq 6.24   3.56701e+05   1.85956e-06   1.54116e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -382,13 +387,13 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.07108e-11
+Ecm.total desvios   2.49121e-10
 -------------------------------
 
 Tiempo de cálculo de la aplicación:          3 s
 
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_K                      0.9997125
 pF_L                      1.0000000
 pY_AP1       1.0000000    0.9997634 
@@ -410,7 +415,7 @@ pD_AP4       1.0000000    0.9998848
 pD_AP5       1.0000000    0.9998178 
 pD_AP6       1.0000000    0.9999315 
 epsilon      1.0000000    1.0000892 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_AP1       pZ_AP2       pZ_AP3       pZ_AP4       pZ_AP5       pZ_AP6       pE_AP1       pE_AP2       pE_AP3       pE_AP4       pE_AP5       pE_AP6       pM_AP1       pM_AP2       pM_AP3       pM_AP4       pM_AP5       pM_AP6
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=  18.0000000
@@ -468,7 +473,7 @@ AP3                 162.1        196.5 S=       358.6
 AP4                   2.4         -9.1 S=        -6.6
 AP5                -212.5       -179.5 S=      -392.0
 AP6                   0.7        -15.9 S=       -15.2
-suma F                0.0         -0.0 S=         0.0
+suma F                0.0          0.0 S=         0.0
              ------------ ------------
 Factor compuesto. Y (Valor Añadido Bruto)
                       AP1          AP2          AP3          AP4          AP5          AP6
@@ -540,10 +545,10 @@ AgH                   0.0          0.0 S=         0.0
 AgE                  -0.4          0.0         -0.4          0.0          0.0          0.0 S=        -0.8
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente. (M - E) - (M0 - E0)
-Sf sectores          -7.0        -10.2         49.9         -0.0        -32.6         -0.0 S=         0.0
-Sf                    0.0
+Sf sectores          -7.0        -10.2         49.9         -0.0        -32.6         -0.0 S=        -0.0
+Sf                   -0.0
 Equilibrio de la balanza de pagos
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
 Apz               0.00001
 
@@ -586,7 +591,7 @@ AP3                 149.8        196.5 S=       346.3
 AP4                  -8.2         -9.1 S=       -17.2
 AP5                -284.8       -179.5 S=      -464.3
 AP6                  -2.5        -15.9 S=       -18.4
-suma F             -109.0         -0.0 S=      -109.0
+suma F             -109.0          0.0 S=      -109.0
              ------------ ------------
 Factor compuesto. Y (Valor Añadido Bruto)
                       AP1          AP2          AP3          AP4          AP5          AP6
@@ -655,13 +660,13 @@ AgH                   0.0          0.0 S=         0.0
 AgE                  -0.6          0.0         -0.5          0.0          0.0          0.0 S=        -1.0
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente en "divisa"
-Sf sectores          -7.0        -10.2         49.9         -0.0        -32.6         -0.0 S=         0.0
-Sf                    0.0
+Sf sectores          -7.0        -10.2         49.9         -0.0        -32.6         -0.0 S=        -0.0
+Sf                   -0.0
 Déficit por cuenta corriente en moneda local. (M - E) * cotización - (M0 - E0) * cotización base
 Sf sectores          -7.0         -7.7         55.2         -0.0        -34.4         -0.0 S=         6.0
 Sf                    6.0
 Equilibrio de la balanza de pagos en "divisas"
-equi.bal.pag         -0.0
+equi.bal.pag          0.0
 
 Apz               0.00001
 

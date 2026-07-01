@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs4_103_salarios_1_5_42_det_1_00
@@ -20,14 +20,15 @@ Fichero Matriz Contabilidad Social (MCS) C:/MEGA/Datos/MCA-ESP-05_ajustada_imp_f
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/Python/v_vars_solucion_Mcs6.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
+Tolerancia en el objetivo               2.000e-10
 Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0010 %
 Tolerancia en las verificaciones        1.000e-08
-Iteraciones para historial                  1,000
+Iteraciones para historial                    100
 Iteraciones para soluciones                    -1
 Balanza de pagos                       Mantenerla constante
 Función de utilidad de la demanda      Cobb-Douglas
@@ -38,13 +39,16 @@ Aportación de factores por los hogares ENDOGENA
 Factor ahorro a largo plazo                100.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
+Peso de las desviaciones Ydp               1.0000
 Usar DLL                               No
-Recombinación                               0.900
-Estrategia                             best1bin
-Tamaño de la población                          5        240 individuos
-Número de workers                              32
-Periodicidad actualización             deferred
 Usar genético DLL                      No
+SCIPY
+    Estrategia                                          best1bin
+    Factor de mutación                                  [0.500,1.000]
+    Factor de recombinación                                0.99950
+    Número de workers                                           32
+    Tamaño de la población                                      30       1440 individuos
+    Periodicidad actualización                          deferred
 
 Rango de validez de los precios en % -     99.0 +    120.0
 Rango de validez de las variables  % -     90.0 +     90.0
@@ -67,13 +71,23 @@ Evolución de la minimización
   Python   7.53503e+08
 
         1  7.53503e+08
-     1000  2.23272e+08
-     2000  1.35440e+02
-     3000  1.86677e-03
-     4000  8.52281e-08
-     5000  3.01877e-11
-     6000  2.88363e-11
-     7000  2.88345e-11
+      100  7.53503e+08
+      200  7.53503e+08
+      300  7.53503e+08
+      400  5.03737e+08
+      500  1.19917e+07
+      600  1.00451e+06
+      700  2.38989e+04
+      800  4.24656e+02
+      900  9.37661e+00
+     1000  1.29259e-01
+     1100  2.10892e-03
+     1200  1.30661e-04
+     1300  3.92020e-06
+     1400  2.43333e-07
+     1500  8.24863e-09
+
+
 -----------------------------------------------------------
 VALORES FINALES
 -----------------------------------------------------------
@@ -193,7 +207,7 @@ Déficit por cuenta corriente. M - E
 Sf Ind             -418.2      27681.5      59688.4        -74.4     -19157.0        -37.3 S=     67683.0
 Sf                67683.0
 Equilibrio de la balanza de pagos
-equi.bal.pag          0.0
+equi.bal.pag         -0.0
 
 Apz              -0.00926
 
@@ -213,7 +227,7 @@ L                349825.4     349825.4          0.0
 C1               744555.0     744555.0          0.0
 C2                96804.0      96804.0          0.0
 A-I              254439.6     254439.6          0.0
-CSS              122922.6     122922.6         -0.0
+CSS              122922.6     122922.6          0.0
 INP              209267.1     209267.1          0.0
 TRF                   0.0          0.0          0.0
 SP               209267.1     209267.1         -0.0
@@ -281,7 +295,7 @@ ALP                0.0       0.0       0.0       0.0       0.0       0.0        
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        52255.9  120850.4  654440.1  283203.9  836137.4  150150.7    394729.7  333167.0  743626.5   96670.5  254341.5  122922.6  209267.1       0.0  205120.7  280362.2    3758.2   14495.8
 
-La distancia (error de la función objetivo) es 2.88345e-11
+La distancia (error de la función objetivo) es 1.99192e-10
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -290,14 +304,14 @@ Número de variables endógenas :181 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   1.21284e+05   2.08507e-06   5.27914e-07         0.000
- 2.F   6. 2   6.06581e+04   1.82937e-06   4.04114e-07         0.000
- 4.Yd  6. 4   1.21284e+05   3.65795e-06   1.45461e-06         0.000
-14.ebp 6.16   1.83849e-07   1.83849e-07   1.83849e-07            --
-15.Q   6.17   3.12909e+05   4.54186e-06   1.41327e-06         0.000
-18.Z   6.20   2.81609e+05   7.51833e-06   2.37492e-06         0.000
-20.Dtr 6.22   2.66183e+05   4.31480e-06   1.27811e-06         0.000
-25.Qeq 6.23   3.12909e+05   5.01193e-06   1.27411e-06         0.000
+ 1.Yp  6. 1   1.21284e+05   7.76972e-06   2.23023e-06         0.000
+ 2.F   6. 2   6.06581e+04   5.24725e-06   1.72998e-06         0.000
+ 4.Yd  6. 4   1.21284e+05   1.04922e-05   4.03079e-06         0.000
+14.ebp 6.16   2.09053e-07   2.09053e-07   2.09053e-07            --
+15.Q   6.17   3.12909e+05   8.62164e-06   4.44640e-06         0.000
+18.Z   6.20   2.81609e+05   1.20186e-05   5.55138e-06         0.000
+20.Dtr 6.22   2.66183e+05   8.35100e-06   4.68956e-06         0.000
+25.Qeq 6.23   3.12909e+05   1.47209e-05   5.86978e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -307,21 +321,20 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   3.52650e-11
+Ecm.total desvios   2.05594e-10
 -------------------------------
 
-***********************************************************************
-nit:     8000 mejora: 4.40452e-17 no progresa más
-No se alcanzó el mínimo deseado 1.000e-11 [2.883e-11]
-***********************************************************************
+******************************************************************************
+nit:     1597 fo: 1.99192e-10 valor función objetivo inferior a la tolerancia 
+******************************************************************************
 
-Tiempo de cálculo de la aplicación:         99 s
+Tiempo de cálculo de la aplicación:        132 s
 
 callback function requested stop early
-Número de generaciones 8000
+Número de generaciones 1597
 
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_K                      1.0000000
 pF_L                      1.0500000
 pY_AP1       1.0000000    1.0086804 
@@ -343,7 +356,7 @@ pD_AP4       1.0000000    1.0002194
 pD_AP5       1.0000000    1.0042839 
 pD_AP6       1.0000000    1.0277752 
 epsilon      1.0000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_AP1       pZ_AP2       pZ_AP3       pZ_AP4       pZ_AP5       pZ_AP6       pE_AP1       pE_AP2       pE_AP3       pE_AP4       pE_AP5       pE_AP6       pM_AP1       pM_AP2       pM_AP3       pM_AP4       pM_AP5       pM_AP6
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=  18.0000000

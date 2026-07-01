@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs4_121_ayudas_42_det_P_1_00
@@ -24,10 +24,11 @@ C2                    0.0          0.0       1000.0          0.0          0.0   
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/v_vars_solucion_Mcs6.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
+Tolerancia en el objetivo               2.000e-10
 Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0500 %
 Tolerancia en las verificaciones        1.000e-08
@@ -42,25 +43,28 @@ Aportación de factores por los hogares ENDOGENA
 Factor ahorro a largo plazo                100.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
+Peso de las desviaciones Ydp               1.0000
 Usar DLL                               Si
-    Factor de recombinación                                 [ 0.99,  1.1]
 Usar genético DLL                      Si
-    Fichero log de la DLL                               saDLL_121.log
+    Factor de mutación                                  [0.750,0.850]
+    Factor de recombinación                                0.99950
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs4/Phillips/121_2010_0_42_dll.log
     Número de hilos multiproceso                                30
     Número máximo de reinicios por falta de progreso            15
     Error máximo para calificar aceptable una solución      0.0001
     Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
-    Factor de alcance para generar la población inicial       0.05
+    Modo reinicio de la población inicial                        0
+    Factor de alcance para generar la población inicial      0.001
+    Variación del factor de alcance                            1.0
     Sigma para generar población inicial normal                0.1
-    Número de tramos para generar población inicial LHS        100
+    Número de tramos para generar población inicial LHS        400
     Número de individuos de la población inicial              2010
-    Factor de mutación                                        0.72
     Control de factibilidad                             Si
     Solución en formato extenso                         No
     El mejor primero                                    No
     Incluir x0                                          Si
 
-Rango de validez de los precios en % -     90.0 +     99.0
+Rango de validez de los precios en % -     90.0 +    120.0
 Rango de validez de las variables  % -     90.0 +     90.0
 Rango de validez de las variables  0 -  10000.0 +  10000.0
 Rango mínimo de las variables            8000.0
@@ -88,54 +92,55 @@ No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA
 respuesta (  0) Solución encontrada
 número de datos         :             59
 intentos                :              1
-generaciones            :           1169
-merito                  :    8.67199e-12
-máxima desviación       :    1.10285e-06
-variable max desviación :             87
+generaciones            :           2152
+merito                  :    1.95219e-10
+máxima desviación       :    5.09329e-06
+variable max desviación :             55
 *****************************************************************
 
 bloque    desvio
 ------ ------------
-Qeq    1.212609e-12
+Qeq    1.874103e-11
 Feq    0.000000e+00
-Fi     5.463770e-13
-Ei     1.672765e-12
-Mi     2.447455e-13
-Dai    1.110516e-12
+Fi     4.239654e-11
+Ei     4.086380e-11
+Mi     5.846374e-12
+Dai    1.983714e-11
 Sf     0.000000e+00
 Xpi    0.000000e+00
-Alp    3.393288e-14
-F      5.808118e-14
-FF     3.393288e-14
-Ydp    2.810548e-13
-Z      6.961065e-13
-X      9.260542e-14
-Xp     3.883178e-15
-Xg     6.156831e-15
-Xv     1.745976e-15
-Q      5.254269e-13
-M      2.573991e-15
-Dat    2.113596e-12
-E      1.610534e-14
-Td     8.527868e-15
-Tz     1.521326e-16
+Alp    6.743197e-13
+F      3.321455e-12
+FF     6.743197e-13
+Ydp    7.985148e-12
+Z      1.326912e-11
+X      2.113319e-12
+Xp     9.324390e-14
+Xg     1.766726e-13
+Xv     8.169044e-14
+Q      8.900949e-12
+M      1.179656e-12
+Dat    2.581505e-11
+E      6.077313e-14
+Td     2.378727e-13
+Tz     3.897223e-15
 Tm     0.000000e+00
-Sp     1.124101e-15
-Sg     1.970924e-16
-AgE    1.877608e-18
+Sp     3.137359e-14
+Sg     5.658423e-15
+AgE    5.389662e-17
 AgH    0.000000e+00
-CssE   2.138926e-15
-CssH   1.470285e-17
-ebp/Sf 7.620644e-15
+CssE   2.073636e-13
+CssH   2.630109e-15
+ebp/Sf 2.699191e-12
 Ti     0.000000e+00
 ------ ------------
-total  8.671992e-12
+total  1.952186e-10
 
 generac.    merito
 -------- ------------
        0 9.313382e+05
-    1000 2.930985e-09
-    1169 8.671992e-12
+    1000 1.010761e-01
+    2000 3.811872e-09
+    2152 1.952186e-10
 -------- ------------
 
 -----------------------------------------------------------
@@ -275,15 +280,15 @@ AP4              273469.0     273469.4         -0.4
 AP5              822660.1     822660.5         -0.4
 AP6              146964.3     146961.7          2.7
 K                379117.3     379117.3          0.0
-L                334152.8     334152.8         -0.0
-C1               713270.1     713270.1         -0.0
+L                334152.8     334152.8          0.0
+C1               713270.1     713270.1          0.0
 C2                97804.0      97804.0          0.0
-A-I              245080.3     245080.3          0.0
-CSS              117346.5     117346.5          0.0
+A-I              245080.3     245080.3         -0.0
+CSS              117346.5     117346.5         -0.0
 INP              201665.0     201665.0          0.0
 TRF                   0.0          0.0          0.0
-SP               201665.0     201665.0          0.0
-SE               274512.6     274512.6         -0.0
+SP               201665.0     201665.0         -0.0
+SE               274512.6     274512.6          0.0
 AYD                4621.3       4621.3          0.0
 ALP                 -48.6        -48.6          0.0
 ------------ ------------ ------------ ------------
@@ -347,8 +352,8 @@ ALP                0.0       0.0       0.0       0.0       0.0       0.0        
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        50761.1  117137.4  636042.0  273483.9  822708.6  146982.7    379117.3  334235.1  713284.0   97805.9  245087.3  117346.5  201665.0       0.0  201688.2  274512.6    4621.3     -48.6
 
-La distancia (error de la función objetivo) es 8.67203e-12
-                                           DLL 8.67199e-12
+La distancia (error de la función objetivo) es 1.95219e-10
+                                           DLL 1.95219e-10
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -357,19 +362,19 @@ Número de variables endógenas :181 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   1.18892e+05   1.51544e-06   5.38377e-07         0.000
- 2.F   6. 2   5.94460e+04   1.50999e-06   3.80165e-07         0.000
- 4.Yd  6. 4   1.18892e+05   2.74116e-06   9.24054e-07         0.000
- 6.Td  6. 6   8.80268e+04   3.68454e-08   3.68454e-08         0.000
-11.Sp  6.11   6.53490e+04   2.67755e-08   2.67755e-08         0.000
-13.Xp  6.13   4.02808e+04   1.69327e-07   1.22760e-07         0.000
-14.ebp 6.16   4.69154e-08   4.69154e-08   4.69154e-08            --
-15.Q   6.17   3.06113e+05   2.44124e-06   7.33547e-07         0.000
-18.Z   6.20   2.75193e+05   2.47217e-06   1.15119e-06         0.000
-20.Dtr 6.22   2.60361e+05   3.03569e-06   1.15950e-06         0.000
-21.Css E      1.60549e+04   4.87782e-08   2.19225e-08         0.000
-22.Css H      1.05087e+04   1.06447e-08   1.06447e-08         0.000
-25.Qeq 6.23   3.06113e+05   2.85619e-06   1.26817e-06         0.000
+ 1.Yp  6. 1   1.18892e+05   8.98616e-06   2.79832e-06         0.000
+ 2.F   6. 2   5.94460e+04   5.32251e-06   1.22365e-06         0.000
+ 4.Yd  6. 4   1.18892e+05   9.97665e-06   2.97426e-06         0.000
+ 6.Td  6. 6   8.80268e+04   2.01137e-07   2.01137e-07         0.000
+11.Sp  6.11   6.53490e+04   1.46174e-07   1.46174e-07         0.000
+13.Xp  6.13   4.02808e+04   9.24602e-07   6.70378e-07         0.000
+14.ebp 6.16   1.15388e-06   1.15388e-06   1.15388e-06            --
+15.Q   6.17   3.06113e+05   5.53608e-06   1.55586e-06         0.000
+18.Z   6.20   2.75193e+05   1.02606e-05   2.54656e-06         0.000
+20.Dtr 6.22   2.60361e+05   7.59975e-06   2.45514e-06         0.000
+21.Css E      1.60549e+04   2.66398e-07   1.19740e-07         0.000
+22.Css H      1.05087e+04   5.81203e-08   5.81203e-08         0.000
+25.Qeq 6.23   3.06113e+05   1.22635e-05   4.83816e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -379,13 +384,13 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.05322e-11
+Ecm.total desvios   1.21833e-10
 -------------------------------
 
 Tiempo de cálculo de la aplicación:          3 s
 
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_K                      1.0000000
 pF_L                      0.9997538
 pY_AP1       1.0000000    0.9999564 
@@ -407,7 +412,7 @@ pD_AP4       1.0000000    0.9999688
 pD_AP5       1.0000000    0.9999556 
 pD_AP6       1.0000000    0.9998456 
 epsilon      1.0000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_AP1       pZ_AP2       pZ_AP3       pZ_AP4       pZ_AP5       pZ_AP6       pE_AP1       pE_AP2       pE_AP3       pE_AP4       pE_AP5       pE_AP6       pM_AP1       pM_AP2       pM_AP3       pM_AP4       pM_AP5       pM_AP6
  ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=  18.0000000
@@ -537,10 +542,10 @@ AgH                   0.0       1000.0 S=      1000.0
 AgE                  -0.4          0.0         -0.3          0.0          0.0          0.0 S=        -0.7
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente. (M - E) - (M0 - E0)
-Sf sectores           1.7         18.6          5.1          0.0        -25.6          0.2 S=        -0.0
-Sf                   -0.0
+Sf sectores           1.7         18.6          5.1          0.0        -25.6          0.2 S=         0.0
+Sf                    0.0
 Equilibrio de la balanza de pagos
-equi.bal.pag          0.0
+equi.bal.pag         -0.0
 
 Apz               0.00003
 
@@ -652,13 +657,13 @@ AgH                   0.0       1000.0 S=      1000.0
 AgE                  -0.3          0.0         -0.3          0.0          0.0          0.0 S=        -0.6
              ------------ ------------ ------------ ------------ ------------ ------------
 Déficit por cuenta corriente en "divisa"
-Sf sectores           1.7         18.6          5.1          0.0        -25.6          0.2 S=        -0.0
-Sf                   -0.0
+Sf sectores           1.7         18.6          5.1          0.0        -25.6          0.2 S=         0.0
+Sf                    0.0
 Déficit por cuenta corriente en moneda local. (M - E) * cotización - (M0 - E0) * cotización base
-Sf sectores           1.7         18.6          5.1          0.0        -25.6          0.2 S=        -0.0
-Sf                   -0.0
+Sf sectores           1.7         18.6          5.1          0.0        -25.6          0.2 S=         0.0
+Sf                    0.0
 Equilibrio de la balanza de pagos en "divisas"
-equi.bal.pag          0.0
+equi.bal.pag         -0.0
 
 Apz               0.00003
 
