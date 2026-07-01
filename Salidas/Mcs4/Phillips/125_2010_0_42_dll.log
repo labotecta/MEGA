@@ -1,0 +1,44 @@
+inicio: Mon Jun 29 16:53:32 2026
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :            6
+
+Número procesos        :           30
+Intentos (reinicios)   :           15
+Población              :         2010
+Modo población inicial :            0
+Modo reinicio población:            0
+Factor dispersión      :  1.00000e-03
+Sigma dispersión       :  1.00000e-01
+Variación dispersión   :  1.00000e+00
+-------------------------------------
+Variables cabecera     :            7
+Variables solución     :           51
+Resto variables modelo :          184
+Variables recalculadas :          183
+-------------------------------------
+Total                  :          425
+
+Variables fijas en sol :            3
+Factor mutación        :  7.50000e-01  8.50000e-01
+Recombinación          :  9.99500e-01
+Opción cálculo desvios :            1
+Semilla num.aleatorios :           42
+
+Variables con valores fijos
+
+     0 pF           0 1.000000e+00
+    19 epsilon      0 1.000000e+00
+    44 M            5 0.000000e+00
+
+generacio d.est.poblac      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+        0  7.44664e+01  1.66114e+07  2.69357e+03      0 ebp          0                           0
+     1000  1.79997e-01  4.97824e-02  6.24034e-02    149 Fi           8    0.5      0.0       47110          0
+     2000  3.81597e-05  2.02011e-09  1.66008e-05     88 Dat          1    0.5      0.0       47254          0
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+     2117  1.47823e-05  1.98094e-10  5.70147e-06    141 Fi           0    0.1      0.0         554
+
+fin   : Mon Jun 29 16:53:35 2026
+
