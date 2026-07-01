@@ -1,0 +1,46 @@
+inicio: Mon Jun 29 10:40:42 2026
+
+Número factores        :            2
+Número hogares         :            1
+Número sectores        :            2
+
+Número procesos        :           20
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Modo reinicio población:            0
+Factor dispersión      :  1.00000e-03
+Sigma dispersión       :  1.00000e-01
+Variación dispersión   :  1.00000e+00
+-------------------------------------
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           58
+Variables recalculadas :           57
+-------------------------------------
+Total                  :          141
+
+Variables fijas en sol :            2
+Factor mutación        :  7.50000e-01  8.50000e-01
+Recombinación          :  9.99000e-01
+Opción cálculo desvios :            1
+Semilla num.aleatorios :           42
+
+Variables con valores fijos
+
+     0 pF           0 1.050000e+00
+     7 epsilon      0 1.000000e+00
+
+generacio d.est.poblac      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+        0  1.38114e+00  1.22208e+01  1.71534e+00     52 Fi           3                         125
+      100  2.79333e-01  2.21132e-02  5.56624e-02     31 Dat          0    0.0      0.0        1635          0
+      200  1.86136e-02  1.81132e-04  7.10950e-03      2 Qeq          1    0.0      0.0        1549          0
+      300  2.18881e-03  1.69493e-06  5.96334e-04     51 Fi           2    0.0      0.0        1619          0
+      400  3.81192e-04  3.41266e-09  2.51686e-05     52 Fi           3    0.0      0.0        1660          0
+      500  3.62966e-04  1.16407e-11  1.96020e-06      0 ebp          0    0.0      0.0        1646          0
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+      504  3.62961e-04  9.63234e-12  1.78603e-06     51 Fi           2    0.0      0.0         474
+
+fin   : Mon Jun 29 10:40:43 2026
+
