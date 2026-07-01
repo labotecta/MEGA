@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs0_salarios_1_05_42_det_P_1_00
@@ -20,6 +20,7 @@ Fichero Matriz Contabilidad Social (MCS) C:/MEGA/Datos/SAM_estandar.xlsx
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/Mcs0/v_vars_solucion_104.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
@@ -38,18 +39,31 @@ Aportación de factores por los hogares ENDOGENA
 Factor ahorro a largo plazo                100.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
-Usar DLL                               No
-Recombinación                               0.900
-Estrategia                             best1bin
-Tamaño de la población                          5         85 individuos
-Número de workers                              32
-Periodicidad actualización             deferred
-Usar genético DLL                      No
+Peso de las desviaciones Ydp               1.0000
+Usar DLL                               Si
+Usar genético DLL                      Si
+    Factor de mutación                                  [ 0.75, 0.85]
+    Factor de recombinación                                  0.999
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs0/104_1000_0_42_dll.log
+    Número de hilos multiproceso                                20
+    Número máximo de reinicios por falta de progreso            15
+    Error máximo para calificar aceptable una solución       1e-05
+    Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
+    Modo reinicio de la población inicial                        0
+    Factor de alcance para generar la población inicial      0.001
+    Variación del factor de alcance                            1.0
+    Sigma para generar población inicial normal                0.1
+    Número de tramos para generar población inicial LHS        400
+    Número de individuos de la población inicial              1000
+    Control de factibilidad                             Si
+    Solución en formato extenso                         No
+    El mejor primero                                    No
+    Incluir x0                                          Si
 
-Rango de validez de los precios en % -    150.0 +    150.0
-Rango de validez de las variables  % -    800.0 +    800.0
+Rango de validez de los precios en % -     90.0 +     99.0
+Rango de validez de las variables  % -     90.0 +     90.0
 Rango de validez de las variables  0 -  10000.0 +  10000.0
-Rango mínimo de las variables            2000.0
+Rango mínimo de las variables             200.0
 ------------------------------------------------------------------------------------------
 Rangos de validez explícitos
 ------------------------------------------------------------------------------------------
@@ -208,17 +222,70 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 Ecm.total desvios   2.66793e-27
 -------------------------------
 
-Evolución de la minimización
+No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA/Salidas/Mcs0/104_1000_0_42_dll.log
 
   Python   1.30167e+01
+  DLL      1.30167e+01
+  DLL sol  1.30167e+01
 
-        1  1.30167e+01
-      100  1.30167e+01
-      200  1.30167e+01
-      300  6.15224e-03
-      400  4.00499e-06
-      500  6.98812e-10
 
+*****************************************************************
+-------------------------- DLL genético -------------------------
+respuesta (  0) Solución encontrada
+número de datos         :             27
+intentos                :              1
+generaciones            :            487
+merito                  :    9.92520e-12
+máxima desviación       :    1.48004e-06
+variable max desviación :             52
+*****************************************************************
+
+bloque    desvio
+------ ------------
+Qeq    2.112559e-12
+Feq    0.000000e+00
+Fi     2.329462e-12
+Ei     2.502796e-12
+Mi     6.135454e-13
+Dai    1.175572e-13
+Sf     0.000000e+00
+Xpi    0.000000e+00
+Alp    3.964003e-16
+F      2.390921e-14
+FF     3.964003e-16
+Ydp    6.672965e-13
+Z      2.503505e-13
+X      7.204444e-15
+Xp     3.860592e-17
+Xg     5.958809e-16
+Xv     2.816083e-17
+Q      2.018070e-13
+M      4.687415e-15
+Dat    1.048126e-12
+E      7.877934e-16
+Td     2.147916e-16
+Tz     8.012788e-16
+Tm     4.573007e-15
+Sp     2.933596e-17
+Sg     4.244247e-18
+AgE    0.000000e+00
+AgH    0.000000e+00
+CssE   0.000000e+00
+CssH   0.000000e+00
+ebp/Sf 3.803796e-14
+Ti     0.000000e+00
+------ ------------
+total  9.925205e-12
+
+generac.    merito
+-------- ------------
+       0 1.301674e+01
+     100 1.629693e-02
+     200 5.044722e-05
+     300 2.605281e-07
+     400 1.162350e-09
+     487 9.925205e-12
+-------- ------------
 
 -----------------------------------------------------------
 VALORES FINALES
@@ -276,9 +343,9 @@ Consumo de inversión. Xv
 Xv                16.3499      15.2174 S=     31.5673
              ------------ ------------
 Consumo total
-X+Xp+Xg+Xv        86.5843      86.9086 S=    173.4929
+X+Xp+Xg+Xv        86.5843      86.9086 S=    173.4928
 Producción total
-Q                 86.5843      86.9086 S=    173.4929
+Q                 86.5843      86.9086 S=    173.4928
              ------------ ------------
 D 6.19            72.3447      73.6006 S=    145.9453
 D 6.22            72.3447      73.6006 S=    145.9453
@@ -400,7 +467,8 @@ ALP             0.0000    0.0000      0.0000    0.0000    2.4769    0.0000    0.
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos         3.6619    3.2712      2.4938    1.9831    4.4770    0.4683    1.5194    0.0645    1.5839    0.4838    0.0000    2.4769
 
-La distancia (error de la función objetivo) es 7.83994e-12
+La distancia (error de la función objetivo) es 9.92520e-12
+                                           DLL 9.92520e-12
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -409,15 +477,15 @@ Número de variables endógenas :55 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   4.62253e+01   8.51696e-07   4.83943e-07         0.000
- 2.F   6. 2   2.31194e+01   1.09006e-06   4.02711e-07         0.000
- 4.Yd  6. 4   4.62253e+01   2.17948e-06   1.38032e-06         0.000
- 8.Tm  6. 8   1.53227e+00   7.66265e-08   5.05204e-08         0.000
-14.ebp 6.16   1.39987e-07   1.39987e-07   1.39987e-07            --
-15.Q   6.17   8.67464e+01   1.26302e-06   8.76165e-07         0.000
-18.Z   6.20   7.45825e+01   2.40370e-06   1.83430e-06         0.000
-20.Dtr 6.22   7.29726e+01   1.64224e-06   1.30219e-06         0.000
-25.Qeq 6.23   8.67464e+01   1.39418e-06   1.29435e-06         0.000
+ 1.Yp  6. 1   4.62253e+01   1.59034e-06   1.50296e-06         0.000
+ 2.F   6. 2   2.31194e+01   1.38813e-06   7.45373e-07         0.000
+ 4.Yd  6. 4   4.62253e+01   2.77544e-06   2.67309e-06         0.000
+ 8.Tm  6. 8   1.53227e+00   8.35274e-08   6.50510e-08         0.000
+14.ebp 6.16   7.84361e-08   7.84361e-08   7.84361e-08            --
+15.Q   6.17   8.67464e+01   1.14983e-06   9.48271e-07         0.000
+18.Z   6.20   7.45825e+01   2.08959e-06   1.34850e-06         0.000
+20.Dtr 6.22   7.29726e+01   1.65209e-06   1.39602e-06         0.000
+25.Qeq 6.23   8.67464e+01   1.52989e-06   1.04914e-06         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -427,20 +495,13 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.13649e-11
+Ecm.total desvios   1.69938e-11
 -------------------------------
 
-***********************************************************************
-nit:      555 fo: 7.83994e-12 valor función objetivo inferior a la tolerancia 
-***********************************************************************
+Tiempo de cálculo de la aplicación:          1 s
 
-Tiempo de cálculo de la aplicación:          8 s
-
-callback function requested stop early
-Número de generaciones 555
-
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_CAP                    1.0000000
 pF_LAB                    1.0500000
 pY_BRD       1.0000000    1.0211302 
@@ -450,7 +511,7 @@ pQ_MLK       1.0000000    1.0006041
 pD_BRD       1.0000000    0.9920696 
 pD_MLK       1.0000000    1.0007133 
 epsilon      1.0000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_BRD       pZ_MLK       pE_BRD       pE_MLK       pM_BRD       pM_MLK
  ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=   6.0000000
@@ -523,9 +584,9 @@ Consumo de inversión. Xv
 Xv                 0.3499       0.2174 S=      0.5673
              ------------ ------------
 Consumo total
-X+Xp+Xg+Xv         2.5843       1.9086 S=      4.4929
+X+Xp+Xg+Xv         2.5843       1.9086 S=      4.4928
 Producción total
-Q                  2.5843       1.9086 S=      4.4929
+Q                  2.5843       1.9086 S=      4.4928
              ------------ ------------
 D                  2.3447       1.6006 S=      3.9453
 M                  0.2232       0.2606 S=      0.4838

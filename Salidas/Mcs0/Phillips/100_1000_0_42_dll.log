@@ -1,0 +1,46 @@
+inicio: Mon Jun 29 10:42:32 2026
+
+Número factores        :            2
+Número hogares         :            1
+Número sectores        :            2
+
+Número procesos        :           20
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Modo reinicio población:            0
+Factor dispersión      :  1.00000e-03
+Sigma dispersión       :  1.00000e-01
+Variación dispersión   :  1.00000e+00
+-------------------------------------
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           58
+Variables recalculadas :           57
+-------------------------------------
+Total                  :          141
+
+Variables fijas en sol :            2
+Factor mutación        :  7.50000e-01  8.50000e-01
+Recombinación          :  9.99000e-01
+Opción cálculo desvios :            1
+Semilla num.aleatorios :           42
+
+Variables con valores fijos
+
+     0 pF           0 1.000000e+00
+     7 epsilon      0 1.000000e+00
+
+generacio d.est.poblac      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+        0  1.37765e+00  3.48226e+01  4.17511e+00      2 Qeq          1                         337
+      100  2.29798e-01  5.43538e-02  1.14520e-01      0 ebp          0    0.0      0.0        1635          0
+      200  2.19248e-02  5.76101e-04  9.36301e-03     22 Mi           1    0.0      0.0        1549          0
+      300  1.59803e-03  2.07567e-06  6.04499e-04     29 Ydp          0    0.0      0.0        1619          0
+      400  1.17377e-04  1.11376e-08  4.51426e-05     20 Ei           1    0.0      0.0        1660          0
+      500  7.63186e-06  4.51899e-11  3.39108e-06      1 Qeq          0    0.0      0.0        1646          0
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
+      521  5.43771e-06  9.48911e-12  1.67880e-06     29 Ydp          0    0.0      0.0         960
+
+fin   : Mon Jun 29 10:42:33 2026
+

@@ -1,11 +1,11 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.2
-scipy            1.17.0
-pandas           3.0.1
-matplotlib       3.10.8
+numpy            2.4.6
+scipy            1.18.0
+pandas           3.0.3
+matplotlib       3.11.0
 
 ####################################################
-MEGA ampliado. versión 1.6.0  ---------------
+MEGA ampliado. versión 1.6.1  ---------------
 ####################################################
 -------------------------------------------------------------------------------------------------
 Mcs0_salarios_1_05_42_det_P_0_00
@@ -20,11 +20,12 @@ Fichero Matriz Contabilidad Social (MCS) C:/MEGA/Datos/SAM_estandar.xlsx
 -------------------------------------------------------------------
 -------------------------------------------------------------------
 MEGA mediante algoritmo genético. Resolución sin restricciones
+Solución total final guardada en       C:/MEGA/Soluciones/Mcs0/v_vars_solucion_105.log
 Desviaciones relativas en tanto por 1  No
 Semilla números aleatorios                     42
 Número máximo de generaciones           1,000,000
 Tolerancia en el objetivo               1.000e-11
-Iteraciones para valorar progreso          10,000
+Iteraciones para valorar progreso           1,000
 Mejora mínima para considerar progreso     0.0200 %
 Tolerancia en las verificaciones        1.000e-08
 Iteraciones para historial                    100
@@ -38,18 +39,31 @@ Aportación de factores por los hogares ENDOGENA
 Factor ahorro a largo plazo                  0.00 %
 Cálculo desvios                        Simple
 Métrica del error: Error cuadrático medio
-Usar DLL                               No
-Recombinación                               0.900
-Estrategia                             best1bin
-Tamaño de la población                          5         85 individuos
-Número de workers                              32
-Periodicidad actualización             deferred
-Usar genético DLL                      No
+Peso de las desviaciones Ydp               1.0000
+Usar DLL                               Si
+Usar genético DLL                      Si
+    Factor de mutación                                  [ 0.75, 0.85]
+    Factor de recombinación                                  0.999
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs0/105_1000_0_42_dll.log
+    Número de hilos multiproceso                                20
+    Número máximo de reinicios por falta de progreso            15
+    Error máximo para calificar aceptable una solución       1e-05
+    Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
+    Modo reinicio de la población inicial                        0
+    Factor de alcance para generar la población inicial      0.001
+    Variación del factor de alcance                            1.0
+    Sigma para generar población inicial normal                0.1
+    Número de tramos para generar población inicial LHS        400
+    Número de individuos de la población inicial              1000
+    Control de factibilidad                             Si
+    Solución en formato extenso                         No
+    El mejor primero                                    No
+    Incluir x0                                          Si
 
-Rango de validez de los precios en % -    150.0 +    150.0
-Rango de validez de las variables  % -    400.0 +    400.0
+Rango de validez de los precios en % -     90.0 +     99.0
+Rango de validez de las variables  % -     90.0 +     90.0
 Rango de validez de las variables  0 -  10000.0 +  10000.0
-Rango mínimo de las variables            2000.0
+Rango mínimo de las variables             200.0
 ------------------------------------------------------------------------------------------
 Rangos de validez explícitos
 ------------------------------------------------------------------------------------------
@@ -208,19 +222,71 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 Ecm.total desvios   2.66793e-27
 -------------------------------
 
-Evolución de la minimización
+No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA/Salidas/Mcs0/105_1000_0_42_dll.log
 
   Python   1.23548e+01
+  DLL      1.23548e+01
+  DLL sol  1.23548e+01
 
-        1  1.23548e+01
-      100  1.23548e+01
-      200  1.01406e+00
-      300  2.02287e-02
-      400  5.23331e-05
-      500  1.20005e-07
-      600  3.82745e-09
-      700  2.74181e-11
 
+*****************************************************************
+-------------------------- DLL genético -------------------------
+respuesta (  0) Solución encontrada
+número de datos         :             27
+intentos                :              1
+generaciones            :            504
+merito                  :    9.63234e-12
+máxima desviación       :    1.78603e-06
+variable max desviación :             51
+*****************************************************************
+
+bloque    desvio
+------ ------------
+Qeq    1.478847e-13
+Feq    0.000000e+00
+Fi     4.958881e-12
+Ei     1.313401e-13
+Mi     6.920184e-14
+Dai    1.210565e-12
+Sf     0.000000e+00
+Xpi    0.000000e+00
+Alp    0.000000e+00
+F      2.725801e-13
+FF     2.468932e-13
+Ydp    5.600938e-13
+Z      6.165090e-13
+X      8.143932e-14
+Xp     7.875941e-14
+Xg     1.198400e-14
+Xv     1.003877e-14
+Q      1.173456e-13
+M      2.867309e-15
+Dat    5.437393e-13
+E      6.614924e-15
+Td     3.327428e-14
+Tz     2.962520e-15
+Tm     1.080239e-15
+Sp     1.817820e-14
+Sg     8.930083e-17
+AgE    0.000000e+00
+AgH    0.000000e+00
+CssE   0.000000e+00
+CssH   0.000000e+00
+ebp/Sf 5.100178e-13
+Ti     0.000000e+00
+------ ------------
+total  9.632340e-12
+
+generac.    merito
+-------- ------------
+       0 1.222079e+01
+     100 2.211322e-02
+     200 1.811321e-04
+     300 1.694934e-06
+     400 3.412664e-09
+     500 1.164072e-11
+     504 9.632340e-12
+-------- ------------
 
 -----------------------------------------------------------
 VALORES FINALES
@@ -329,7 +395,7 @@ Déficit por cuenta corriente. M - E
 Sf Ind             5.2265       6.7735 S=     12.0000
 Sf                12.0000
 Equilibrio de la balanza de pagos
-equi.bal.pag       0.0000
+equi.bal.pag      -0.0000
 
 Apz               0.00000
 
@@ -338,7 +404,7 @@ MCS final. Importes
 
                    BRD       MLK       CAP       LAB       HOH       INV       IDT       TRF       GOV       EXT       AYD       ALP  Recursos
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
-BRD            18.7878    7.1669      0.0000    0.0000   17.9707   15.0067    0.0000    0.0000   17.1041    6.7569    0.0000    0.0000   82.7931
+BRD            18.7878    7.1670      0.0000    0.0000   17.9707   15.0067    0.0000    0.0000   17.1041    6.7569    0.0000    0.0000   82.7932
 MLK            15.2218    8.0695      0.0000    0.0000   26.9561   14.0688    0.0000    0.0000   12.6030    3.3719    0.0000    0.0000   80.2911
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
                    BRD       MLK         CAP       LAB       HOH       INV       IDT       TRF       GOV       EXT       AYD       ALP  Recursos
@@ -354,9 +420,7 @@ EXT            11.9835   10.1453      0.0000    0.0000    0.0000    0.0000    0.
 AYD             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 ALP             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
-Empleos        82.7932   80.2910     44.9255   35.9427   80.8682   29.0755   28.7411    2.7664   31.5075   22.1288    0.0000    0.0000
-
-Las diferencias entre empleos y recursos se deben exclusivamente a los redondeos de impresión
+Empleos        82.7932   80.2911     44.9255   35.9427   80.8682   29.0755   28.7411    2.7664   31.5075   22.1288    0.0000    0.0000
 
 MCS final. Cantidades
 
@@ -384,7 +448,7 @@ Diferencias entre los valores finales y los iniciales de la MCS
 
                    BRD       MLK       CAP       LAB       HOH       INV       IDT       TRF       GOV       EXT       AYD       ALP  Recursos
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
-BRD            -2.2122   -0.8331      0.0000    0.0000   -2.0293   -0.9933    0.0000    0.0000   -1.8959   -1.2431    0.0000    0.0000   -9.2069
+BRD            -2.2122   -0.8330      0.0000    0.0000   -2.0293   -0.9933    0.0000    0.0000   -1.8959   -1.2431    0.0000    0.0000   -9.2068
 MLK            -1.7782   -0.9305      0.0000    0.0000   -3.0439   -0.9312    0.0000    0.0000   -1.3970   -0.6281    0.0000    0.0000   -8.7089
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
                    BRD       MLK         CAP       LAB       HOH       INV       IDT       TRF       GOV       EXT       AYD       ALP  Recursos
@@ -392,7 +456,7 @@ MLK            -1.7782   -0.9305      0.0000    0.0000   -3.0439   -0.9312    0.
 CAP            -2.0581   -3.0164      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000   -5.0745
 LAB            -1.5436   -2.5137      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000   -4.0573
 HOH             0.0000    0.0000     -5.0745   -4.0573    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000   -9.1318
-INV             0.0000    0.0000      0.0000    0.0000   -1.7249    0.0000    0.0000    0.0000   -0.1996   -0.0000    0.0000    0.0000   -1.9245
+INV             0.0000    0.0000      0.0000    0.0000   -1.7249    0.0000    0.0000    0.0000   -0.1996    0.0000    0.0000    0.0000   -1.9245
 IDT            -0.5200   -0.4052      0.0000    0.0000   -2.3337    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000   -3.2589
 TRF            -0.0782   -0.1554      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000   -0.2336
 GOV             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000   -3.2589   -0.2336    0.0000    0.0000    0.0000    0.0000   -3.4925
@@ -400,9 +464,10 @@ EXT            -1.0165   -0.8547      0.0000    0.0000    0.0000    0.0000    0.
 AYD             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 ALP             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
-Empleos        -9.2068   -8.7090     -5.0745   -4.0573   -9.1318   -1.9245   -3.2589   -0.2336   -3.4925   -1.8712    0.0000    0.0000
+Empleos        -9.2068   -8.7089     -5.0745   -4.0573   -9.1318   -1.9245   -3.2589   -0.2336   -3.4925   -1.8712    0.0000    0.0000
 
-La distancia (error de la función objetivo) es 7.53367e-12
+La distancia (error de la función objetivo) es 9.63234e-12
+                                           DLL 9.63234e-12
 -----------------------------------------------------------
 
 Verifica con la solución final
@@ -411,15 +476,15 @@ Número de variables endógenas :55 incluida Apz
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   3.95667e+01   2.39850e-06   1.57407e-06         0.000
- 2.F   6. 2   1.97892e+01   1.85846e-06   5.69065e-07         0.000
- 4.Yd  6. 4   3.95667e+01   3.71583e-06   2.04081e-06         0.000
- 8.Tm  6. 8   1.38321e+00   1.01599e-07   8.44295e-08         0.000
-14.ebp 6.16   1.22953e-07   1.22953e-07   1.22953e-07            --
-15.Q   6.17   7.50682e+01   8.58999e-07   7.34449e-07         0.000
-18.Z   6.20   6.37365e+01   1.26278e-06   9.86898e-07         0.000
-20.Dtr 6.22   6.26256e+01   1.10879e-06   1.09245e-06         0.000
-25.Qeq 6.23   7.50682e+01   1.22216e-06   7.42514e-07         0.000
+ 1.Yp  6. 1   3.95667e+01   2.72946e-06   2.33416e-06         0.000
+ 2.F   6. 2   1.97892e+01   2.03197e-06   8.93237e-07         0.000
+ 4.Yd  6. 4   3.95667e+01   4.06275e-06   3.20337e-06         0.000
+ 8.Tm  6. 8   1.38321e+00   4.60025e-08   2.63272e-08         0.000
+14.ebp 6.16   3.27684e-07   3.27684e-07   3.27684e-07            --
+15.Q   6.17   7.50682e+01   9.82081e-07   6.89090e-07         0.000
+18.Z   6.20   6.37365e+01   1.70185e-06   9.51933e-07         0.000
+20.Dtr 6.22   6.26256e+01   8.46969e-07   8.28356e-07         0.000
+25.Qeq 6.23   7.50682e+01   8.86353e-07   7.60695e-07         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -429,20 +494,13 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.46191e-11
+Ecm.total desvios   2.14187e-11
 -------------------------------
 
-***********************************************************************
-nit:      714 fo: 7.53367e-12 valor función objetivo inferior a la tolerancia 
-***********************************************************************
+Tiempo de cálculo de la aplicación:          1 s
 
-Tiempo de cálculo de la aplicación:          9 s
-
-callback function requested stop early
-Número de generaciones 714
-
-Precios    iniciales equilibrio
---------- ---------- ----------
+Precios      iniciales   equilibrio
+--------- ------------ ------------
 pF_CAP                    1.0000000
 pF_LAB                    1.0500000
 pY_BRD       1.0000000    1.0211302 
@@ -452,7 +510,7 @@ pQ_MLK       1.0000000    1.0191960
 pD_BRD       1.0000000    1.0221039 
 pD_MLK       1.0000000    1.0227407 
 epsilon      1.0000000    1.0000000 
---------- ---------- ----------
+--------- ------------ ------------
        pZ_BRD       pZ_MLK       pE_BRD       pE_MLK       pM_BRD       pM_MLK
  ------------ ------------ ------------ ------------ ------------ ------------
     1.0000000    1.0000000    1.0000000    1.0000000    1.0000000    1.0000000 S=   6.0000000
@@ -570,10 +628,10 @@ AgH                0.0000
 AgE                0.0000       0.0000 S=      0.0000
              ------------ ------------
 Déficit por cuenta corriente. (M - E) - (M0 - E0)
-Sf sectores        0.2265      -0.2265 S=     -0.0000
-Sf                -0.0000
+Sf sectores        0.2265      -0.2265 S=      0.0000
+Sf                 0.0000
 Equilibrio de la balanza de pagos
-equi.bal.pag       0.0000
+equi.bal.pag      -0.0000
 
 Apz               0.00000
 
@@ -673,13 +731,13 @@ AgH                0.0000
 AgE                0.0000       0.0000 S=      0.0000
              ------------ ------------
 Déficit por cuenta corriente en "divisa"
-Sf sectores        0.2265      -0.2265 S=     -0.0000
-Sf                -0.0000
+Sf sectores        0.2265      -0.2265 S=      0.0000
+Sf                 0.0000
 Déficit por cuenta corriente en moneda local. (M - E) * cotización - (M0 - E0) * cotización base
-Sf sectores        0.2265      -0.2265 S=     -0.0000
-Sf                -0.0000
+Sf sectores        0.2265      -0.2265 S=      0.0000
+Sf                 0.0000
 Equilibrio de la balanza de pagos en "divisas"
-equi.bal.pag       0.0000
+equi.bal.pag      -0.0000
 
 Apz               0.00000
 
