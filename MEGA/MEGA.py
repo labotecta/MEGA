@@ -132,6 +132,12 @@ except BaseException as e:
     print('Error en la lectura de parámetros {}\n'.format(e.args))
     sys.exit()
 
+'''
+# máxima prioridad
+p = psutil.Process(os.getpid())
+p.nice(psutil.HIGH_PRIORITY_CLASS)
+'''
+
 # se guardan las notificaciones hasta que esté lista la función 'imprimir'
 errores_diferidos = []
 avisos_diferidos  = []
@@ -153,7 +159,10 @@ las matrices ('reshape') cuando corresponde, ya que en la línea de comandos sol
 realizan algunas comprobaciones de la consistencia de los valores especificados
 '''
 NSAM                = args.NSAM
+if args.NSAM_OP    != args.NSAM:
+    errores_diferidos.append('La función "valores_opciones()" para procesar los argumentos ({}) no es coherente con la MCS especificada ({})'.format(args.NSAM_OP, args.NSAM))
 DECIMALES           = args.DECIMALES
+ECT_ECM             = args.ECT_ECM
 FI_SOL_LEE          = args.FI_SOL_LEE
 FI_SOL_SALVA        = args.FI_SOL_SALVA
 FI_SOL_TOT_SALVA    = args.FI_SOL_TOT_SALVA
@@ -179,15 +188,26 @@ if DESV_RELATIVA == 1:
             if __name__ == 'MEGA':
                 avisos_diferidos.append('Para usar DESV_RELATIVA es probable que haya que recompilar la DLL. Se desactiva DESV_RELATIVA')
 if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 0 and NSAM != 1 and NSAM != 2 and NSAM != 3 and NSAM != 4 and NSAM != 5 and NSAM != 6:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('La DLL solo se puede usar con las MCS 0, 1, 2, 3, 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('La DLL solo se puede usar con las MCS 0, 1, 2, 3, 4, 5 y 6 y se ha especificado la {}'.format(NSAM))
 ALGE_ID_SALIDA      = args.ALGE_ID_SALIDA
 ALGE_MAX_INTENTOS   = args.ALGE_MAX_INTENTOS
 ALGE_N_HILOS        = args.ALGE_N_HILOS
 GE_MIN_PROGRESO     = args.GE_MIN_PROGRESO
 ALGE_TOL_ACEPTABLE  = args.ALGE_TOL_ACEPTABLE
+ALGE_UMBRAL_REGUL   = args.ALGE_UMBRAL_REGUL
+if ALGE_UMBRAL_REGUL < 1.0:
+    if __name__ == 'MEGA':
+       avisos_diferidos.append('El umbral de regularización {} se ha modificado a 2.0, que es el mínimo'.format(ALGE_UMBRAL_REGUL))
+    else:
+        avisos_diferidos.append('')
+    ALGE_UMBRAL_REGUL = 2.0
+ALGE_FRAC_REGUL     = args.ALGE_FRAC_REGUL
+if ALGE_FRAC_REGUL > 0.9:
+    if __name__ == 'MEGA':
+       avisos_diferidos.append('La fracción de población a regularizar {} se ha modificado a 0.9, que es el máximo'.format(ALGE_FRAC_REGUL))
+    else:
+        avisos_diferidos.append('')
+    ALGE_FRAC_REGUL = 0.9
 ALGE_MODO_POB_INI   = args.ALGE_MODO_POB_INI
 ALGE_MODO_REINI_POB = args.ALGE_MODO_REINI_POB
 ALGE_F_INICIO_POB   = args.ALGE_F_INICIO_POB
@@ -197,10 +217,7 @@ ALGE_TRAMOS_LHS     = args.ALGE_TRAMOS_LHS
 ALGE_NPOB           = args.ALGE_NPOB
 ALGE_F_MUTACION     = args.ALGE_F_MUTACION
 if len(ALGE_F_MUTACION) != 2:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para ALGE_F_MUTACION {} be ser dos'.format(len(ALGE_F_MUTACION)))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de datos para ALGE_F_MUTACION {} debe ser dos'.format(len(ALGE_F_MUTACION)))
 ALGE_RECOMBINACION  = args.ALGE_RECOMBINACION
 ALGE_CTRL_FACTIBLE  = args.ALGE_CTRL_FACTIBLE
 ALGE_RES_EXTENSA    = args.ALGE_RES_EXTENSA
@@ -212,10 +229,7 @@ EQ_BAL_PAGOS        = args.EQ_BAL_PAGOS
 if len(args.PRECIO_IMPORTACION) > 0:
     n_precios_importacion = len(args.PRECIO_IMPORTACION) // 2
     if n_precios_importacion * 2 != len(args.PRECIO_IMPORTACION):
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_AD_HO_PRO), 3 * args.DEM_AD_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_AD_HO_PRO), 3 * args.DEM_AD_LON))
     else:
         precios_importacion = []
         for i in range(0, n_precios_importacion, 2):
@@ -226,10 +240,7 @@ DEM_ADICIONAL_TIPO  = args.DEM_ADICIONAL_TIPO
 DEM_ADICIONAL       = np.zeros((ndem, nsec), dtype=np.float64)
 if args.DEM_AD_LON > 0:
     if len(args.DEM_AD_HO_PRO) != 3 * args.DEM_AD_LON:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_AD_HO_PRO), 3 * args.DEM_AD_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para DEM_ADICIONAL {} no es el correcto {}'.format(len(args.DEM_AD_HO_PRO), 3 * args.DEM_AD_LON))
     else:
         n = args.DEM_AD_LON
         i = 0
@@ -241,10 +252,7 @@ if args.DEM_AD_LON > 0:
 AYD_ADICIONAL = np.zeros((ndem, nsec), dtype=np.float64)
 if args.AYD_AD_LON > 0:
     if len(args.AYD_AD_HO_PRO) != 3 * args.AYD_AD_LON:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_AD_HO_PRO), 3 * args.AYD_AD_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para AYD_ADICIONAL {} no es el correcto {}'.format(len(args.AYD_AD_HO_PRO), 3 * args.AYD_AD_LON))
     else:
         n = args.AYD_AD_LON
         i = 0
@@ -262,10 +270,7 @@ DEM_ESENCIALES      = args.DEM_ESENCIALES
 CON_ESENCIALES = np.zeros((ndem, nsec), dtype=np.float64)
 if args.CON_AD_LON > 0:
     if len(args.CON_AD_HO_PRO) != 3 * args.CON_AD_LON:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_AD_HO_PRO), 3 * args.CON_AD_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para CON_ESENCIALES {} no es el correcto {}'.format(len(args.CON_AD_HO_PRO), 3 * args.CON_AD_LON))
     else:
         n = args.CON_AD_LON
         i = 0
@@ -295,20 +300,14 @@ else:
         if __name__ == 'MEGA':
             avisos_diferidos.append('Se han especificado consumos esenciales y GE_INCLUYE_XP es False pero DEM_ESENCIALES es True. Stone-Geary puede fallar')
 if len(args.SIGMA_CES_DEMANDA) != ndem:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para SIGMA_CES_DEMANDA {} no es el correcto {}'.format(len(args.SIGMA_CES_DEMANDA), ndem))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de datos para SIGMA_CES_DEMANDA {} no es el correcto {}'.format(len(args.SIGMA_CES_DEMANDA), ndem))
 else:
     SIGMA_CES_DEMANDA = np.array(args.SIGMA_CES_DEMANDA, dtype=np.float64).reshape(ndem)
 SIGMA_ESCENARIO = np.empty(nsec, dtype=np.float64)
 SIGMA_ESCENARIO.fill(2.)
 if args.SIGMA_ESCE_LON > 0:
     if len(args.SIGMA_ESCE) != 2 * args.SIGMA_ESCE_LON:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para SIGMA_ESCENARIO {} no es el correcto {}'.format(len(args.SIGMA_ESCE), 2 * args.SIGMA_ESCE_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para SIGMA_ESCENARIO {} no es el correcto {}'.format(len(args.SIGMA_ESCE), 2 * args.SIGMA_ESCE_LON))
     else:
         n = args.SIGMA_ESCE_LON
         i = 0
@@ -319,10 +318,7 @@ if args.SIGMA_ESCE_LON > 0:
 ARANCELES = np.zeros(nsec, dtype=np.float64)
 if args.ARANCELES_LON > 0:
     if len(args.ARANCELES_PRO) != 2 * args.ARANCELES_LON:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para ARANCELES {} no es el correcto {}'.format(len(args.ARANCELES_PRO), 2 * args.ARANCELES_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para ARANCELES {} no es el correcto {}'.format(len(args.ARANCELES_PRO), 2 * args.ARANCELES_LON))
     else:
         n = args.ARANCELES_LON
         i = 0
@@ -381,15 +377,9 @@ else:
     k = len(args.FIX)
     n = len(args.FIX_LON)
     if k != n:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('FIX. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('FIX. No coincide el número de variables acotadas {} con el de límites {}'.format(k, n))
     if len(args.FIX_LIMITES) != sum(args.FIX_LON) * 3:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('FIX. No coincide el número de ternas de limites {} con el de tamaño de FIX_LIMITES {}'.format(sum(args.FIX_LON) * 2, args.FIX_LIMITES))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('FIX. No coincide el número de ternas de limites {} con el de tamaño de FIX_LIMITES {}'.format(sum(args.FIX_LON) * 2, args.FIX_LIMITES))
 
     # cada elemento de la matriz 'FIX_LIMITES' es una lista de tres valores
     FIX_LIMITES = np.zeros(k, dtype=list)
@@ -403,26 +393,17 @@ else:
             try:
                 terna[0] = int(terna[0])
             except BaseException as e:
-                if __name__ == 'MEGA':
-                    errores_diferidos.append('FIX {}. El primer elemento de la terna {} debe ser un número'.format(FIX[i], terna[0]))
-                else:
-                    errores_diferidos.append('')
+                errores_diferidos.append('FIX {}. El primer elemento de la terna {} debe ser un número'.format(FIX[i], terna[0]))
             try:
                 terna[1] = float(terna[1])
             except BaseException as e:
                 if terna[1] != '*':
-                    if __name__ == 'MEGA':
-                        errores_diferidos.append('FIX {}. El segundo elemento de la terna {} debe ser un número o un *'.format(FIX[i], terna[1]))
-                    else:
-                        errores_diferidos.append('')
+                    errores_diferidos.append('FIX {}. El segundo elemento de la terna {} debe ser un número o un *'.format(FIX[i], terna[1]))
             try:
                 terna[2] = float(terna[2])
             except BaseException as e:
                 if terna[2] != '*':
-                    if __name__ == 'MEGA':
-                        errores_diferidos.append('FIX {}. El tercer elemento de la terna {} debe ser un número o un *'.format(FIX[i], terna[1]))
-                    else:
-                        errores_diferidos.append('')
+                    errores_diferidos.append('FIX {}. El tercer elemento de la terna {} debe ser un número o un *'.format(FIX[i], terna[1]))
             sec.append(terna)
             ni += 3
         FIX_LIMITES[i] = sec
@@ -438,10 +419,7 @@ if len(GE_F_MUTACION) != 0:
     if len(GE_F_MUTACION) == 1:
         GE_F_MUTACION   = args.GE_F_MUTACION[0]
     elif len(GE_F_MUTACION) != 2:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para GE_F_MUTACION {} be ser dos'.format(len(GE_F_MUTACION)))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para GE_F_MUTACION {} be ser dos'.format(len(GE_F_MUTACION)))
 GE_RECOMBINACION    = args.GE_RECOMBINACION
 GE_DIM_POBLACION    = args.GE_DIM_POBLACION
 GE_WORKERS          = args.GE_WORKERS
@@ -463,19 +441,13 @@ PESO_YDP            = args.PESO_YDP
 PRECIO_INI          = np.float64(args.PRECIO_INI)
 
 if len(args.FACTOR_CSSH) != ndem:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para FACTOR_CSSH {} no es el correcto {}'.format(len(args.FACTOR_CSSH), ndem))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de datos para FACTOR_CSSH {} no es el correcto {}'.format(len(args.FACTOR_CSSH), ndem))
 else:
     FACTOR_CSSH         = np.array(args.FACTOR_CSSH, dtype=np.float64)
 FACTOR_CSSE = np.ones(nsec, dtype=np.float64)
 if args.F_CSSE_LON > 0:
     if len(args.F_CSSE) != 2 * args.F_CSSE_LON:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de datos para FACTOR_CSSE {} no es el correcto {}'.format(len(args.F_CSSE), 2 * args.F_CSSE_LON))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de datos para FACTOR_CSSE {} no es el correcto {}'.format(len(args.F_CSSE), 2 * args.F_CSSE_LON))
     else:
         n = args.F_CSSE_LON
         i = 0
@@ -484,37 +456,22 @@ if args.F_CSSE_LON > 0:
             FACTOR_CSSE[j] = args.F_CSSE[i+1]
             i += 2
 if len(args.VAR_FACTORES) != ndem * nfac:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de datos para VAR_FACTORES {} no es el correcto {}'.format(len(args.VAR_FACTORES), ndem * nfac))
 else:
     VAR_FACTORES  = np.array(args.VAR_FACTORES, dtype=np.float64).reshape(ndem, nfac)
 if SAL_GRAFICOS_EVOL and GE_SOLUCIONES == 0:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('Se ha especificado gráfico de soluciones (SAL_GRAFICOS_EVOL=True) pero no el registro de las mismas (GE_SOLUCIONES={})'.format(GE_SOLUCIONES))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('Se ha especificado gráfico de soluciones (SAL_GRAFICOS_EVOL=True) pero no el registro de las mismas (GE_SOLUCIONES={})'.format(GE_SOLUCIONES))
 if SAL_GRAFICOS_EVOL and SAL_AUXILIARES == False:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('Se ha especificado gráfico de soluciones (SAL_GRAFICOS_EVOL=True) pero no salidas auxiliares (SAL_AUXILIARES=False))')
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('Se ha especificado gráfico de soluciones (SAL_GRAFICOS_EVOL=True) pero no salidas auxiliares (SAL_AUXILIARES=False))')
 SENDA_DATOS       = args.SENDA_DATOS
 SENDA_SALIDAS     = args.SENDA_SALIDAS
 SENDA_GRAFICOS    = args.SENDA_GRAFICOS
 SENDA_SOLUCIONES  = args.SENDA_SOLUCIONES
 if (13 in NCASO) and DEM_ESENCIALES:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('Consumos esenciales iguales a Xp0 (caso 13) es incompatible con Stone-Geary (rentas 0)')
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('Consumos esenciales iguales a Xp0 (caso 13) es incompatible con Stone-Geary (rentas 0)')
 if USAR_ALGE_DLL:
     if (ALGE_NPOB % ALGE_N_HILOS) != 0:
-        if __name__ == 'MEGA':
-            errores_diferidos.append('El número de individuos {} debe ser muútiplo del número de hilos {}'.format(ALGE_NPOB, ALGE_N_HILOS))
-        else:
-            errores_diferidos.append('')
+        errores_diferidos.append('El número de individuos {} debe ser muútiplo del número de hilos {}'.format(ALGE_NPOB, ALGE_N_HILOS))
 if len(errores_diferidos) == 0:
     # acumular por hogar porque el modelo no contempla ayudas para un producto determinado, pero necesitamos los
     # valores desagregados por producto, porque modificaremos las preferencias (alfa) de consumo de cada producto en particular
@@ -700,29 +657,17 @@ elif NSAM == 6:
     alp  = ('ALP',)                                 # ahorro a largo plazo
     #
 else:
-    if __name__ == 'MEGA':
-        errores_diferidos.append('Número de MCS {} incorrecto'.format(NSAM))
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('Número de MCS {} incorrecto'.format(NSAM))
 
 # error máximo para diagnosticar una discrepacia en la MCS recalculada
 TOLERA_MCS = 1.0 / (10.0 ** DECIMALES)
 
 if nfac != len(h):
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de factores en la MCS {} no coincide con el especificado {}'.format(len(h), nfac) + '\n')
 if ndem != len(dem):
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de hogares en la MCS {} no coincide con el especificado {}'.format(len(dem), ndem) + '\n')
 if nsec != len(ind):
-    if __name__ == 'MEGA':
-        errores_diferidos.append('El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
-    else:
-        errores_diferidos.append('')
+    errores_diferidos.append('El número de sectores en la MCS {} no coincide con el especificado {}'.format(len(ind), nsec) + '\n')
 
 if len(PREFIJO) > 1 and PREFIJO[0] == '=':
     # si PREFIJO empieza con el caracter '=' los caracteres del 1 en adelante se usarán como nombre de los
@@ -748,6 +693,8 @@ FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
 FICHERO_ERR     = SENDA_FI_SALIDA +'_Err'+ '.log'
 FI_HISTORIAL    = SENDA_FI_SALIDA + '_his.csv'
 FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
+
+N_DESVIACIONES = 0
 
 # preparar para usar la función 'imprime', que llama a la del módulo 'mfun' del mismo nombre, pasándole el nombre del fichero donde escribir
 mfun.ini(FICHERO_LOG)
@@ -1262,11 +1209,11 @@ def sec_ecuaciones(vec_opt):
     para que el demérito sea el correcto hay que recalcular todas las variables.
     '''
 
-    Zr    = exte.restriccion_produccion_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi)             # 6.20
     Ypr   = prod.produccion_factor_compuesto_Y(F, parametros.beta, parametros.b)                                                    # 6. 1
-    Fr    = prod.uso_optimo_factores_F(parametros.beta, pf, py, Ypr)                                                                # 6. 2
+    Zr    = exte.restriccion_produccion_bruta_Z(parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi)             # 6.20
     Xr    = prod.consumo_intermedio_X(Zr, ax)                                                                                       # 6. 3
     Ydr   = prod.utilizacion_factor_compuesto_Y(Zr, ay)                                                                             # 6. 4
+    Fr    = prod.uso_optimo_factores_F(parametros.beta, pf, py, (Ypr + Ydr) / 2.)                                                                # 6. 2
 
     if  FF_ENDOGENA:
         FFr = deho.aportacion_factores_FF(datos.FF0, Fr)
@@ -1344,7 +1291,7 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
         Ti,Tir
     ) = res_ecuaciones
 
-    # Se trata de forma individualizada la desviación, en valor absoluto, de cada variable
+    # Se trata de forma individualizada la desviación de cada variable
 
     # Apz es como los precios, no es el resultado de ninguna ecuación y por tanto no procede
     # calcular un desvío para ella
@@ -1352,10 +1299,10 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     if EQ_BAL_PAGOS:
         # 'ebp' y 'ebpr' deben ser ambas cero
         des_ebp = np.array([abs(ebp) + abs(ebpr)])
-        des_Sf  = np.array([0.])    
+        des_Sf  = np.array([0], dtype=np.float64)    
     else:
         # el desvio por la balanza de pagos será exclusivamente por la diferencia entre 'Sf' y 'Sfr', no por 'ebp' 
-        des_ebp = np.array([0.])
+        des_ebp = np.array([0], dtype=np.float64)
         des_Sf  = abs(Sfr  - Sf  ).flatten()    
 
     # condiciones de equilibrio del mercado.
@@ -1373,19 +1320,19 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
     # aportación de los mismos por los hogares 'FF.sum(axis=0)'
     if  FF_ENDOGENA:
         # ya está garantizado el cumplimiento de la ecuación 6.24, luego no hay desvios por este concepto
-        #des_factores   = np.zeros(nfac, dtype=np.float64)
-        des_factores  = np.zeros(nfac, dtype=np.float64)
+        #des_factores = np.array([0], dtype=np.float64)
+        des_factores = np.array([0], dtype=np.float64)
         if ALP_FACTOR > 0:
             # el desglose de los ahorros por factor es importante porque cada factor tiene su precio y la renta disponible
             # para adquirir productos depende de ello
-            des_Alp        = abs(Alpr - Alp).flatten()
+            des_Alp = abs(Alpr - Alp).flatten()
         else:
-            des_Alp        = np.zeros(ndem, dtype=np.float64)
+            des_Alp = np.array([0], dtype=np.float64)
     else:
         # se calcula solo para los valores del segundo pase
         #des_factores   = abs(F.sum(axis=0)  - FF.sum(axis=0)).flatten()     # 6.24
         des_factores  = abs(Fr.sum(axis=0) - FFr.sum(axis=0)).flatten()   # 6.24
-        des_Alp        = np.zeros(ndem, dtype=np.float64)
+        des_Alp        = np.array([0], dtype=np.float64)
 
     des_Fi         = abs(Fr   - Fi  ).flatten()    
     des_Ei         = abs(Er   - Ei  ).flatten()    
@@ -1448,6 +1395,20 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 des_Td,des_Tz,des_Tm,des_Sp,des_Sg,des_Sf,des_AgE,des_AgH,des_CssE,des_CssH,des_Ti
             )
         )
+
+    global N_DESVIACIONES
+    # hay desvio 'des_ebp' o 'des_Sf', nunca ambos
+    N_DESVIACIONES = len(desvios) - 1
+    if GE_INCLUYE_XP == False:
+        # no hay 'des_Xpi'
+        N_DESVIACIONES -= 1
+    if  FF_ENDOGENA:
+        # no hay 'des_factores'
+        N_DESVIACIONES -= 1
+    if  FF_ENDOGENA == False or ALP_FACTOR == 0:
+        # no hay 'des_Alp'
+        N_DESVIACIONES -= 1
+
     if METRICA_ERROR == 0:
         dist = (desvios ** 2).sum()
     elif METRICA_ERROR == 1:
@@ -1478,6 +1439,8 @@ def calcula_desvios(res_ecuaciones, muestra_progreso):
                 )
 
         infor.salida_desvios(res_ecuaciones, param, DECIMALES, GE_INCLUYE_XP, OPT_DESVIOS, dist)
+    if ECT_ECM == 1:
+        dist = np.sqrt(dist / N_DESVIACIONES)
     return dist
 
 def fo(vec_opt):
@@ -1552,6 +1515,8 @@ def imprime_opciones(nvec_opt):
         imprime('    Número de hilos multiproceso                        {:10}'.format(ALGE_N_HILOS))
         imprime('    Número máximo de reinicios por falta de progreso    {:10}'.format(ALGE_MAX_INTENTOS))
         imprime('    Error máximo para calificar aceptable una solución  {:10}'.format(ALGE_TOL_ACEPTABLE))
+        imprime('    Número GE_MIN_PROGRESO para efectuar regularización {:10}'.format(ALGE_UMBRAL_REGUL))
+        imprime('    Fracción de población a regularizar                 {:10}'.format(ALGE_FRAC_REGUL))
         imprime('    Modo para generar la población inicial              {:10} {}'.format(ALGE_MODO_POB_INI, etq_mpob[ALGE_MODO_POB_INI]))
         imprime('    Modo reinicio de la población inicial               {:10}'.format(ALGE_MODO_REINI_POB))
         imprime('    Factor de alcance para generar la población inicial {:10}'.format(ALGE_F_INICIO_POB))
@@ -2083,8 +2048,6 @@ if __name__ == '__main__':
         if vf < GE_TOLERANCIA:
             # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
             mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
-            imprime('')
-            imprime('')
             raise StopIteration
         if nit % GE_PROGRESO == 0:
             global vfa
@@ -2283,15 +2246,15 @@ if __name__ == '__main__':
     else:
         restricciones = []
 
-    if USAR_ALGE_DLL:
-        imprime('No se muestra en pantalla la evolución de los cálculos. Ver el fichero {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
-    else:
-        imprime('Evolución de la minimización')
-
-    imprime('')
     res_ecuaciones = sec_ecuaciones(vec_opt)
     dist = calcula_desvios(res_ecuaciones, False)
+    imprime('Número de desvios {}'.format(N_DESVIACIONES))
+    imprime('')
     imprime('{:>9} {:12.5e}'.format('Python ', dist))
+    imprime('')
+    if USAR_ALGE_DLL:
+        imprime('No se muestra en pantalla la evolución de los cálculos. Ver el fichero {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
+        imprime('')
     if USAR_DLL:
         '''
         las función 'abre_salida' y 'cierra_salida' de la DLL se llaman explícitamente para abrir y cerrar el fichero de salida donde la DLL escribe, lo
@@ -2310,10 +2273,11 @@ if __name__ == '__main__':
             imprime('')
             sys.exit()
         '''
-        dist_dll = fo(vec_opt);
-        imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
+        # si ECT_ECM == 1, hay que llamar a 'merito_sol' antes que  a 'merito_s' para que calcule el número de desvios
         dist_dll = dll.merito_sol(libc, vec_opt);
         imprime('{:>9} {:12.5e}'.format('DLL sol', dist_dll))
+        dist_dll = fo(vec_opt);
+        imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
         '''
         res = libc.cierra_salida()
         if res == False:
@@ -2349,6 +2313,8 @@ if __name__ == '__main__':
         par.append(np.float64(ALGE_TOL_ACEPTABLE))
         par.append(np.float64(GE_PROGRESO))
         par.append(np.float64(GE_MIN_PROGRESO / 100.))
+        par.append(np.float64(ALGE_UMBRAL_REGUL))
+        par.append(np.float64(ALGE_FRAC_REGUL))
         par.append(np.float64(GE_HISTORIAL))
         par.append(np.float64(GE_SOLUCIONES))
         par.append(np.float64(ALGE_MODO_POB_INI))
@@ -2740,6 +2706,12 @@ if __name__ == '__main__':
         imprime('')
     else:
         # Python 
+        imprime('Evolución de la minimización')
+        if ECT_ECM == 0:
+            imprime('generacio      ECT')
+        else:
+            imprime('generacio      ECM')
+        imprime('--------- ------------')
         if len(GE_F_MUTACION) == 0:
             rmin = differential_evolution(func=fo,
                     x0=vec_opt,
@@ -2752,7 +2724,6 @@ if __name__ == '__main__':
                     callback=vigila,
                     maxiter=GE_MAX_ITER,
                     updating=GE_ACTUALIZACION,
-                    #vectorized=6,
                     workers=GE_WORKERS,
                     recombination=GE_RECOMBINACION,
                     seed=GE_SEMILLA,
@@ -2771,12 +2742,12 @@ if __name__ == '__main__':
                     callback=vigila,
                     maxiter=GE_MAX_ITER,
                     updating=GE_ACTUALIZACION,
-                    #vectorized=6,
                     workers=GE_WORKERS,
                     recombination=GE_RECOMBINACION,
                     seed=GE_SEMILLA,
                     constraints=restricciones,
             )
+        imprime('--------- ------------')
 
     # la minimización ha terminado
     #---------------------------------------------------------------------

@@ -13,10 +13,15 @@ Este módulo continene diversas versiones de la función 'valores_opciones?()' c
 están definidadas en la aplicación, simplemente por comodidad en las pruebas de una u otra.
 La aplicación sólo llama a una de ellas, la que que NO termina en un dígito 'valores_opciones()', con la aplicación en 'explotación' se pueden eliminar el resto de funciones,
 especialmente por la posibilidad de utilizar archivos .BAT, que es una forma mucho más útil de ejecutar la aplicación.
+
+------------------------------------------------------------------------------------------------
+ES IMPRESCINDIBLE QUE LA FUNCION 'valores_opciones()' SEA LA CORRECTA AL EJECUTAR UN FICHERO BAT
+------------------------------------------------------------------------------------------------
 '''
 
 def valores_opciones0():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=0      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
     NCASO
         'base',                 #  0
@@ -44,6 +49,7 @@ def valores_opciones0():
     
     parser.add_argument('--NSAM'               , type=int  , default=0      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
     parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
@@ -57,6 +63,8 @@ def valores_opciones0():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.01   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=False  , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=False  , help="si True se usa el algoritmo genético de la DLL")
@@ -230,6 +238,7 @@ def valores_opciones0():
 
 def valores_opciones1():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=1      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
     las matrices se especifican aplanadas como vectores.
 
@@ -279,6 +288,7 @@ def valores_opciones1():
 
     parser.add_argument('--NSAM'               , type=int  , default=1      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
     parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
@@ -292,6 +302,8 @@ def valores_opciones1():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
@@ -464,6 +476,7 @@ def valores_opciones1():
 
 def valores_opciones2():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=2      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
     NCASO
         'base',                 #  0
@@ -491,6 +504,7 @@ def valores_opciones2():
 
     parser.add_argument('--NSAM'               , type=int  , default=1      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
     parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
@@ -504,6 +518,8 @@ def valores_opciones2():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
@@ -676,6 +692,7 @@ def valores_opciones2():
 
 def valores_opciones3():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=3      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
     las matrices se especifican aplanadas como vectores.
 
@@ -724,6 +741,7 @@ def valores_opciones3():
 
     parser.add_argument('--NSAM'               , type=int  , default=3      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
     parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
@@ -737,6 +755,8 @@ def valores_opciones3():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
@@ -909,6 +929,7 @@ def valores_opciones3():
 
 def valores_opciones4():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=4      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
     NCASO
         'base',                 #  0
@@ -936,6 +957,7 @@ def valores_opciones4():
 
     parser.add_argument('--NSAM'               , type=int  , default=4      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
     parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
@@ -949,6 +971,8 @@ def valores_opciones4():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
@@ -1121,6 +1145,7 @@ def valores_opciones4():
 
 def valores_opciones5():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=5      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
     NCASO
         'base',                 #  0
@@ -1148,6 +1173,7 @@ def valores_opciones5():
 
     parser.add_argument('--NSAM'               , type=int  , default=5      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
     parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
@@ -1161,6 +1187,8 @@ def valores_opciones5():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
@@ -1268,7 +1296,7 @@ def valores_opciones5():
 
     parser.add_argument('--GE_HISTORIAL'       , type=int  , default=10000  , help="número de generaciones para mostrar evolución y en su caso salvar el historial")
     parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=-1     , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
-    parser.add_argument('--GE_MAX_ITER'        , type=int  , default=1000000, help="máximo número de generaciones a simular")
+    parser.add_argument('--GE_MAX_ITER'        , type=int  , default=0, help="máximo número de generaciones a simular")
     parser.add_argument('--GE_PRE_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de los precios es su valor inicial por   (1 - GE_PRE_MIN/100)")
     parser.add_argument('--GE_PRE_MAX'         , type=float, default=99.0   , help="el límite superior del rango de variación de los precios es su valor inicial por   (1 + GE_PRE_MAX/100)")
     parser.add_argument('--GE_VAR_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de las variables es su valor inicial por (1 - GE_PRE_MIN/100)")
@@ -1333,6 +1361,7 @@ def valores_opciones5():
 
 def valores_opciones():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--NSAM_OP'             , type=int  , default=6      , help="Matriz de Contabilidad Social asociada a esta función")
     
     # 205_salarios_1_5_42_det_0_00.bat
 
@@ -1380,15 +1409,16 @@ def valores_opciones():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs6_075_085_999_48k' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs6_075_085_999_54k_d' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
 
-    parser.add_argument('--NSAM'               , type=int  , default=6     , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
-    parser.add_argument('--DECIMALES'          , type=int  , default=1     , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--NSAM'               , type=int  , default=6      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
+    parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
+    parser.add_argument('--ECT_ECM'            , type=int  , default=0      , help="merito: 0=suma total de desvíos al cuadrado; 1=desviación media (raíz del error cuadrático medio)")
     # aunque NFAC, NDEM y NSEC se establecen el la definición de cada MCS, tenemos que especificarlos aquí porque los vamos a necesitar para redimensionar las matrices aplanadas antes
     # de llegar a la definición de la MCS
-    parser.add_argument('--NFAC'               , type=int  , default=2     , help="número de factores")
-    parser.add_argument('--NDEM'               , type=int  , default=2     , help="número de hogares")
-    parser.add_argument('--NSEC'               , type=int  , default=31    , help="número de sectores")
+    parser.add_argument('--NFAC'               , type=int  , default=2      , help="número de factores")
+    parser.add_argument('--NDEM'               , type=int  , default=2      , help="número de hogares")
+    parser.add_argument('--NSEC'               , type=int  , default=31     , help="número de sectores")
     parser.add_argument('--GE_SEMILLA'         , type=int  , default=42     , help="valor inicial del generador de números aleatorios")
     
     # GE_PROGRESO tiene su importancia porque la minimización puede terminar si tras GE_PROGRESO generaciones no mejora al menos GE_MIN_PROGRESO
@@ -1397,21 +1427,23 @@ def valores_opciones():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-06 , help="límite para considerar que una ecuación se cumple")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=10.    , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.1    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
-    parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=10062  , help="un número que identifica la salida de la DLL")
+    parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=1004   , help="un número que identifica la salida de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
     parser.add_argument('--ALGE_MODO_POB_INI'  , type=int  , default=0      , help="de 0 a 15 formas de generar la población inicial")
     parser.add_argument('--ALGE_MODO_REINI_POB', type=int  , default=0      , help="modo reinicio de la población; 0=normal; 1=con variación del factor de dispersión")
     parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int  , default=5      , help="número máximo de veces que se reinician los calculos, desde una nueva población inicial, si no se alcanza el objetico")
-    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=30     , help="número de procesos simultáneos")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=15     , help="número de procesos simultáneos")
     parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float, default=1.e-05 , help="valor del error de la función objetivo por debajo del cual se considera una solución aceptable si no se ha podido alcanzar el objetivo GE_TOLERANCIA, no interviene el los cálculos, solo se usa a efectos informativos")
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float, default=0.001 , help="factor de alcance para generar de la población inicial")
     parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float, default=0.1   , help="sigma de la distribución normal para generar de la población inicial")
     parser.add_argument('--ALGE_VAR_DISPERSION', type=float, default=1.5   , help="variación del factor de alcance para generar de la población inicial a cada intento")
     parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int  , default=400   , help="Tnúmero de tramos en los que se divide el intervalo de existencia de las variables para generar sus valores en la población inicial")
-    parser.add_argument('--ALGE_NPOB'          , type=int  , default=4800  , help="Número de individuos en la población")
+    parser.add_argument('--ALGE_NPOB'          , type=int  , default=5400  , help="Número de individuos en la población")
     parser.add_argument('--ALGE_F_MUTACION'    , type=float, default=[0.75 , 0.85], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
     parser.add_argument('--ALGE_RECOMBINACION' , type=float, default=0.999 , help="constante de recombinación")
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
@@ -1503,7 +1535,7 @@ def valores_opciones():
     parser.add_argument('--GE_IMG_COL'         , type=int  , default=6      , help="número de columnas del mapa de gráficos con la evolución de los precios y las variables")
 
     parser.add_argument('--GE_HISTORIAL'       , type=int  , default=10000  , help="número de generaciones para mostrar evolución y en su caso salvar el historial")
-    parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=-1     , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
+    parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=10000  , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
     parser.add_argument('--GE_MAX_ITER'        , type=int  , default=1000000, help="máximo número de generaciones a simular")
     parser.add_argument('--GE_PRE_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de los precios es su valor inicial por   (1 - GE_PRE_MIN/100)")
     parser.add_argument('--GE_PRE_MAX'         , type=float, default=99.0   , help="el límite superior del rango de variación de los precios es su valor inicial por   (1 + GE_PRE_MAX/100)")
@@ -1558,7 +1590,7 @@ def valores_opciones():
     parser.add_argument('--SENDA_SALIDAS'      , type=str  , default='C:/MEGA/Salidas_IDE'                   , help="senda para las salidas")
     parser.add_argument('--SENDA_GRAFICOS'     , type=str  , default='C:/MEGA/Graficos_IDE'                  , help="senda para los gráficos")
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
-    parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll', help="senda para la DLL")
+    parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Release/MEGA6.dll', help="senda para la DLL")
 
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs6.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
