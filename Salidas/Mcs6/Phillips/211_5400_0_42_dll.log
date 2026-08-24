@@ -1,0 +1,68 @@
+inicio: Sun Aug 16 10:32:38 2026
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :           31
+
+Número procesos        :           30
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :            5
+Población              :         5400
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+-------------------------------------
+Progreso mínimo        :        0.050 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       30.000 % = 1620 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación normal
+Opción cálculo desvios :            1
+-------------------------------------
+Variables cabecera     :            7
+Variables solución     :          251
+Resto variables modelo :         1634
+Variables recalculadas :         1633
+-------------------------------------
+Total                  :         3525
+
+Variables fijas en sol :            8
+Variables con valores fijos
+    0 pF           0  1.00000000e+00
+   94 epsilon      0  1.00000000e+00
+  166 E            8  0.00000000e+00
+  167 E            9  0.00000000e+00
+  197 M            8  0.00000000e+00
+  198 M            9  0.00000000e+00
+  199 M           10  0.00000000e+00
+  200 M           11  0.00000000e+00
+
+n.gen.pro2 máximoxtramo:  13122000000
+
+generacio d.est.poblac      ECT     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ----------
+        0  2.27767e+01  9.18841e+05  8.66666e+02     31 Qeq         30                           0
+    10000  2.36980e-02  6.48510e+00  1.20930e+00    354 Ydp         23   76.3      1.3    13029202    4573744       3477
+    20000  3.78864e-03  3.15003e-01  1.83124e-01    354 Ydp         23   76.4      2.5    13070001    4526052       3547
+    30000  1.64340e-03  6.23149e-02  1.37113e-01    353 Ydp         22   77.2      3.8    13072838    4534941       3562
+    40000  1.16833e-03  1.06250e-02  4.18722e-02    353 Ydp         22   76.7      5.1    13070095    4472660       3622
+    50000  1.36271e-04  1.86597e-04  5.88779e-03    333 Ydp          2   76.6      6.4    13073721    4594889       3554
+    60000  3.44204e-05  2.52593e-05  2.10240e-03    353 Ydp         22   77.4      7.7    13069859    4521439       3538
+    70000  1.25598e-05  3.84872e-06  9.14625e-04    353 Ydp         22   76.4      8.9    13071757    4490688       3590
+    80000  4.62561e-06  2.47258e-07  1.83813e-04    354 Ydp         23   76.3     10.2    13066390    4474688       3595
+    90000  9.50718e-07  1.76963e-08  5.21237e-05    354 Ydp         23   76.3     11.5    13071443    4581217       3594
+   100000  3.93519e-07  2.12605e-09  1.45839e-05    353 Ydp         22   76.2     12.8    13071391    4464822       3643
+   110000  6.90979e-08  1.13475e-10  3.40904e-06    353 Ydp         22   76.2     14.0    13066414    4473388       3603
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ----------
+   119631  3.18466e-08  9.99893e-12  1.04251e-06    354 Ydp         23   76.9     15.3        4244
+
+fin   : Sun Aug 16 10:47:59 2026
+
