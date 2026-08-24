@@ -1,0 +1,51 @@
+inicio: Sun Aug 23 21:56:06 2026
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :            6
+
+Número procesos        :           30
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :           15
+Población              :         2010
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+-------------------------------------
+Progreso mínimo        :        0.050 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       30.000 % = 603 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99500e-01
+Recombinación normal
+Opción cálculo desvios :            1
+Número de desviaciones :          185
+-------------------------------------
+Variables cabecera     :            7
+Variables solución     :           51
+Resto variables modelo :          184
+Variables recalculadas :          183
+-------------------------------------
+Total                  :          425
+
+Variables fijas en sol :            1
+Variables con valores fijos
+   44 M            5  0.00000000e+00
+
+n.gen.pro2 máximoxtramo:     10050000
+
+generacio d.est.poblac      ECT     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ----------
+        0  7.62753e+01  1.41088e-17  1.86265e-09     91 Dat          4                           0
+--------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ---------- ----------
+        0  7.62753e+01  1.41088e-17  1.86265e-09     91 Dat          4    0.0      0.0           0
+
+fin   : Sun Aug 23 21:56:08 2026
+
