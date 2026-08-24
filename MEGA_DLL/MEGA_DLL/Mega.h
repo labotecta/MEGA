@@ -1,14 +1,23 @@
 #pragma once
 #define MEGA_DLL_API __declspec(dllexport)
 #include <Windows.h>
+#include <random>
 
 using namespace std;
 
-// para disponer de una DLL para cada modelo, hay que cambiar el '#define' siguiente antes de compilar la solución
-// además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'general->Nombre de destino' y una vez compilada la solución copiar
-// desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
+/*
+Sobre la reproducibilidad de los resultados.
+Solo se ha conseguido en mono proceso.
+Con multiproceso no ha sido posible con ninguno de los dos generadores de números aleatorios que se han probado, ni con 'minstd_rand' ni con 'mt19937'
+*/
 
-#define MEGA5
+/*
+para disponer de una DLL para cada modelo, hay que cambiar el '#define' siguiente antes de compilar la solución
+además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'general->Nombre de destino' y una vez compilada la solución copiar
+desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
+*/
+
+#define MEGA6
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -35,17 +44,58 @@ const int NDEM = 2;
 const int NSEC = 31;
 #endif
 
+// desastroso, 'FIJAR_VARIABLES' no funciona
+//#define FIJAR_VARIABLES
+#ifdef FIJAR_VARIABLES
+int GENS_CALENTAR = 50000;
+int BLOQUE_FIJAR = 10000;
+double MIN_FIJAR = 0.1;
+double TOL_DISPERSION;
+#endif
+
 // dar un peso distinto de 1 a PESO_YDP, ya sea mayor o menor, dificulta o imposibilita encontrar una solución
 //#define USAR_PESO_YDP
 #ifdef USAR_PESO_YDP
 double PESO_YDP = 10.;
 #endif
 
-// añade estadísticas de los cruces a las salidas
-//#define ESTA_CRUCES
+// en los individuos de la población inicial se sustituyen los valores de las variables (F,E,M,D, y en su caso XP) por los que resultan de
+// recalcular dos veces las ecuaciones del modelo, como se hace en la función de mérito
+//#define AJUSTA_POB_INICIAL
+
+// para utilizar la función 'std::copy' para copiar un 'vector' a otro, en lugar de un 'for', no hay un ahorro de tiempo significativo, si es que lo hay
+#define COPIAR_CON_COPY
+
+// seleccina la forma de generar los números aleatorios de forma segura mediante variables 'thhread_safe'
+#define AZAR_HILOS_LOCAL
+
+// usar el generador de números aleatorios 'mt19937', en caso contrario se usa el 'minstd_rand' que es menos aleatorio y tarda mucho más.
+#define MT19937
+// otro generador es rl 'ranlux48'
+
+// para inicializar el generador de números aleatorios 'mt19937' con un fichero
+//#define INI_AZAR_FICHERO
+
+// si RECOMBINACION_NORMAL está definido, los cruces sin recombinación toman el valor de la variable del individuo correspondiente de la
+// población, si no, se toma el valor del mejor individuo. No parece que una sea mejor que otra, pero quizás sea preferible que
+// RECOMBINACION_NORMAL esté definido porque recombinar con el mejor ofrece menos variedad que con los individuos de la población.
+#define RECOMBINACION_NORMAL
+
+// inviable. El descendiente se acepta (selecciona) si hay algún individuo en la población con peor mérito
+//#define SELECCION_MAXIMA
+
+// añade estadísticas de las mutaciones a las salidas, registra el número de genes que se toman del segundo progenitor y no del mutante
+#define NUM_GENES_PROGENITOR_2
 
 // calcula el número de individuos que mejoran
-//#define NUM_MEJORAS
+#define NUM_MEJORAS
+
+// calcula la función de mérito como ECM y no como ECT
+//#define ECM
+int N_DESVIACIONES = 1;
+
+// añade estadísticas de los cruces a las salidas
+//#define ESTA_CRUCES
 
 // para comprobar que la variable con la desviación máxima se está determinando correctamente, fue útil durante el desarrollo, pero ahora es inútil
 //#define COMPROBAR_MAX_DESVIACION
@@ -61,8 +111,8 @@ double PESO_YDP = 10.;
 // no ahorra tiempo, es inútil.
 //#define CONSUMO_INTERMEDIO_INDESADO
 
-// para utilizar la función 'std::copy' para copiar un 'vector' a otro, en lugar de un 'for', no hay un ahorro de tiempo significativo, si es que lo hay
-#define COPIAR_CON_COPY
+// para calcular las medias de los sorteos
+//#define SORTEOS
 
 typedef struct
 {
@@ -150,9 +200,9 @@ public:
 extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
-extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
 extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
+extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 
 // estas dos funciones fueron útiles durante el desarrollo  pero se podrían eliminar
 extern "C" MEGA_DLL_API bool abre_salida(const char* senda);
@@ -168,8 +218,6 @@ double merito_d(double* vec_opt, double liston);
 #ifdef COMPROBAR_MAX_DESVIACION
 extern "C" MEGA_DLL_API void indice_desviaciones();
 #endif
-
-// para reiniciar la población centrada en 'vec_ini' (MODO_REINICIO=0) o en la media de 'vec_ini' y la mejor solución encontrada (MODO_REINICIO=1)
 
 #pragma region Merito
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
@@ -208,20 +256,38 @@ int parametros_alge(double* par);
 bool inicia_cotas();
 bool fija_cotas(double* cotasInf, double* cotasSup);
 bool inicia_poblacion(double ajuste);
-static bool genera_poblacion(double * vec_central, int modo, double modulacion);
+static bool genera_poblacion(double* vec_central, int modo, double modulacion);
 void recolocar_al_mejor(int ind_mejor_merito);
 int avanza();
 void mutacion_cruze(int desde, int hasta, int hilo);
-void mutacion_cruzeH(int desde, int hasta, int hilo);
 void seleccion(int desde);
 void seleccionH(int desde, int hasta);
 void seleccionH(int desde, int hasta, int hilo);
 int comprobar_final();
+void salida_solucion(char* fichero);
 double distancia_clonacion();
 int PreparaMP();
 bool Arranque();
 int ProcesoMP(int gh);
+#ifdef AZAR_HILOS_LOCAL
+// las variables relacionadas con el generador de números aleatorios hay que pasarlas por referencia (& = punteros) para que estado del generador se actualice
+// correctamente cada vez que se le llama, en caso contrario se generaría el mismo número una y otra vez
+void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_distribution<int>& he, uniform_int_distribution<int>& hi, uniform_real_distribution<double>& hd);
+void ProcesarTramo(int hilo, int desde, int hasta, mt19937& gh, uniform_int_distribution<int>& he, uniform_int_distribution<int>& hi, uniform_real_distribution<double>& hd);
+#else
+void mutacion_cruzeH(int desde, int hasta, int hilo);
 void ProcesarTramo(int hilo, int desde, int hasta);
+#endif
 unsigned int WINAPI HiloTramos(LPVOID param);
-void fin_soluciona(auto t_inicio);
+void fin_soluciona();
+#ifdef INI_AZAR_FICHERO
+void inicia_azar(mt19937* g, int hilo, unsigned int semilla);
+void inicia_azar(mt19937& g, unsigned int semilla);
+#endif
+#ifdef SELECCION_MAXIMA
+void seleccion_maxima();
+#endif
+#ifdef AJUSTA_POB_INICIAL
+double ajustar_vec_solucion(double* vec_opt);
+#endif
 #pragma endregion
