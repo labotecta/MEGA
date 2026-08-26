@@ -61,7 +61,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --DEM_ESENCIALES      False ^
 --OPT_DESVIOS         1 ^
 --SAL_CALIBRADO       False ^
---SALIDA_VAL_INI      False ^
+--SALIDA_VAL_INI      True ^
 --SALIDA_VEC_OPT      False ^
 --PRIMERA_VALORACION  False ^
 --SALIDA_DESVIOS      False ^
