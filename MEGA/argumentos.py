@@ -927,7 +927,7 @@ def valores_opciones3():
     args = parser.parse_args()
     return args
 
-def valores_opciones4():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=4      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1359,7 +1359,7 @@ def valores_opciones5():
 
     return args
 
-def valores_opciones():
+def valores_opciones6():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=6      , help="Matriz de Contabilidad Social asociada a esta función")
     

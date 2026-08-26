@@ -351,6 +351,9 @@ SALIDA_DESVIOS      = args.SALIDA_DESVIOS
 SAL_VARIACIONES     = args.SAL_VARIACIONES
 SAL_MCS             = args.SAL_MCS
 SAL_VAR_MCS         = args.SAL_VAR_MCS
+if SAL_VAR_MCS == True and SALIDA_VAL_INI == False:
+    avisos_diferidos.append('Se ha especificado SAL_VAR_MCS = True pero SALIDA_VAL_INI = False, se cambia SAL_VAR_MCS a False')
+    SAL_VAR_MCS = False
 if USAR_ALGE_DLL:
     # la DLL no aporta estos detalles
     SAL_AUXILIARES    = False
