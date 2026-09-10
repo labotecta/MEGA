@@ -13,7 +13,7 @@ def imprime(texto, rc=True):
 
 def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
               NCASO, DEM_ADICIONAL, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES, UTILIDAD_DEMANDA, RENTA_FICTICIA,
-              AYD_ADICIONAL, GE_INCLUYE_XP,
+              AYD_ADICIONAL, GE_INCLUYE_XP, GE_INCLUYE_AgH,
               PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
               SIGMA_ESCENARIO, ARANCELES
               ):
@@ -98,11 +98,24 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             imprime('Ayudas adicionales')
             mfun.i_tabla(''  , [] , dem             , AYD_ADICIONAL, False     , DECIMALES)
             imprime('')
-        if abs(CON_ESENCIALES).sum() != 0 and GE_INCLUYE_XP and (13 in NCASO) == False and (14 in NCASO) == False:
-            # se han especificado consumos esenciales, Xp se incluye en la solución y no es el caso 13 o 14 que hace CON_ESENCIALES = Xp0
-            imprime('Consumos esenciales. Cantidades')
-            mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
-            imprime('')
+    
+    # si hay ayudas o demandas adicionales, como conducirán a demandas adicionales de determinados productos, se incrementan las 
+    # variables F0 y D0 que forman parte del vector solución
+    if abs(DEM_ADICIONAL).sum() != 0 or abs(AYD_ADICIONAL).sum() != 0:
+        factor = np.ones((nsec,2), dtype=np.float64)
+        if abs(DEM_ADICIONAL).sum() != 0:
+            for i in range(nsec):
+                a = DEM_ADICIONAL[:,i].sum()
+                if abs(a) != 0:
+                    factor[i,0] = factor[i,1] = 1. + a / datos.Z0[i]
+        if abs(AYD_ADICIONAL).sum() != 0:
+            for i in range(nsec):
+                a = AYD_ADICIONAL[:,i].sum()
+                if abs(a) != 0:
+                    factor[i,0] = factor[i,1] = 1. + a / datos.Z0[i]
+        datos.F0 = factor * datos.F0
+        datos.D0 = factor[:,0] * datos.D0
+    
     for nc in NCASO:
         if nc > 0:
             if imprimir:
@@ -276,7 +289,7 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                         imprime('Elasticidad (Stone-Geary) de la demanda (alfa) calibrado')
                         mfun.tabla_2D(dem, parametros.alfa_esen)
                     else:
-                        imprime('Elasticidad de la demanda (alfa) calibrado')
+                        imprime('Elasticidad de la demanda (alfa) calibrado') 
                         mfun.tabla_2D(dem, parametros.alfa)
                     imprime('')
 
@@ -341,25 +354,67 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                 if imprimir:
                     mfun.tabla_2D(['Productos',], datos.taum)
             elif nc == 13:
+                if DEM_ESENCIALES == False:
+                    if imprimir:
+                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    sys.exit()
                 if GE_INCLUYE_XP == False:
                     if imprimir:
-                        imprime('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                        print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
                     sys.exit()
                 else:
                     CON_ESENCIALES = datos.Xp0
+                    CON_ESENCIALES = np.where(CON_ESENCIALES < 0, -1, CON_ESENCIALES)
                     if imprimir:
-                        imprime('Consumos esenciales = Xp0. Cantidades')
+                        imprime('Consumos esenciales = Xp0. Cantidades (si 0 entonces -1)')
                         mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
                         imprime('')
             elif nc == 14:
+                if DEM_ESENCIALES == False:
+                    if imprimir:
+                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    sys.exit()
                 if GE_INCLUYE_XP == False:
                     if imprimir:
-                        imprime('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                        print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
                     sys.exit()
                 else:
                     CON_ESENCIALES = datos.Xp0 - 1
+                    CON_ESENCIALES = np.where(CON_ESENCIALES < 0, -1, CON_ESENCIALES)
                     if imprimir:
-                        imprime('Consumos esenciales = Xp0. Cantidades')
+                        imprime('Consumos esenciales = Xp0 - 1. Cantidades (si 0 entonces -1)')
+                        mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
+                        imprime('')
+            elif nc == 15:
+                if DEM_ESENCIALES == False:
+                    if imprimir:
+                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    sys.exit()
+                if GE_INCLUYE_XP == False:
+                    if imprimir:
+                        print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    sys.exit()
+                else:
+                    CON_ESENCIALES = 0.9 * datos.Xp0
+                    CON_ESENCIALES = np.where(CON_ESENCIALES <= 0, -1, CON_ESENCIALES)
+                    if imprimir:
+                        imprime('Consumos esenciales = 0.9 * Xp0. Cantidades (si 0 entonces -1)')
+                        mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
+                        imprime('')
+            elif nc == 16:
+                if DEM_ESENCIALES == False:
+                    if imprimir:
+                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    sys.exit()
+                if GE_INCLUYE_XP == False:
+                    if imprimir:
+                       print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    sys.exit()
+                else:
+                    CON_ESENCIALES = datos.Xp0 - DEM_ADICIONAL - 1
+                    CON_ESENCIALES = np.where(CON_ESENCIALES < 0, -1, CON_ESENCIALES)
+                    if imprimir:
+                        imprime('Consumos esenciales = Xp0 - demanda adicional - 1. Cantidades (si 0 entonces -1)')
                         mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
                         imprime('')
             else:
@@ -367,7 +422,7 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                     imprime('Número de caso {} incorrecto'.format(NCASO))
                 sys.exit()
         if imprimir:
-            imprime('---------------------------------------------------------------------------------------------------')
+            imprime('')
     if imprimir:
         imprime('')
     return (CON_ESENCIALES)

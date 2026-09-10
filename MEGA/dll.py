@@ -21,6 +21,8 @@ class OPCIONES(ct.Structure):
         ('VALOR_F_TRA'       , ct.c_double),
         ('ALFA_PHILLIPS'     , ct.c_double),
         ('GE_INCLUYE_XP'     , ct.c_bool),
+        ('GE_INCLUYE_AgH'    , ct.c_bool),
+        ('GE_IMPUESTOS_AgH'  , ct.c_bool),
         ('FF_ENDOGENA'       , ct.c_bool),
         ('ALP_FACTOR'        , ct.c_double),
         ('INDICE_F_TRA'      , ct.c_int),
@@ -58,6 +60,7 @@ class DATOS(ct.Structure):
         ('Ti0',      ct.c_double),
         ('Te0',      ct.c_double),
         ('Sf0',      ct.c_double),
+        ('Fue',      ct.c_double),
         ('PobAct',   ct.c_double),
     )
 
@@ -104,6 +107,8 @@ def envia_opciones(libc):
             ct.c_double(prin.VALOR_F_TRA),
             ct.c_double(prin.ALFA_PHILLIPS),
             ct.c_bool(prin.GE_INCLUYE_XP),
+            ct.c_bool(prin.GE_INCLUYE_AgH),
+            ct.c_bool(prin.GE_IMPUESTOS_AgH),
             ct.c_bool(prin.FF_ENDOGENA),
             ct.c_double(prin.ALP_FACTOR),
             ct.c_int(prin.INDICE_F_TRA),
@@ -145,6 +150,7 @@ def envia_datos(libc, d):
         ct.c_double(d.Ti0),
         ct.c_double(d.Te0),
         ct.c_double(d.Sf0),
+        ct.c_double(prin.FDO_UE),
         ct.c_double(d.PobAct),
     )
     libc.recibe_datos.argtypes = [DATOS]

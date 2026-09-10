@@ -41,7 +41,7 @@ def ahorro_hogares_Sp(ssp, FF, pf, PssH):
     Sp = ssp * (FF.dot(pf) + PssH)
     return Sp
 
-def ahorro_gobierno_Sg(ssg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, PssH, CssH, CssE):
+def ahorro_gobierno_Sg(ssg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, PssH, CssH, CssE, Fue):
     '''
     IMPORTE ahorrado por el gobierno, Sg
 
@@ -53,6 +53,7 @@ def ahorro_gobierno_Sg(ssg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, PssH, CssH, CssE):
     Tg   : impuestos que paga el gobierno. No se usa porque lo que paga lo recibe
     Ti   : impuestos pagados por la inversión de los hogares
     Css  : si es el gobierno quien paga las pensiones, ingresos recibidos de la seguridad social
+    Fue  : transferencias de fondos de la UE al gobierno
     restan:
     Sg   : ahorro del gobierno
     AgE  : ayudas (pagos) del gobierno a los sectores
@@ -64,7 +65,7 @@ def ahorro_gobierno_Sg(ssg, Td, Tz, Tm, Tg, Ti, Te, AgE, AgH, PssH, CssH, CssE):
         Css = CssH.sum() + CssE.sum()
     else:
         Css = 0.
-    return ssg * (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te + Css - (AgE.sum() + AgH.sum()))
+    return ssg * (Td.sum() + Tz.sum() + Tm.sum() + Ti + Te + Css + Fue - (AgE.sum() + AgH.sum()))
 
 def ahorro_exterior_Sf(M, E, pm, pe):
     Sf = M.dot(pm) - E.dot(pe)
