@@ -1,70 +1,17 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.6
+numpy            2.5.0
 scipy            1.18.0
-pandas           3.0.3
+pandas           3.0.4
 matplotlib       3.11.0
 
-####################################################
-MEGA ampliado. versión 1.6.1  ---------------
-####################################################
+#################################################################
+MEGA ampliado. versión 1.7.0  ---------------
+#################################################################
 -------------------------------------------------------------------------------------------------
 Mcs0_salarios_1_05_42_det_P_1_00
 -------------------------------------------------------------------------------------------------
 
 Fichero Matriz Contabilidad Social (MCS) C:/MEGA/Datos/SAM_estandar.xlsx
-
----------------------------------------------------------------------------------------------------
-
-*--* Se han modificado 10 intervalos para ajustarlos al valor mínimo
-
--------------------------------------------------------------------
--------------------------------------------------------------------
-MEGA mediante algoritmo genético. Resolución sin restricciones
-Solución total final guardada en       C:/MEGA/Soluciones/Mcs0/Python/v_vars_solucion_104.log
-Desviaciones relativas en tanto por 1  No
-Semilla números aleatorios                     42
-Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
-Iteraciones para valorar progreso          10,000
-Mejora mínima para considerar progreso     0.0200 %
-Tolerancia en las verificaciones        1.000e-08
-Iteraciones para historial                    100
-Iteraciones para soluciones                     0
-Balanza de pagos                       Mantenerla constante
-Función de utilidad de la demanda      Cobb-Douglas
-Consumos de los hogares en la solución No
-Modo pseudo impuestos (Css y Ag)       Variable
-Demanda con consumos esenciales        No
-Aportación de factores por los hogares ENDOGENA
-Factor ahorro a largo plazo                100.00 %
-Cálculo desvios                        Simple
-Métrica del error: Error cuadrático medio
-Peso de las desviaciones Ydp               1.0000
-Usar DLL                               No
-Usar genético DLL                      No
-SCIPY
-    Estrategia                                          best1bin
-    Factor de mutación                                  [  0.5,  1.0]
-    Factor de recombinación                                 0.9995
-    Número de workers                                           32
-    Tamaño de la población                                      30        510 individuos
-    Periodicidad actualización                          deferred
-
-Rango de validez de los precios en % -     90.0 +     99.0
-Rango de validez de las variables  % -     90.0 +     90.0
-Rango de validez de las variables  0 -  10000.0 +  10000.0
-Rango mínimo de las variables             200.0
-------------------------------------------------------------------------------------------
-Rangos de validez explícitos
-------------------------------------------------------------------------------------------
-epsilon  i:         0 vi:       1.0 vs:       1.0
-------------------------------------------------------------------------------------------
-El precio del factor CAP es variable exógena con valor igual a 1.0
-El precio del factor LAB es fijo con valor igual a 1.05
-
-Dimensión del vector de prueba:     19 variables; con valor fijo:     2 (E:   0 M:   0)
-------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------
 
 MCS base. Importes
 
@@ -87,6 +34,7 @@ AYD             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.
 ALP             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        92.0000   89.0000     50.0000   40.0000   90.0000   31.0000   32.0000    3.0000   35.0000   24.0000    0.0000    0.0000
+
 
 Valores iniciales de las variables
 
@@ -166,6 +114,7 @@ CssH0              0.0000
 CssE0              0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -193,7 +142,10 @@ equi.bal.pag       0.0000
 Apz0              0.00000
 
 
+#################################################################
 Verifica con los valores iniciales
+#################################################################
+
 Número de variables endógenas :55 incluida Apz
 
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
@@ -209,20 +161,84 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   2.66793e-27
+Ec.total desvios   2.66793e-27
 -------------------------------
+#################################################################
+Escenario
+#################################################################
+
+
+#################################################################
+
+*--* Se han modificado 10 intervalos para ajustarlos al valor mínimo
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+MEGA mediante algoritmo genético. Resolución sin restricciones
+Código de caso                                  0
+Solución total final guardada en       C:/MEGA/Soluciones/Mcs0/Python/v_vars_solucion_104.log
+Desviaciones relativas en tanto por 1  No
+Semilla números aleatorios                     42
+Número máximo de generaciones           1,000,000
+Tolerancia en el objetivo               1.000e-11
+Tolerancia en las verificaciones        1.000e-08
+Iteraciones para historial                    100
+Iteraciones para soluciones                     0
+Iteraciones para valorar progreso          10,000
+Mejora mínima para considerar progreso     0.0200 %
+Balanza de pagos                       Mantenerla constante
+Consumos de los hogares en la solución No
+Ayudas a los hogares en la solución    No
+Impuestos a las ayudas a los hogares   No
+Demanda con consumos esenciales        No
+Función de utilidad de la demanda      Cobb-Douglas
+Modo pseudo impuestos (Css y Ag)       Variable
+Aportación de factores por los hogares ENDOGENA
+Factor ahorro a largo plazo                100.00 %
+Cálculo desvios                        Simple
+Métrica del error: Error cuadrático medio
+Fondos transferidos por la UE                0.00
+Usar DLL                               No
+Usar genético DLL                      No
+SCIPY
+    Estrategia                                          best1bin
+    Factor de mutación                                  [0.500,1.000]
+    Factor de recombinación                                0.99950
+    Número de workers                                           32
+    Tamaño de la población                                      30        510 individuos
+    Periodicidad actualización                          deferred
+
+Rango de validez de los precios en % -     90.0 +     99.0
+Rango de validez de las variables  % -     90.0 +     90.0
+Rango de validez de las variables  0 -  10000.0 +  10000.0
+Rango mínimo de las variables             200.0
+------------------------------------------------------------------------------------------
+Rangos de validez explícitos
+------------------------------------------------------------------------------------------
+epsilon  i:         0 vi:       1.0 vs:       1.0
+------------------------------------------------------------------------------------------
+El precio del factor CAP es variable exógena con valor igual a 1.0
+El precio del factor LAB es fijo con valor igual a 1.05
+
+Dimensión del vector de prueba:     19 variables; con valor fijo:     2 (E:   0 M:   0)
+------------------------------------------------------------------------------------------
+
+Número de desvios 57
+
+  Python   7.17531e+00
+
 
 Evolución de la minimización
-
-  Python   1.30167e+01
-
-        1  1.30167e+01
-      100  1.30167e+01
-      200  1.30167e+01
-      300  9.57335e-01
-      400  1.35642e-07
-
-
+generacio      ECT
+--------- ------------
+        1  7.17531e+00
+      100  7.17531e+00
+      200  7.17531e+00
+      300  7.17531e+00
+      400  7.17531e+00
+      500  9.68774e-04
+      600  2.38488e-09
+--------- ------------
 -----------------------------------------------------------
 VALORES FINALES
 -----------------------------------------------------------
@@ -307,6 +323,7 @@ CssH               0.0000
 CssE               0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -330,7 +347,7 @@ Déficit por cuenta corriente. M - E
 Sf Ind             4.8225       7.1775 S=     12.0000
 Sf                12.0000
 Equilibrio de la balanza de pagos
-equi.bal.pag      -0.0000
+equi.bal.pag       0.0000
 
 Apz              -0.01640
 
@@ -393,7 +410,7 @@ MLK             0.6091    0.2049      0.0000    0.0000    0.2869    0.2266    0.
 CAP             1.1415    1.3523      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    2.4938
 LAB             0.8562    1.1269      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    1.9831
 HOH             0.0000    0.0000      2.4938    1.9831    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    4.4769
-INV             0.0000    0.0000      0.0000    0.0000    0.3778    0.0000    0.0000    0.0000    0.0905    0.0000    0.0000    0.0000    0.4683
+INV             0.0000    0.0000      0.0000    0.0000    0.3778    0.0000    0.0000    0.0000    0.0905   -0.0000    0.0000    0.0000    0.4683
 IDT             0.2193    0.1560      0.0000    0.0000    1.1441    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    1.5194
 TRF             0.0172    0.0474      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0646
 GOV             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    1.5194    0.0645    0.0000    0.0000    0.0000    0.0000    1.5839
@@ -403,24 +420,27 @@ ALP             0.0000    0.0000      0.0000    0.0000    2.4769    0.0000    0.
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos         3.6619    3.2712      2.4938    1.9831    4.4770    0.4683    1.5194    0.0645    1.5839    0.4838    0.0000    2.4769
 
-La distancia (error de la función objetivo) es 9.39869e-12
+La distancia (error de la función objetivo) es 8.98575e-12
 -----------------------------------------------------------
 
+#################################################################
 Verifica con la solución final
+#################################################################
+
 Número de variables endógenas :55 incluida Apz
 
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
 ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
- 1.Yp  6. 1   4.62253e+01   8.80565e-07   4.48581e-07         0.000
- 2.F   6. 2   2.31194e+01   1.36984e-06   4.53320e-07         0.000
- 4.Yd  6. 4   4.62253e+01   2.73887e-06   1.62572e-06         0.000
- 8.Tm  6. 8   1.53227e+00   3.78270e-08   3.23224e-08         0.000
-14.ebp 6.16   8.18041e-08   8.18041e-08   8.18041e-08            --
-15.Q   6.17   8.67464e+01   5.19613e-07   4.86947e-07         0.000
-18.Z   6.20   7.45825e+01   2.43107e-06   1.75642e-06         0.000
-20.Dtr 6.22   7.29726e+01   1.31455e-06   7.42977e-07         0.000
-25.Qeq 6.23   8.67464e+01   3.05499e-06   2.24334e-06         0.000
+ 1.Yp  6. 1   4.62253e+01   4.29985e-07   2.78112e-07         0.000
+ 2.F   6. 2   2.31194e+01   1.29039e-06   6.48620e-07         0.000
+ 4.Yd  6. 4   4.62253e+01   2.58002e-06   2.32611e-06         0.000
+ 8.Tm  6. 8   1.53227e+00   4.05706e-08   3.01155e-08         0.000
+14.ebp 6.16   1.49355e-07   1.49355e-07   1.49355e-07            --
+15.Q   6.17   8.67464e+01   1.31647e-06   7.31863e-07         0.000
+18.Z   6.20   7.45825e+01   8.36409e-07   4.58236e-07         0.000
+20.Dtr 6.22   7.29726e+01   1.31707e-06   1.12134e-06         0.000
+25.Qeq 6.23   8.67464e+01   8.65445e-07   8.46753e-07         0.000
 ----------- ------------- ------------- ------------- -------------
 
 -- Verificación de las ecuaciones en % de error máximo     0.01% --
@@ -430,17 +450,17 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   1.51203e-11
+Ec.total desvios   9.53643e-12
 -------------------------------
 
 ******************************************************************************
-nit:      467 fo: 9.39869e-12 valor función objetivo inferior a la tolerancia 
+nit:      637 fo: 8.98575e-12 valor función objetivo inferior a la tolerancia 
 ******************************************************************************
 
-Tiempo de cálculo de la aplicación:         12 s
+Tiempo de cálculo de la aplicación:         15 s
 
 callback function requested stop early
-Número de generaciones 467
+Número de generaciones 637
 
 Precios      iniciales   equilibrio
 --------- ------------ ------------
@@ -552,6 +572,7 @@ CssH               0.0000
 CssE               0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -571,10 +592,10 @@ AgH                0.0000
 AgE                0.0000       0.0000 S=      0.0000
              ------------ ------------
 Déficit por cuenta corriente. (M - E) - (M0 - E0)
-Sf sectores       -0.1775       0.1775 S=      0.0000
-Sf                 0.0000
+Sf sectores       -0.1775       0.1775 S=     -0.0000
+Sf                -0.0000
 Equilibrio de la balanza de pagos
-equi.bal.pag      -0.0000
+equi.bal.pag       0.0000
 
 Apz              -0.01640
 
@@ -632,7 +653,7 @@ Consumo de inversión. Xv
 Xv                 0.2417       0.2266 S=      0.4683
              ------------ ------------
 Consumo total
-X+Xp+Xg+Xv         2.0704       1.8340 S=      3.9043
+X+Xp+Xg+Xv         2.0704       1.8340 S=      3.9044
 Producción total
 Q                  2.0113       1.9611 S=      3.9724
              ------------ ------------
@@ -655,6 +676,7 @@ CssH               0.0000
 CssE               0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -674,13 +696,13 @@ AgH                0.0000
 AgE                0.0000       0.0000 S=      0.0000
              ------------ ------------
 Déficit por cuenta corriente en "divisa"
-Sf sectores       -0.1775       0.1775 S=      0.0000
-Sf                 0.0000
+Sf sectores       -0.1775       0.1775 S=     -0.0000
+Sf                -0.0000
 Déficit por cuenta corriente en moneda local. (M - E) * cotización - (M0 - E0) * cotización base
-Sf sectores       -0.1775       0.1775 S=      0.0000
-Sf                 0.0000
+Sf sectores       -0.1775       0.1775 S=     -0.0000
+Sf                -0.0000
 Equilibrio de la balanza de pagos en "divisas"
-equi.bal.pag      -0.0000
+equi.bal.pag       0.0000
 
 Apz              -0.01640
 

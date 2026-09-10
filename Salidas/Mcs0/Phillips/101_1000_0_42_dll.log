@@ -1,18 +1,39 @@
-inicio: Mon Jun 29 10:42:26 2026
+inicio: Thu Sep 10 18:17:31 2026
 
 Número factores        :            2
 Número hogares         :            1
 Número sectores        :            2
 
+Fondos UE              :  0.00000e+00
+
 Número procesos        :           20
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
 Intentos (reinicios)   :           15
 Población              :         1000
 Modo población inicial :            0
-Modo reinicio población:            0
-Factor dispersión      :  1.00000e-03
-Sigma dispersión       :  1.00000e-01
-Variación dispersión   :  1.00000e+00
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
 -------------------------------------
+Progreso mínimo        :        0.020 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       10.000 % = 100 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación normal
+Factor Alp             :  0.00000e+00
+Inc.demanda SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :           55
+-------------------------------------
+Xp NO incluido en la solución
+AgH NO incluido en la solución
 Variables cabecera     :            7
 Variables solución     :           19
 Resto variables modelo :           58
@@ -21,26 +42,22 @@ Variables recalculadas :           57
 Total                  :          141
 
 Variables fijas en sol :            2
-Factor mutación        :  7.50000e-01  8.50000e-01
-Recombinación          :  9.99000e-01
-Opción cálculo desvios :            1
-Semilla num.aleatorios :           42
-
 Variables con valores fijos
+    0 pF           0  1.00000000e+00
+    7 epsilon      0  1.00000000e+00
 
-     0 pF           0 1.000000e+00
-     7 epsilon      0 1.000000e+00
+n.gen.pro2 máximoxtramo:      1700000
 
-generacio d.est.poblac      ECM     var.max.err  ind.v.  bloque  despl segs.p mins.tot  n.gen.pro2  n.mejoras
---------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
-        0  1.37740e+00  6.83382e+01  5.54153e+00      0 ebp          0                         337
-      100  3.11736e-01  1.02882e-01  1.37354e-01      2 Qeq          1    0.0      0.0        1635          0
-      200  2.21176e-02  6.16056e-04  1.06918e-02     40 Q            1    0.0      0.0        1549          0
-      300  2.03359e-03  3.23841e-06  8.40284e-04     30 Ydp          1    0.0      0.0        1619          0
-      400  1.72205e-04  2.16835e-08  6.16243e-05     52 Fi           3    0.0      0.0        1660          0
-      500  1.41070e-05  1.36080e-10  4.72651e-06      1 Qeq          0    0.0      0.0        1646          0
---------- ------------ ------------ ------------ ------ -------- ----- ------ --------  ---------- ----------
-      550  3.57307e-06  9.43701e-12  2.31391e-06     32 Dat          1    0.0      0.0         707
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q    segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ----------
+        0  1.39358e+00  6.89664e+01  5.54153e+00 ebp          0  9.023925e+01  3.620118e+01  0.000000e+00  1.457836e+02  1.668894e+02                         302
+      100  2.43978e-01  7.23506e-02  1.12388e-01 Mi           0  9.822362e+01  4.020681e+01  0.000000e+00  1.586137e+02  1.835252e+02    0.0      0.0        1618      26679        101
+      200  2.27123e-02  5.90458e-04  1.43927e-02 Qeq          1  9.874193e+01  4.043054e+01  0.000000e+00  1.594141e+02  1.844347e+02    0.0      0.0        1563      18787         32
+      300  1.99622e-03  3.20705e-06  8.40834e-04 Mi           1  9.874176e+01  4.042901e+01  0.000000e+00  1.594020e+02  1.844181e+02    0.0      0.0        1594      18722         37
+      400  2.29829e-04  3.42998e-08  9.51888e-05 Fi           0  9.874345e+01  4.042978e+01  0.000000e+00  1.594051e+02  1.844213e+02    0.0      0.0        1630      18959         43
+      500  1.11850e-05  1.51354e-10  6.01788e-06 Ydp          0  9.874291e+01  4.042953e+01  0.000000e+00  1.594040e+02  1.844202e+02    0.0      0.0        1617      19325         37
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ----------
+      543  3.34539e-06  9.79329e-12  1.96779e-06 Fi           2  9.874290e+01  4.042952e+01  0.000000e+00  1.594040e+02  1.844202e+02    0.0      0.0         303
 
-fin   : Mon Jun 29 10:42:27 2026
+fin   : Thu Sep 10 18:17:32 2026
 

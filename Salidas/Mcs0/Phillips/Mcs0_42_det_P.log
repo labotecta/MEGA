@@ -1,80 +1,17 @@
 python           3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]
-numpy            2.4.6
+numpy            2.5.0
 scipy            1.18.0
-pandas           3.0.3
+pandas           3.0.4
 matplotlib       3.11.0
 
-####################################################
-MEGA ampliado. versión 1.6.1  ---------------
-####################################################
+#################################################################
+MEGA ampliado. versión 1.7.0  ---------------
+#################################################################
 -------------------------------------------------------------------------------------------------
 Mcs0_42_det_P
 -------------------------------------------------------------------------------------------------
 
 Fichero Matriz Contabilidad Social (MCS) C:/MEGA/Datos/SAM_estandar.xlsx
-
----------------------------------------------------------------------------------------------------
-
-*--* Se han modificado 10 intervalos para ajustarlos al valor mínimo
-
--------------------------------------------------------------------
--------------------------------------------------------------------
-MEGA mediante algoritmo genético. Resolución sin restricciones
-Solución total final guardada en       C:/MEGA/Soluciones/Mcs0/v_vars_solucion_102.log
-Desviaciones relativas en tanto por 1  No
-Semilla números aleatorios                     42
-Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               1.000e-11
-Iteraciones para valorar progreso           1,000
-Mejora mínima para considerar progreso     0.0200 %
-Tolerancia en las verificaciones        1.000e-08
-Iteraciones para historial                    100
-Iteraciones para soluciones                     0
-Balanza de pagos                       Mantenerla constante
-Función de utilidad de la demanda      Cobb-Douglas
-Consumos de los hogares en la solución No
-Modo pseudo impuestos (Css y Ag)       Variable
-Demanda con consumos esenciales        No
-Aportación de factores por los hogares ENDOGENA
-Factor ahorro a largo plazo                  0.00 %
-Cálculo desvios                        Simple
-Métrica del error: Error cuadrático medio
-Peso de las desviaciones Ydp               1.0000
-Usar DLL                               Si
-Usar genético DLL                      Si
-    Factor de mutación                                  [ 0.75, 0.85]
-    Factor de recombinación                                  0.999
-    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs0/Phillips/102_1000_0_42_dll.log
-    Número de hilos multiproceso                                20
-    Número máximo de reinicios por falta de progreso            15
-    Error máximo para calificar aceptable una solución       1e-05
-    Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
-    Modo reinicio de la población inicial                        0
-    Factor de alcance para generar la población inicial      0.001
-    Variación del factor de alcance                            1.0
-    Sigma para generar población inicial normal                0.1
-    Número de tramos para generar población inicial LHS        400
-    Número de individuos de la población inicial              1000
-    Control de factibilidad                             Si
-    Solución en formato extenso                         No
-    El mejor primero                                    No
-    Incluir x0                                          Si
-
-Rango de validez de los precios en % -     90.0 +     99.0
-Rango de validez de las variables  % -     90.0 +     90.0
-Rango de validez de las variables  0 -  10000.0 +  10000.0
-Rango mínimo de las variables             200.0
-------------------------------------------------------------------------------------------
-Rangos de validez explícitos
-------------------------------------------------------------------------------------------
-epsilon  i:         0 vi:       1.0 vs:       1.0
-------------------------------------------------------------------------------------------
-El precio del factor CAP es variable exógena con valor igual a 1.0
-El precio del factor LAB se calcula con la curva Phillips [paro: 10.0% alfa: -0.5]
-
-Dimensión del vector de prueba:     19 variables; con valor fijo:     2 (E:   0 M:   0)
-------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------
 
 MCS base. Importes
 
@@ -97,6 +34,7 @@ AYD             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.
 ALP             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        92.0000   89.0000     50.0000   40.0000   90.0000   31.0000   32.0000    3.0000   35.0000   24.0000    0.0000    0.0000
+
 
 Valores iniciales de las variables
 
@@ -176,6 +114,7 @@ CssH0              0.0000
 CssE0              0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -205,7 +144,10 @@ Apz0              0.00000
 Pobla.activa      44.4444
 % paro              10.00
 
+#################################################################
 Verifica con los valores iniciales
+#################################################################
+
 Número de variables endógenas :55 incluida Apz
 
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
@@ -221,14 +163,88 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   2.66793e-27
+Ec.total desvios   2.66793e-27
 -------------------------------
+#################################################################
+Escenario
+#################################################################
+
+
+#################################################################
+
+*--* Se han modificado 10 intervalos para ajustarlos al valor mínimo
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+MEGA mediante algoritmo genético. Resolución sin restricciones
+Código de caso                                  0
+Solución total final guardada en       C:/MEGA/Soluciones/Mcs0/v_vars_solucion_102.log
+Desviaciones relativas en tanto por 1  No
+Semilla números aleatorios                     42
+Número máximo de generaciones           1,000,000
+Tolerancia en el objetivo               1.000e-11
+Tolerancia en las verificaciones        1.000e-08
+Iteraciones para historial                    100
+Iteraciones para soluciones                     0
+Iteraciones para valorar progreso           1,000
+Mejora mínima para considerar progreso     0.0200 %
+Balanza de pagos                       Mantenerla constante
+Consumos de los hogares en la solución No
+Ayudas a los hogares en la solución    No
+Impuestos a las ayudas a los hogares   No
+Demanda con consumos esenciales        No
+Función de utilidad de la demanda      Cobb-Douglas
+Modo pseudo impuestos (Css y Ag)       Variable
+Aportación de factores por los hogares ENDOGENA
+Factor ahorro a largo plazo                  0.00 %
+Cálculo desvios                        Simple
+Métrica del error: Error cuadrático medio
+Fondos transferidos por la UE                0.00
+Usar DLL                               Si
+Usar genético DLL                      Si
+    Fichero log de la DLL                               C:/MEGA/Salidas/Mcs0/Phillips/102_1000_0_42_dll.log
+    Número de hilos multiproceso                                20
+    Factor de mutación                                  [0.750,0.850]
+    Factor de recombinación                                0.99900
+    Número máximo de reinicios por falta de progreso            15
+    Error máximo para calificar aceptable una solución       1e-05
+    Número de individuos de la población inicial              1000
+    Modo para generar la población inicial                       0 intervalo simétrico centrado en 'vec_ini' con distribución uniforme
+    Factor de alcance para generar la población inicial      0.001
+    Sigma para generar población inicial normal                0.1
+    Número de tramos para generar población inicial LHS        400
+    Número GE_MIN_PROGRESO para efectuar regularización       10.0
+    Fracción de población a regularizar                        0.1
+    Modo reinicio de la población inicial                        0
+    Variación del factor de alcance                            1.0
+    Control de factibilidad                             Si
+    Solución en formato extenso                         No
+    El mejor primero                                    No
+    Incluir x0                                          Si
+
+Rango de validez de los precios en % -     90.0 +     99.0
+Rango de validez de las variables  % -     90.0 +     90.0
+Rango de validez de las variables  0 -  10000.0 +  10000.0
+Rango mínimo de las variables             200.0
+------------------------------------------------------------------------------------------
+Rangos de validez explícitos
+------------------------------------------------------------------------------------------
+epsilon  i:         0 vi:       1.0 vs:       1.0
+------------------------------------------------------------------------------------------
+El precio del factor CAP es variable exógena con valor igual a 1.0
+El precio del factor LAB se calcula con la curva Phillips [paro: 10.0% alfa: -0.5]
+
+Dimensión del vector de prueba:     19 variables; con valor fijo:     2 (E:   0 M:   0)
+------------------------------------------------------------------------------------------
+
+Número de desvios 55
+
+  Python   1.45793e-26
 
 No se muestra en pantalla la evolución de los cálculos. Ver el fichero C:/MEGA/Salidas/Mcs0/Phillips/102_1000_0_42_dll.log
 
-  Python   1.29127e-26
-  DLL      1.29474e-26
-  DLL sol  1.29474e-26
+  DLL sol  1.46141e-26
+  DLL      1.46141e-26
 
 
 *****************************************************************
@@ -237,51 +253,56 @@ respuesta (  0) Solución encontrada
 número de datos         :             27
 intentos                :              1
 generaciones            :              0
-merito                  :    1.29474e-26
+merito                  :    1.46141e-26
 máxima desviación       :    5.68434e-14
 variable max desviación :             32
 *****************************************************************
 
 bloque    desvio
 ------ ------------
-Qeq    8.077936e-28
+Qeq    1.009742e-27
 Feq    0.000000e+00
-Fi     1.262177e-29
+Fi     1.893266e-28
 Ei     5.226203e-29
 Mi     8.204153e-29
 Dai    2.019484e-27
 Sf     0.000000e+00
 Xpi    0.000000e+00
 Alp    0.000000e+00
-F      0.000000e+00
-FF     0.000000e+00
+F      1.262177e-28
+FF     6.563323e-28
 Ydp    1.464126e-27
 Z      2.625329e-27
 X      2.208811e-28
-Xp     0.000000e+00
-Xg     1.577722e-29
-Xv     0.000000e+00
+Xp     2.524355e-28
+Xg     7.888609e-29
+Xv     2.524355e-29
 Q      2.019484e-27
 M      5.364254e-29
 Dat    3.433123e-27
 E      1.203013e-29
-Td     0.000000e+00
+Td     1.135960e-28
 Tz     1.419950e-29
 Tm     8.011869e-31
-Sp     0.000000e+00
-Sg     1.972152e-31
+Sp     5.048710e-29
+Sg     7.888609e-31
 AgE    0.000000e+00
 AgH    0.000000e+00
 CssE   0.000000e+00
 CssH   0.000000e+00
 ebp/Sf 1.135960e-28
 Ti     0.000000e+00
+Yp     0.000000e+00
+Yd     0.000000e+00
+Da     0.000000e+00
+Dt     0.000000e+00
+AgHi   0.000000e+00
 ------ ------------
-total  1.294739e-26
+total  1.461406e-26
 
 generac.    merito
 -------- ------------
-       0 1.294739e-26
+       0 1.461406e-26
 -------- ------------
 
 -----------------------------------------------------------
@@ -368,6 +389,7 @@ CssH               0.0000
 CssE               0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -464,11 +486,14 @@ ALP             0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.
 ------------ --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos         0.0000    0.0000      0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000    0.0000
 
-La distancia (error de la función objetivo) es 1.29127e-26
-                                           DLL 1.29474e-26
+La distancia (error de la función objetivo) es 1.45793e-26
+                                           DLL 1.46141e-26
 -----------------------------------------------------------
 
+#################################################################
 Verifica con la solución final
+#################################################################
+
 Número de variables endógenas :55 incluida Apz
 
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
@@ -484,7 +509,7 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   2.85648e-27
+Ec.total desvios   2.85648e-27
 -------------------------------
 
 Tiempo de cálculo de la aplicación:          1 s
@@ -599,6 +624,7 @@ CssH               0.0000
 CssE               0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
@@ -702,6 +728,7 @@ CssH               0.0000
 CssE               0.0000       0.0000 S=      0.0000
              ------------ ------------
 def/sup ss         0.0000
+Fd.UE              0.0000
 Ahorro-Inversión
                       HOH
              ------------
