@@ -122,6 +122,8 @@ public:
 	double VALOR_F_TRA;
 	double ALFA_PHILLIPS;
 	bool GE_INCLUYE_XP;
+	bool GE_INCLUYE_AgH;
+	bool GE_IMPUESTOS_AgH;
 	bool FF_ENDOGENA;
 	double ALP_FACTOR;
 	int INDICE_F_TRA;
@@ -160,6 +162,7 @@ public:
 	double Ti0;
 	double Te0;
 	double Sf0;
+	double Fue;
 	double PobAct;
 } DATOS;
 
@@ -227,7 +230,7 @@ void utilizacion_factor_compuesto_Y(double* Y, double* Z, double* ay);
 void uso_optimo_factores_F(double F[NSEC][NFAC], double beta[NSEC][NFAC], double* pf, double* py, double* Ypd);
 void coste_unitario_produccion_pz(double* pz, double* ay, double* py, double ax[NSEC][NSEC], double* pq);
 void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], double F[NSEC][NFAC]);
-void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0);
+void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0, double AgH[NDEM]);
 void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
 void aranceles_importacion_Tm(double* Tm, double* taum, double* pm, double* M);
 void ahorro_hogares_Sp(double* Sp, double* ssp, double* pf, double FF[NDEM][NFAC], double* PssH0);
@@ -235,7 +238,7 @@ double impuestos_directos_Ti(double tai, double* pf, double FF[NDEM][NFAC], int 
 void ayudas_AgE_AgH(double* AgE, double* AgH, double* cage, double* cagh, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AYD_ADI_DEM);
 void seguridad_social_empresas_CssE(double* CssE, double* ctzsse, double* pf, double F[NSEC][NFAC], int INDICE_F_TRA);
 void seguridad_social_hogares_CssH(double* CssH, double* ctzssh, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], int INDICE_F_TRA);
-double gobierno_Sg_Xg(double* Xg, double ssg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE);
+double gobierno_Sg_Xg(double* Xg, double ssg, double* mu, double* pq, double* Td, double* Tz, double* Tm, double Tg, double Ti, double Te, double* AgE, double* AgH, double* PssH0, double* CssH, double* CssE, double Fue);
 double ahorro_exterior_Sf(double* M, double* E, double* pm, double* pe);
 void demanda_inversion_Xv(double* Xv, double* landa, double* pq, double* Sp, double Sg, double Sc, double epsilon, double Sf, double Ti, double Te);
 void demanda_maxima_utilidad_StoneGeary_Xp(double Xp[NDEM][NSEC], double alfa_esen[NDEM][NSEC], double CON_ESENCIALES[NDEM][NSEC], double* pq, double* pf, double FF[NDEM][NFAC], double* Sp, double* Td, double* CssH, double* AgH, double* PssH0, int DEM_ADICIONAL_TIPO, double DEM_ADICIONAL[NDEM][NSEC], bool RENTA_FICTICIA);
