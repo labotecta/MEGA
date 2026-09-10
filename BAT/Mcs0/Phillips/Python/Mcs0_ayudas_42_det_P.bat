@@ -57,6 +57,8 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --MODO_PSEUDOIMPTOS   0 ^
 --ALP_FACTOR          0.0 ^
 --GE_INCLUYE_XP       False ^
+--GE_INCLUYE_AgH      False ^
+--GE_IMPUESTOS_AgH    False ^
 --CON_AD_LON          0 ^
 --CON_AD_HO_PRO       0 10. 1000. ^
 --DEM_ESENCIALES      False ^
@@ -77,7 +79,9 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_TOLERANCIA       1.e-11 ^
 --GE_VERIFICAR        1.e-08 ^
 --GE_PROGRESO         1000 ^
---GE_MIN_PROGRESO     0.01 ^
+--GE_MIN_PROGRESO     0.02 ^
+--ALGE_UMBRAL_REGUL   10. ^
+--ALGE_FRAC_REGUL     0.1 ^
 --GE_HISTORIAL        100 ^
 --GE_SOLUCIONES       0 ^
 --GE_PRE_MIN          90.0 ^
