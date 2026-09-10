@@ -55,12 +55,14 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --MODO_PSEUDOIMPTOS   0 ^
 --ALP_FACTOR          0.0 ^
 --GE_INCLUYE_XP       False ^
+--GE_INCLUYE_AgH      False ^
+--GE_IMPUESTOS_AgH    False ^
 --CON_AD_LON          0 ^
 --CON_AD_HO_PRO       0 10. 1000. ^
 --DEM_ESENCIALES      False ^
 --OPT_DESVIOS         1 ^
 --SAL_CALIBRADO       False ^
---SALIDA_VAL_INI      False ^
+--SALIDA_VAL_INI      True ^
 --SALIDA_VEC_OPT      False ^
 --PRIMERA_VALORACION  False ^
 --SALIDA_DESVIOS      False ^

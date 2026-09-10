@@ -26,7 +26,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FI_SOL_SALVA        "" ^
 --NSAM                4 ^
 --DECIMALES           1 ^
---PREFIJO             =123_Mcs4_ayudas_42_det_P_1_00 ^
+--PREFIJO             =123_Mcs4_ayudas_recalibra_alfa__42_det_P_1_00 ^
 --GE_SEMILLA          42 ^
 --NCASO               10 ^
 --NFAC                2 ^
@@ -56,6 +56,8 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --MODO_PSEUDOIMPTOS   0 ^
 --ALP_FACTOR          1.0 ^
 --GE_INCLUYE_XP       False ^
+--GE_INCLUYE_AgH      False ^
+--GE_IMPUESTOS_AgH    False ^
 --CON_AD_LON          0 ^
 --CON_AD_HO_PRO       0 10. 1000. ^
 --DEM_ESENCIALES      False ^
