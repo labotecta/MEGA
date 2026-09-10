@@ -1,0 +1,64 @@
+inicio: Thu Sep 10 18:33:42 2026
+
+Número factores        :            2
+Número hogares         :            3
+Número sectores        :            2
+
+Fondos UE              :  0.00000e+00
+
+Número procesos        :           20
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+-------------------------------------
+Progreso mínimo        :        0.020 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       10.000 % = 100 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación normal
+Factor Alp             :  0.00000e+00
+Inc.demanda SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :           71
+-------------------------------------
+Xp NO incluido en la solución
+AgH NO incluido en la solución
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           78
+Variables recalculadas :           77
+-------------------------------------
+Total                  :          181
+
+Variables fijas en sol :            2
+Variables con valores fijos
+    0 pF           0  1.00000000e+00
+    7 epsilon      0  1.00000000e+00
+
+n.gen.pro2 máximoxtramo:      1700000
+
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q    segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ----------
+        0  1.40658e+00  7.11819e+03  5.49416e+01 ebp          0  1.101646e+03  3.456371e+02  6.509738e+01  1.657109e+03  1.900477e+03                         302
+      100  2.48859e+00  7.21261e+00  1.31540e+00 Dat          0  1.224379e+03  3.914689e+02  7.336668e+01  1.841282e+03  2.128702e+03    0.0      0.0        1618      29764        106
+      200  2.55765e-01  4.59405e-02  1.17476e-01 Ei           0  1.227634e+03  3.924352e+02  7.356585e+01  1.844659e+03  2.132648e+03    0.0      0.0        1563      18607         35
+      300  1.68638e-02  1.62797e-04  6.55187e-03 Ydp          1  1.227754e+03  3.924827e+02  7.357462e+01  1.844877e+03  2.132880e+03    0.0      0.0        1594      20600         36
+      400  1.14501e-03  1.30470e-06  5.43866e-04 Dat          0  1.227703e+03  3.924642e+02  7.357115e+01  1.844787e+03  2.132780e+03    0.0      0.0        1630      18856         37
+      500  8.04644e-05  5.55023e-09  3.27963e-05 Fi           1  1.227705e+03  3.924648e+02  7.357127e+01  1.844790e+03  2.132783e+03    0.0      0.0        1617      19846         40
+      600  7.83377e-06  2.58510e-11  2.96528e-06 ebp          0  1.227705e+03  3.924649e+02  7.357128e+01  1.844790e+03  2.132783e+03    0.0      0.0        1654      19544         38
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ----------
+      621  3.50600e-06  9.45856e-12  1.94362e-06 Dat          1  1.227705e+03  3.924648e+02  7.357127e+01  1.844790e+03  2.132783e+03    0.0      0.0         737
+
+fin   : Thu Sep 10 18:33:43 2026
+
