@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from pandas import DataFrame
 
 NMCS = 5
-MENOS_FIN = 10
+MENOS_FIN = 0
 SUFIJO = '_0_42_dll_sol_'
 
 if   NMCS == 4:
@@ -36,6 +36,8 @@ if   NMCS == 4:
         ]
     ]
     NPOB = '2010'
+    NFAC = 2
+    NDEM = 2
     NSEC = 6
     N_VAR_CAL     = 165
     #                     NFAC   pY pQ pD   epsilon  Apz
@@ -48,6 +50,14 @@ if   NMCS == 4:
     ULT_LINEA     = LIN_INI_Spase + N_VAR_CAL - 1
     TOL_PRECIOS   = 0.00001
     TOL_VARIABLES = 0.001
+    p_VAB = 0
+    p_Ti  = 0
+    p_Tz  = 0
+    p_Tm  = 0
+    p_Td  = 0
+    p_cotizacion_SS = 0
+    p_suma_Z = 0
+    p_suma_Q = 0
 elif NMCS == 5:
     SENDAS = [
         'C:/MEGA/Salidas/Mcs5/',
@@ -64,6 +74,8 @@ elif NMCS == 5:
         ],
     ]
     NPOB = '16020'
+    NFAC = 2
+    NDEM = 3
     NSEC = 63
     N_VAR_CAL     = 5195
     #                     NFAC   pY pQ pD   epsilon  Apz
@@ -76,6 +88,14 @@ elif NMCS == 5:
     ULT_LINEA     = 11088
     TOL_PRECIOS   = 0.0001
     TOL_VARIABLES = 1.0
+    p_VAB = 5893
+    p_Ti  = 11087
+    p_Tz  = 6652
+    p_Tm  = 6715
+    p_Td  = 6649
+    p_cotizacion_SS = 6847
+    p_suma_Z = 6397
+    p_suma_Q = 6586
 elif NMCS == 6:
     SENDAS = [
         'C:/MEGA/Salidas/Mcs6/',
@@ -97,21 +117,43 @@ elif NMCS == 6:
             ['220', 1658],
             ['221', 1662],
             ['230', 1658],
-        ]
+        ],
     ]
     NPOB = '5400'
+    NFAC = 2
+    NDEM = 2
     NSEC = 31
-    N_VAR_CAL     = 1540
-    #                     NFAC   pY pQ pD   epsilon  Apz
-    #                     NFAC + 3 * NSEC  +   1   +  1
-    PRECIOS       = 97      # incluidos epsilon y Apz
-    RESTO_SOL     = 155     # NVEC - (PRECIOS - 1) los precios incluyen los dos factores
+    N_VAR_CAL     = 1540    # variables calculadas del modelo
+    # NFAC   pY pQ pD   epsilon  Apz
+    # NFAC + 3 * NSEC  +   1   +  1
+    PRECIOS       = 97      # incluidos epsilon y Apz, ocupan fila_fin la línea 98 del fichero, inclusive
+    RESTO_SOL     = 155     # NVEC - (PRECIOS - 1) el - 1 es porque los precios incluyen los dos factores
     V_C_UNICO     = 93      # 3 * NSEC  ( pz pe pm )
-    LIN_INI_Ppase = 1 + PRECIOS + RESTO_SOL + V_C_UNICO + 1     # 347 = la siguiente a: primera línea + ...
-    LIN_INI_Spase = LIN_INI_Ppase + N_VAR_CAL # 1887 = LIN_PPASE + 1540 (variables calculadas del modelo)
-    ULT_LINEA     = LIN_INI_Spase + N_VAR_CAL - 1
+
+    # 347 = 
+    # + 1 primera línea
+    # + 97 precios +
+    # + 155 resto solución +
+    # + 1 el fichero contiene los dos factores y hemos quitado 1 a RESTO_SOL 
+    # + 93 V_C_UNICO
+    LIN_INI_Ppase = 1 + PRECIOS + RESTO_SOL + V_C_UNICO + 1
+
+    # 1887 = LIN_PPASE + 1540 variables calculadas del modelo
+    LIN_INI_Spase = LIN_INI_Ppase + N_VAR_CAL
+    
+    # 3426
+    ULT_LINEA     = LIN_INI_Spase + N_VAR_CAL - 1   
+    
     TOL_PRECIOS   = 0.0001
     TOL_VARIABLES = 0.01
+    p_VAB = 1886
+    p_Ti  = 3425
+    p_Tz  = 2260
+    p_Tm  = 2291
+    p_Td  = 2258
+    p_cotizacion_SS = 2357
+    p_suma_Z = 2134
+    p_suma_Q = 2227
 else:
     print('número de MCS (NMCS) incorrecto')
     sys.exit()
@@ -120,6 +162,7 @@ titulo = []
 for ids in IDS:
     for eids,n in ids:
         titulo.append(eids)
+titulo_s = ['VAB', 'impuestos', 'cotización SS', 'Suma Z', 'Suma Q']
 
 g_log_ep = []
 g_log_ev = []
@@ -146,6 +189,11 @@ COL_ADD_INI  = 3    # columnas iniciales al principio: 'N','variable' y 'indice'
  9 'suma error'
 10 log10(Error maximo)
 11 log10(Dif.max.pases)
+12 VAB
+13 impuestos
+14 cotizacion SS
+15 suma Z
+16 suma Q
 '''
 rot_filas = [
     'Generaciones',
@@ -160,6 +208,11 @@ rot_filas = [
     'Suma error',
     'log10(Error maximo)',
     'log10(Dif.max.pases)',
+    'VAB',
+    'impuestos',
+    'cotizacion SS',
+    'suma Z',
+    'suma Q'
 ]
 FIL_ADD_INI = len(rot_filas)
 
@@ -286,19 +339,19 @@ def GraficoResumenPares(n_filas, n_cols, x, y, rl, senda, nombnre, titulo):
             axes[fil, col].title.set_size(20)
             if m < nimg:
                 axes[fil, col].scatter(x[m] , y[m]  , s=28, c='red', marker='o')
-
-                b = rl[m][0]
-                p = rl[m][1]
                 xmin = min(x[m])
                 xmax = max(x[m])
-                y1 = b + p * xmin
-                y2 = b + p * xmax
-                axes[fil, col].plot([xmin,xmax], [y1,y2], linewidth=2, color ='blue')
-
-                ymin = min(min(y[m]), y1, y2)
-                ymax = max(max(y[m]), y1, y2)
-                axes[fil, col].text(xmin, ymin + 5./6. * (ymax - ymin), 'y = {:.3f} + {:.3f} * x'.format(b, p), fontsize=20, color ='blue')
-
+                if len(rl) > 0:
+                    b = rl[m][0]
+                    p = rl[m][1]
+                    y1 = b + p * xmin
+                    y2 = b + p * xmax
+                    ymin = min(min(y[m]), y1, y2)
+                    ymax = max(max(y[m]), y1, y2)
+                    axes[fil, col].text(xmin, ymin + 5./6. * (ymax - ymin), 'y = {:.3f} + {:.3f} * x'.format(b, p), fontsize=20, color ='blue')
+                    axes[fil, col].plot([xmin,xmax], [y1,y2], linewidth=2, color ='blue')
+                else:
+                    axes[fil, col].hlines(y=0., xmin=xmin, xmax=xmax, linewidth=3, linestyle='dotted', colors='gray')
                 axes[fil, col].title.set_text(titulo[m])
             else:
                 axes[fil, col].set_xticks([])
@@ -504,30 +557,45 @@ for SENDA in SENDAS:
         # contar el número de lineas en el primer fichero        
         fichero = FUENTE + '{:03d}'.format(0) + '.log'
         with open(fichero, "r", encoding="utf-8") as f:
-            LINEAS = sum(1 for linea in f)
-        if LINEAS != ULT_LINEA:
-            imprime('inconsistencia en el número de líneas de los ficheros {} vs {}'.format(LINEAS, ULT_LINEA))
+            LINEAS_FICHERO = sum(1 for linea in f)
+        if LINEAS_FICHERO != ULT_LINEA:
+            imprime('inconsistencia en el número de líneas de los ficheros {} vs {}'.format(LINEAS_FICHERO, ULT_LINEA))
             sys.exit()
 
         # el número de columnas añade las tres iniciales: 'N','variable' y 'indice' y la final 'fin'
         cabeceras = ['N','variable','indice'] + list(range(0,NUM_FICHEROS)) + ['fin',]
-        # al número de filas se añaden:
+        # al número de filas del fichero se añaden:
         #   las primeras FIL_ADD_INI:
-        #       'Generaciones','Pre.dif.max','Dif.max_pre','Var.dif.max','Dif.max.var','Ecm dif.'
+        #        0 'Generaciones'
+        #        1 'Prec.max.err'
+        #        2 'Err.max.prec'
+        #        3 'Vari.max.err'
+        #        4 'Err.max.vari'
+        #        5 'Error maximo'
+        #        6 'Vari.max.dif'
+        #        7 'Dif.max.pases'
+        #        8 'Suma diferencias'
+        #        9 'suma error'
+        #       10 log10(Error maximo)
+        #       11 log10(Dif.max.pases)
+        #       12 VAB
+        #       13 impuestos
+        #       14 cotizacion SS
+        #       15 suma Z
+        #       16 suma Q
         #   las N_VAR_CAL al final:
         #        para las diferencias entre el primer y el segundo pase de cada variable
-        tabla = DataFrame(columns=cabeceras,index=range(0,FIL_ADD_INI + LINEAS + N_VAR_CAL))
+        tabla = DataFrame(columns=cabeceras,index=range(0, FIL_ADD_INI + LINEAS_FICHERO + N_VAR_CAL))
+        # rotulos de las tres primeras columnas (COL_ADD_INI) de las filas adicionales al principio
         for i in range(FIL_ADD_INI):
             tabla.iloc[i,0]  = rot_filas[i]
             tabla.iloc[i,1] = ''
             tabla.iloc[i,2] = ''
+        # poner a 0 la columna 'fin' de las filas adicionales al principio
         for i in range(1, FIL_ADD_INI):
             tabla.loc[i,'fin'] = 0.
-        # Vari.max.dif
-        for i in range(1, COL_ADD_INI):
-            tabla.iloc[6,i] = ''
 
-        # procesar los ficheros con las soluciones, excepto la última ('fin')
+        # procesar los ficheros con las soluciones, excepto el de la última ('fin')
 
         for i in range(0, NUM_FICHEROS):
             fichero = FUENTE + '{:03d}'.format(i) + '.log'
@@ -584,18 +652,22 @@ for SENDA in SENDAS:
         dvc = []    # almacena las diferencias de cada columna respecto a la columna final 'fin' para los gráficos de dispersión de errores de las variables 'GraficoDispersion'
         for i in range(0, NUM_FICHEROS):
             # precios
-            dp = abs(tabla[i][(FIL_ADD_INI + 1):(FIL_ADD_INI + 1 + PRECIOS)] - tabla['fin'][(FIL_ADD_INI + 1):(FIL_ADD_INI + 1 + PRECIOS)])
-            # Prec.max.err
+            fila_ini = FIL_ADD_INI + 1
+            fila_fin = fila_ini + PRECIOS
+            dp = abs(tabla[i][fila_ini:fila_fin] - tabla['fin'][fila_ini:fila_fin])
+            # Prec.max.err nombre de la variable con el error máximo
             tabla.iloc[1,COL_ADD_INI + i] = tabla.iloc[dp.idxmax(),1] + '  ' + str(tabla.iloc[dp.idxmax(),2])
-            # Err.max.prec
+            # Err.max.prec valor del error máximo
             tabla.iloc[2,COL_ADD_INI + i] = max(dp)
 
             # variables, incluidas Fi, Ei, Mi, Di, pz, pe, pm = 8 * NSEC 
-            dva = tabla[i][(FIL_ADD_INI + 1 + PRECIOS):(FIL_ADD_INI + LIN_INI_Spase - 1)] - tabla['fin'][(FIL_ADD_INI + 1 + PRECIOS):(FIL_ADD_INI + LIN_INI_Spase - 1)]
+            fila_ini = FIL_ADD_INI + 1 + PRECIOS
+            fila_fin = FIL_ADD_INI + LIN_INI_Spase - 1 # fila_ini + V_C_UNICO + N_VAR_CAL
+            dva = tabla[i][fila_ini:fila_fin] - tabla['fin'][fila_ini:fila_fin]
             dv = abs(dva)
-            # Vari.max.err
+            # Vari.max.err nombre de la variable con el error máximo
             tabla.iloc[3,COL_ADD_INI + i] = tabla.iloc[dv.idxmax(),1] + '  ' + str(tabla.iloc[dv.idxmax(),2])
-            # Err.max.vari
+            # Err.max.vari valor del error máximo
             tabla.iloc[4,COL_ADD_INI + i] = max(dv)
             dvc.append(dva)
 
@@ -612,12 +684,12 @@ for SENDA in SENDAS:
 
         f1 = FIL_ADD_INI + LIN_INI_Ppase - 1
         f2 = FIL_ADD_INI + LIN_INI_Spase - 1
-        fd = FIL_ADD_INI + ULT_LINEA     - 1
+        fd = FIL_ADD_INI + ULT_LINEA
 
         # las tres primeras columnas
 
         n = 0
-        for i in range(N_VAR_CAL - 1):
+        for i in range(N_VAR_CAL):
             tabla.iloc[fd,0] = tabla.iloc[f2,0]                             # indice del sustraendo
             tabla.iloc[fd,1] = tabla.iloc[f2,1] + ' - ' + tabla.iloc[f1,1]  # variables que se restan
             if tabla.iloc[f1,1] != tabla.iloc[f1 - 1,1]:
@@ -634,25 +706,26 @@ for SENDA in SENDAS:
         for j in range(NUM_FICHEROS + 1):
             f1 = FIL_ADD_INI + LIN_INI_Ppase - 1
             f2 = FIL_ADD_INI + LIN_INI_Spase - 1
-            fd = FIL_ADD_INI + ULT_LINEA     - 1
-            for i in range(N_VAR_CAL - 1):
+            fd = FIL_ADD_INI + ULT_LINEA
+            for i in range(N_VAR_CAL):
                 tabla.iloc[fd,COL_ADD_INI + j] = tabla.iloc[f2,COL_ADD_INI + j] - tabla.iloc[f1,COL_ADD_INI + j]
                 f1 += 1
                 f2 += 1
                 fd += 1
         
         # rango de filas con las diferencias entre pases
-        desde = FIL_ADD_INI + ULT_LINEA - 1
-        hasta = desde + N_VAR_CAL - 1
+        fila_ini = FIL_ADD_INI + ULT_LINEA
+        fila_fin = fila_ini + N_VAR_CAL
         # 'COL_ADD_INI:-1]' para que 'tab_dif' no tenga una fila más que el de errores 'ddvc' porque contiene las diferencias entre pases de la columna final 'fin' 
-        tab_dif = tabla[desde:hasta].iloc[:,COL_ADD_INI:-1]
+        tab_dif = tabla[fila_ini:fila_fin].iloc[:,COL_ADD_INI:-1]
         im = abs(tab_dif).idxmax()
-
+        # 'y' es una matriz donde las filas son las diferencias (entre variables) a cada generación (NUM_FICHEROS, N_VAR_CAL)
         y = np.transpose(tab_dif.to_numpy(dtype=float))
         # las filas de errores 'ddvc' tienen mas valores que las de diferencias, especialmente porque incluyen Fi, Ei, Mi, Di, pz, pe, pm = 8 * NSEC
-        # además las diferencias entre pases no coinciden una a una con los errores porque no se defieren a las mismas magnitudes
+        # además las diferencias entre pases no coinciden una a una con los errores porque no se refieren a las mismas magnitudes
         # esto hace que la comparación de los gráficos de unas y otras no sea equivalente, aunque si suficientemente explicativa
         del tab_dif
+        # mínimo y máximo de las difrencias entre pases de la (última generación - 1), escala del último gráfico
         miny = min(np.min(y[-1]), np.min(ddvc[-1]))
         maxy = max(np.max(y[-1]), np.max(ddvc[-1]))
         nf = 5
@@ -703,26 +776,49 @@ for SENDA in SENDAS:
         for i in range(NUM_FICHEROS):
             tabla.iloc[6,COL_ADD_INI + i] = tabla.iloc[im[i],1] + '  ' + str(tabla.iloc[im[i],2])
         # Dif.max.pases
-        tabla.iloc[7,COL_ADD_INI:] = abs(tabla[desde:hasta].iloc[:,COL_ADD_INI:]).max(axis=0)
+        tabla.iloc[7,COL_ADD_INI:] = abs(tabla[fila_ini:fila_fin].iloc[:,COL_ADD_INI:]).max(axis=0)
         # Suma diferencias
-        tabla.iloc[8,COL_ADD_INI:] = abs(tabla[desde:hasta].iloc[:,COL_ADD_INI:]).sum(axis=0)
+        tabla.iloc[8,COL_ADD_INI:] = abs(tabla[fila_ini:fila_fin].iloc[:,COL_ADD_INI:]).sum(axis=0)
 
         log_raiz_merito = []
         for i in range(NUM_FICHEROS):
-            if tabla.iloc[5,COL_ADD_INI + i] != 0 and tabla.iloc[7,COL_ADD_INI + i] != 0:
-                tabla.iloc[10,COL_ADD_INI + i] = math.log10(tabla.iloc[4,COL_ADD_INI + i])
-                tabla.iloc[11,COL_ADD_INI + i] = math.log10(tabla.iloc[7,COL_ADD_INI + i])
+            col = COL_ADD_INI + i
+            if tabla.iloc[5,col] != 0 and tabla.iloc[7,col] != 0:
+                tabla.iloc[10,col] = math.log10(tabla.iloc[4,col])
+                tabla.iloc[11,col] = math.log10(tabla.iloc[7,col])
                 '''
-                para poder comparar 'merito', que es el Error Cuadrático Total, con las otras series hay:
+                para poder comparar 'merito', que es el Error Cuadrático Total, con las otras series hay que:
                     1. dividirlo del número de variables pazra las que se calculan desviaciones
                     entre pases 'N_DESVIOS' y obtener el Error Cuadrático medio.
                     2. calcular la raiz cuadrada.
                 '''
-                log_raiz_merito.append(math.log10(math.sqrt(tabla.iloc[FIL_ADD_INI,COL_ADD_INI + i] / N_DESVIOS)))
+                log_raiz_merito.append(math.log10(math.sqrt(tabla.iloc[FIL_ADD_INI,col] / N_DESVIOS)))
             else:
-                tabla.iloc[10,COL_ADD_INI + i] = 0.
-                tabla.iloc[11,COL_ADD_INI + i] = 0.
+                tabla.iloc[10,col] = 0.
+                tabla.iloc[11,col] = 0.
                 log_raiz_merito.append(0.)
+
+            # VAB
+            tabla.iloc[12,col] = 0
+            for j in range(NSEC * NFAC):
+                tabla.iloc[12,col] += tabla.iloc[FIL_ADD_INI + p_VAB + j,col] - tabla.iloc[FIL_ADD_INI + p_VAB + j, NUM_FICHEROS]
+            # impuestos
+            tabla.iloc[13,col] = tabla.iloc[FIL_ADD_INI + p_Ti,col] - tabla.iloc[FIL_ADD_INI + p_Ti, NUM_FICHEROS]
+            for j in range(NSEC):
+                tabla.iloc[13,col] += tabla.iloc[FIL_ADD_INI + p_Tz + j,col] - tabla.iloc[FIL_ADD_INI + p_Tz + j, NUM_FICHEROS]
+                tabla.iloc[13,col] += tabla.iloc[FIL_ADD_INI + p_Tm + j,col] - tabla.iloc[FIL_ADD_INI + p_Tm + j, NUM_FICHEROS]
+            for j in range(NDEM):
+                tabla.iloc[13,col] += tabla.iloc[FIL_ADD_INI + p_Td + j,col] - tabla.iloc[FIL_ADD_INI + p_Td + j, NUM_FICHEROS]
+            # cotización SS
+            tabla.iloc[14,col] = 0
+            for j in range(NSEC + NDEM):
+                tabla.iloc[14,col] += tabla.iloc[FIL_ADD_INI + p_cotizacion_SS + j,col] - tabla.iloc[FIL_ADD_INI + p_cotizacion_SS + j, NUM_FICHEROS]
+            # Suma Z
+            tabla.iloc[15,col] = 0
+            tabla.iloc[16,col] = 0
+            for j in range(NSEC):
+                tabla.iloc[15,col] += tabla.iloc[FIL_ADD_INI + p_suma_Z + j,col] - tabla.iloc[FIL_ADD_INI +  p_suma_Z + j, NUM_FICHEROS]
+                tabla.iloc[16,col] += tabla.iloc[FIL_ADD_INI + p_suma_Q + j,col] - tabla.iloc[FIL_ADD_INI +  p_suma_Q + j, NUM_FICHEROS]
 
         # guardar la tabla a un fichero
 
@@ -735,20 +831,20 @@ for SENDA in SENDAS:
 
         # 'COL_ADD_INI+1' para evitar el primer punto (solución 0)
 
-        x      = tabla.iloc[0,COL_ADD_INI+1:-1].values
+        x      = tabla.iloc[0, COL_ADD_INI + 1:-1].values
         n      = len(x)
         if n < 2:
             continue
         nm1    = n - 1
         log_ep = []
         for i in range(1,NUM_FICHEROS):
-            if tabla.iloc[2,COL_ADD_INI+i] == 0:
+            if tabla.iloc[2, COL_ADD_INI + i] == 0:
                 log_ep.append(0.)
             else:
-                log_ep.append(math.log10(tabla.iloc[2,COL_ADD_INI+i]))
+                log_ep.append(math.log10(tabla.iloc[2, COL_ADD_INI + i]))
 
-        log_ev = tabla.iloc[10,COL_ADD_INI+1:-1].values
-        log_d  = tabla.iloc[11,COL_ADD_INI+1:-1].values
+        log_ev = tabla.iloc[10, COL_ADD_INI + 1:-1].values
+        log_d  = tabla.iloc[11, COL_ADD_INI + 1:-1].values
         log_m  = log_raiz_merito[1:]
         if n!= len(log_ev):
             imprime('la dimensión de x {} no coincide con la de log_ev {}'.format(n,len(log_ev)))
@@ -763,9 +859,9 @@ for SENDA in SENDAS:
             imprime('la dimensión de x {} no coincide con la de log_m {}'.format(n,len(log_m)))
             sys.exit()
 
-        a_ep = tabla.iloc[2,COL_ADD_INI+1:-1].values
-        a_ev = tabla.iloc[4,COL_ADD_INI+1:-1].values
-        a_d  = tabla.iloc[7,COL_ADD_INI+1:-1].values
+        a_ep = tabla.iloc[2, COL_ADD_INI + 1:-1].values
+        a_ev = tabla.iloc[4, COL_ADD_INI + 1:-1].values
+        a_d  = tabla.iloc[7, COL_ADD_INI + 1:-1].values
         a_m  = []
         for i in range(1,NUM_FICHEROS):
             a_m.append(math.sqrt(tabla.iloc[FIL_ADD_INI,COL_ADD_INI + i] / N_DESVIOS))
@@ -971,6 +1067,20 @@ for SENDA in SENDAS:
         gr_m_d.append  ([res_m_d.params[0]  , res_m_d.params[1]])
         gr_ep_ev.append([res_ep_ev.params[0], res_ep_ev.params[1]])
 
+        g_log_m_s = []
+        g_log_m_s.append(log_m)
+        g_log_m_s.append(log_m)
+        g_log_m_s.append(log_m)
+        g_log_m_s.append(log_m)
+        g_log_m_s.append(log_m)
+        g_sumas = []
+        g_sumas.append(tabla.iloc[12, COL_ADD_INI + 1:-1].values)
+        g_sumas.append(tabla.iloc[13, COL_ADD_INI + 1:-1].values)
+        g_sumas.append(tabla.iloc[14, COL_ADD_INI + 1:-1].values)
+        g_sumas.append(tabla.iloc[15, COL_ADD_INI + 1:-1].values)
+        g_sumas.append(tabla.iloc[16, COL_ADD_INI + 1:-1].values)
+        GraficoResumenPares(3, 2, g_log_m_s, g_sumas, [], SENDA_SALIDAS, 'resumen_m_sumas_' + ID, titulo_s)
+
         xd  = sm.add_constant(log_d)
         res_d_ep = sm.OLS(log_ep , xd ).fit()
         res_d_ev = sm.OLS(log_ev , xd ).fit()
@@ -1001,4 +1111,5 @@ GraficoResumenPares(3, 3, g_log_m, g_log_ep  , gr_m_ep , SENDA_SALIDAS, 'resumen
 GraficoResumenPares(3, 3, g_log_m, g_log_ev  , gr_m_ev , SENDA_SALIDAS, 'resumen_m_ev'  , titulo)
 GraficoResumenPares(3, 3, g_log_m, g_log_d   , gr_m_d  , SENDA_SALIDAS, 'resumen_m_d'   , titulo)
 GraficoResumenPares(3, 3, g_log_ep, g_log_ev , gr_ep_ev, SENDA_SALIDAS, 'resumen_ep_ev' , titulo)
+
 imprime('fin')
