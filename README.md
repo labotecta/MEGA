@@ -1,8 +1,8 @@
 # MEGA
 
-Este es el repositorio del Libro "Guía práctica para Modelos de Equilibrio General Aplicado (MEGA)
-Computable General Equilibrium (CGE)"
-Publicado en la Editorial universitaria Aula Magna McGraw Hill
+# Este es el repositorio del Libro "Guía práctica para Modelos de Equilibrio General Aplicado (MEGA)
+# Computable General Equilibrium (CGE)"
+# Publicado en la Editorial universitaria Aula Magna McGraw Hill
 
 Un modelo de equilibrio general aplicado (MEGA) define una serie de magnitudes o variables de importancia económica y las ecuaciones que las relacionan entre sí. Como las relaciones en economía son de carácter circular, algunas ecuaciones hacen uso de valores que son el resultado de otras ecuaciones que a su vez dependen de las primeras. Una vez planteado el modelo, hay que resolver las ecuaciones, es decir, que valores han de tener las variables, para que todas las ecuaciones se cumplan de forma simultánea. Rara vez, por no decir nunca, estaremos ante un sistema de ecuaciones lineales y hay que recurrir a software de resolución de ecuaciones no lineales. Aunque la resolución de ecuaciones no tiene nada que ver con el óptimo de ninguna función, la resolución se suele plantear como un problema de minimización (o maximización) de alguna función objetivo sometida a restricciones, ya que para esto hay disponible software comercial y de libre utilización. Que función objetivo utilizar es irrelevante y lo que se busca es que el software nos encuentre una solución en la que se cumplan las restricciones que no serán otra cosa que las ecuaciones del modelo.
 
