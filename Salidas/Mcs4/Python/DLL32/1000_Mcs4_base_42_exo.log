@@ -4,9 +4,9 @@ scipy            1.18.0
 pandas           3.0.4
 matplotlib       3.11.0
 
-####################################################
-MEGA ampliado. versión 1.6.1  ---------------
-####################################################
+#################################################################
+MEGA ampliado. versión 1.7.0  ---------------
+#################################################################
 -------------------------------------------------------------------------------------------------
 1000_Mcs4_base_42_exo
 -------------------------------------------------------------------------------------------------
@@ -280,53 +280,6 @@ cagh. Ayudas del gobierno a los hogares
 cagh         0.0000000   0.0000000
            ----------- -----------
 
----------------------------------------------------------------------------------------------------
-
-*--* Se han modificado 5 intervalos para ajustarlos al valor mínimo
-
--------------------------------------------------------------------
--------------------------------------------------------------------
-MEGA mediante algoritmo genético. Resolución sin restricciones
-Solución total final guardada en       C:/MEGA/Soluciones/Python/DLL32/v_vars_solucion_Mcs4.log
-Desviaciones relativas en tanto por 1  No
-Semilla números aleatorios                     42
-Número máximo de generaciones           1,000,000
-Tolerancia en el objetivo               5.000e-11
-Iteraciones para valorar progreso           1,000
-Mejora mínima para considerar progreso     0.0010 %
-Tolerancia en las verificaciones        1.000e-08
-Iteraciones para historial                    100
-Iteraciones para soluciones                    -1
-Balanza de pagos                       Mantenerla constante
-Función de utilidad de la demanda      Cobb-Douglas
-Consumos de los hogares en la solución No
-Modo pseudo impuestos (Css y Ag)       Variable
-Demanda con consumos esenciales        No
-Aportación de factores por los hogares exógena
-Factor ahorro a largo plazo                  0.00 %
-Cálculo desvios                        Simple
-Métrica del error: Error cuadrático medio
-Peso de las desviaciones Ydp               1.0000
-Usar DLL                               Si
-Usar genético DLL                      No
-SCIPY
-    Estrategia                                          best1bin
-    Factor de mutación                                  [0.500,1.000]
-    Factor de recombinación                                0.99950
-    Número de workers                                           32
-    Tamaño de la población                                      30       1500 individuos
-    Periodicidad actualización                          deferred
-
-Rango de validez de los precios en % -     99.0 +    120.0
-Rango de validez de las variables  % -     90.0 +     90.0
-Rango de validez de las variables  0 -  10000.0 +  10000.0
-Rango mínimo de las variables            8000.0
-El precio del factor L es variable exógena con valor igual a 1.0
-
-Dimensión del vector de prueba:     51 variables; con valor fijo:     1 (E:   0 M:   1)
-------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------
-
 MCS base. Importes
 
                    AP1       AP2       AP3       AP4       AP5       AP6         K         L        C1        C2       A-I       CSS       INP       TRF        SP        SE       AYD       ALP  Recursos
@@ -354,6 +307,7 @@ AYD                0.0       0.0       0.0       0.0       0.0       0.0        
 ALP                0.0       0.0       0.0       0.0       0.0       0.0         0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0       0.0
 ------------ --------- --------- --------- --------- --------- ---------   --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- --------- ---------
 Empleos        50727.0  117068.0  635858.0  273682.0  822002.0  147726.0    378983.0  334418.0  713401.0   96804.0  245332.0  117447.0  201704.0       0.0  201704.0  274404.0    3622.0       0.0
+
 
 Valores iniciales de las variables
 
@@ -445,6 +399,7 @@ CssH0             21034.0          0.0 S=     21034.0
 CssE0               654.0       1364.0      17216.0      12662.0      43263.0      21254.0 S=     96413.0
              ------------ ------------ ------------ ------------ ------------ ------------
 def/sup ss        20643.0
+Fd.UE                 0.0
 Ahorro-Inversión
                        C1           C2
              ------------ ------------
@@ -472,7 +427,10 @@ equi.bal.pag          0.0
 Apz0              0.00000
 
 
+#################################################################
 Verifica con los valores iniciales
+#################################################################
+
 Número de variables endógenas :181 incluida Apz
 
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
@@ -488,8 +446,61 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   3.67672e-18
+Ec.total desvios   3.67672e-18
 -------------------------------
+#################################################################
+Escenario
+#################################################################
+
+
+#################################################################
+
+*--* Se han modificado 5 intervalos para ajustarlos al valor mínimo
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+MEGA mediante algoritmo genético. Resolución sin restricciones
+Código de caso                                  0
+Solución total final guardada en       C:/MEGA/Soluciones/Python/DLL32/v_vars_solucion_Mcs4.log
+Desviaciones relativas en tanto por 1  No
+Semilla números aleatorios                     42
+Número máximo de generaciones           1,000,000
+Tolerancia en el objetivo               5.000e-11
+Tolerancia en las verificaciones        1.000e-08
+Iteraciones para historial                    100
+Iteraciones para soluciones                    -1
+Iteraciones para valorar progreso           1,000
+Mejora mínima para considerar progreso     0.0010 %
+Balanza de pagos                       Mantenerla constante
+Consumos de los hogares en la solución No
+Ayudas a los hogares en la solución    No
+Impuestos a las ayudas a los hogares   No
+Demanda con consumos esenciales        No
+Función de utilidad de la demanda      Cobb-Douglas
+Modo pseudo impuestos (Css y Ag)       Variable
+Aportación de factores por los hogares exógena
+Factor ahorro a largo plazo                  0.00 %
+Cálculo desvios                        Simple
+Métrica del error: Error cuadrático medio
+Fondos transferidos por la UE                0.00
+Usar DLL                               Si
+Usar genético DLL                      No
+SCIPY
+    Estrategia                                          best1bin
+    Factor de mutación                                  [0.500,1.000]
+    Factor de recombinación                                0.99950
+    Número de workers                                           32
+    Tamaño de la población                                      30       1500 individuos
+    Periodicidad actualización                          deferred
+
+Rango de validez de los precios en % -     99.0 +    120.0
+Rango de validez de las variables  % -     90.0 +     90.0
+Rango de validez de las variables  0 -  10000.0 +  10000.0
+Rango mínimo de las variables            8000.0
+El precio del factor L es variable exógena con valor igual a 1.0
+
+Dimensión del vector de prueba:     51 variables; con valor fijo:     1 (E:   0 M:   1)
+------------------------------------------------------------------------------------------
 
 Número de desvios 185
 
@@ -514,6 +525,7 @@ des Fi     S:7.946662e-20  2.117582e-22 7.444626e-24 4.003554e-22 1.675041e-23 1
 des Ei     S:3.304894e-19  5.169879e-22 1.323489e-21 2.744387e-19 7.290337e-26 5.421011e-20 8.486881e-26
 des Mi     S:1.757924e-20  1.621274e-22 6.405687e-21 7.623297e-21 1.022364e-27 3.388132e-21 0.000000e+00
 des Di     S:1.572530e-18  2.977850e-21 2.117582e-20 5.421011e-20 2.744387e-19 1.097755e-18 1.219727e-19
+des Sf     S:0.000000e+00  0.000000e+00
 des Xpi    S:0.000000e+00  0.000000e+00
 des Alp    S:0.000000e+00  0.000000e+00
 des F      S:7.983058e-20  2.117582e-22 7.444626e-24 3.308722e-22 1.675041e-23 1.323489e-21 2.594038e-21 8.470329e-22 1.323489e-21 5.421011e-20 1.355253e-20 1.191140e-22 5.293956e-21
@@ -534,12 +546,12 @@ des Tm     S:0.000000e+00  0.000000e+00 0.000000e+00 0.000000e+00 0.000000e+00 0
 des Ti     S:0.000000e+00  0.000000e+00
 des Sp     S:0.000000e+00  0.000000e+00 0.000000e+00
 des Sg     S:5.293956e-23  5.293956e-23
-des Sf     S:0.000000e+00  0.000000e+00
 des AgE    S:6.720842e-25  2.067952e-25 0.000000e+00 4.652891e-25 0.000000e+00 0.000000e+00 0.000000e+00
 des AgH    S:0.000000e+00  0.000000e+00 0.000000e+00
 des CssE   S:2.347952e-21  2.067952e-25 1.861156e-24 2.117582e-22 1.621274e-22 1.323489e-21 6.485096e-22
 des CssH   S:0.000000e+00  0.000000e+00 0.000000e+00
 des b.pag  S:1.097755e-18  1.097755e-18
+des AgHi   S:0.000000e+00  0.000000e+00
 
 Errdesvios 1.41682e-17 
 
@@ -551,6 +563,7 @@ des Fi     7.946662e-20      0.00
 des Ei     3.304894e-19      0.00
 des Mi     1.757924e-20      0.00
 des Di     1.572530e-18      0.00
+des Sf     0.000000e+00      0.00
 des Xpi    0.000000e+00      0.00
 des Alp    0.000000e+00      0.00
 des F      7.983058e-20      0.00
@@ -571,12 +584,12 @@ des Tm     0.000000e+00      0.00
 des Ti     0.000000e+00      0.00
 des Sp     0.000000e+00      0.00
 des Sg     5.293956e-23      0.00
-des Sf     0.000000e+00      0.00
 des AgE    6.720842e-25      0.00
 des AgH    0.000000e+00      0.00
 des CssE   2.347952e-21      0.00
 des CssH   0.000000e+00      0.00
 des b.pag  1.097755e-18 
+des AgHi   0.000000e+00      0.00
 ---------- ------------ ---------
 Suma       1.416818e-17 
 
@@ -672,6 +685,7 @@ CssH              21034.0          0.0 S=     21034.0
 CssE                654.0       1364.0      17216.0      12662.0      43263.0      21254.0 S=     96413.0
              ------------ ------------ ------------ ------------ ------------ ------------
 def/sup ss        20643.0
+Fd.UE                 0.0
 Ahorro-Inversión
                        C1           C2
              ------------ ------------
@@ -760,7 +774,10 @@ La distancia (error de la función objetivo) es 1.41682e-17
                                            DLL 1.41220e-17
 -----------------------------------------------------------
 
+#################################################################
 Verifica con la solución final
+#################################################################
+
 Número de variables endógenas :181 incluida Apz
 
 --- Verificación de las ecuaciones en error acumulado  1.000e-08 --
@@ -776,7 +793,7 @@ ecuación      valor medio error acumula  error máximo  % error máxi
 ----------- ------------- ------------- ------------- -------------
 
 -------------------------------
-Ecm.total desvios   2.61703e-18
+Ec.total desvios   2.61703e-18
 -------------------------------
 
 ******************************************************************************
