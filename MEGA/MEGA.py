@@ -37,10 +37,12 @@ impuesto como un pago de los hogares, o como un pago de la cuenta ahorro-inversi
 Mejoras:
     1. Relacionar las iniversiones con el uso del factor capital por los sectores y la retribición de los hogares por rentas de capital
 
-    2. Desglosar la cuenta del IVA, en general desglosar las cuentas de impuestos, porque la base de los mismos es diferente,
-       por ejemplo la del IRPF y la del IVA es muy distinta
+    2. Desglosar la cuenta del IVA (impuestos indirectos Tz), en general desglosar las cuentas de impuestos, porque la base de los mismos es diferente.
 
-    3. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
+    3. El ahorro a largo plazo, que controla el efecto inducido (derivado del incremento de rentas) se puede desglosar por hogar y producto con
+       un porcentaje distinto para cada uno de ellos.
+
+    4. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
 '''
 import os
 import sys
@@ -194,13 +196,10 @@ ALGE_N_HILOS        = args.ALGE_N_HILOS
 GE_MIN_PROGRESO     = args.GE_MIN_PROGRESO
 ALGE_TOL_ACEPTABLE  = args.ALGE_TOL_ACEPTABLE
 ALGE_UMBRAL_REGUL   = args.ALGE_UMBRAL_REGUL
-if ALGE_UMBRAL_REGUL < 1.0:
-    avisos_diferidos.append('El umbral de regularización {} se ha modificado a 2.0, que es el mínimo'.format(ALGE_UMBRAL_REGUL))
-    ALGE_UMBRAL_REGUL = 2.0
 ALGE_FRAC_REGUL     = args.ALGE_FRAC_REGUL
-if ALGE_FRAC_REGUL > 0.9:
-    avisos_diferidos.append('La fracción de población a regularizar {} se ha modificado a 0.9, que es el máximo'.format(ALGE_FRAC_REGUL))
-    ALGE_FRAC_REGUL = 0.9
+if ALGE_FRAC_REGUL > 0.95:
+    avisos_diferidos.append('La fracción de población a regularizar {} se ha modificado a 0.95, que es el máximo'.format(ALGE_FRAC_REGUL))
+    ALGE_FRAC_REGUL = 0.95
 ALGE_MODO_POB_INI   = args.ALGE_MODO_POB_INI
 ALGE_MODO_REINI_POB = args.ALGE_MODO_REINI_POB
 ALGE_F_INICIO_POB   = args.ALGE_F_INICIO_POB
@@ -1113,14 +1112,15 @@ def sec_ecuaciones(vec_opt):
         if ALP_FACTOR > 0:
             # se ahorra a largo plazo (Alp) un porcentaje del exceso de ingresos (FF) respecto a los iniciales (FF0)
             # lo que significa que no se usará en comprar productos
-            # en la medida que ALP_FACTOR sea mayor que 0, el modelo se realimenta, además de por los consumos internos, por la demanda final.
+            # en la medida que ALP_FACTOR sea menor que 1, el modelo se realimenta, además de por los
+            # consumos internos (efecto indirecto), por la demanda final (efecto inducido).
             exceso = FF - datos.FF0
             Alp = exceso * ALP_FACTOR
             FF -= Alp
         else:
             Alp = datos.Alp0
     else:
-        # la igualación es correcta porque ni 'FF' ni 'Alp' los vamos a cambiar
+        # la igualación (de los punteros)es correcta porque ni 'FF' ni 'Alp' los vamos a cambiar
         FF = datos.FF0
         Alp = datos.Alp0
 
