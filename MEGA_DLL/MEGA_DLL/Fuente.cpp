@@ -2907,7 +2907,7 @@ int comprobar_final() {
 				return -3;
 			}
 		}
-		else if ((int)(fraccion_regularizacion * NPOB) > 0 && ((mejor_merito_anterior - mejor_merito) < umbral_regularizacion * mejor_merito_anterior * min_progreso)) {
+		else if (umbral_regularizacion > 0.001 && (int)(fraccion_regularizacion * NPOB) > 0 && ((mejor_merito_anterior - mejor_merito) < umbral_regularizacion * mejor_merito_anterior * min_progreso)) {
 			// "regularización", sustituir un porcentaje de individuos (seleccionados al azar) por otros con valores generados aleatoriamente (modo 0)
 			if (regularizaciones == max_intentos) {
 				// agotadas las regularizaciones, reiniciar la población si procede

@@ -17,7 +17,7 @@ además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'g
 desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 */
 
-#define MEGA6
+#define MEGA5
 const int NFAC = 2;
 
 #ifdef MEGA0
