@@ -8,40 +8,42 @@ from scipy import stats
 from matplotlib import pyplot as plt
 from pandas import DataFrame
 
-NMCS = 5
+NMCS = 6
+MENOS_INI = 0
 MENOS_FIN = 0
 SUFIJO = '_0_42_dll_sol_'
 
 if   NMCS == 4:
     # sin Alp
     SENDAS = [
-        'C:/MEGA/Salidas/Mcs4/',
         'C:/MEGA/Salidas/Mcs4/Phillips/',
+        'C:/MEGA/Salidas/Mcs4/',
     ]
+    # ID, N_DESVIOS, DESDE, HASTA
     IDS = [
         [
-            ['101', 185],
-            ['102', 185],
-            ['103', 187],
-            ['104', 183],
+            ['120', 183, -1, -1],
+            ['121', 187, -1, -1],
+            ['122', 183, -1, -1],
+            ['123', 187, -1, -1],
+            ['125', 183, -1, -1],
+            ['130', 183, -1, -1],
+            ['131', 187, -1, -1],
         ],
         [
-            ['120', 183],
-            ['121', 187],
-            ['122', 183],
-            ['123', 187],
-            ['125', 183],
-            ['130', 183],
-            ['131', 187],
-        ]
+            ['101', 185, -1, -1],
+            ['102', 185, -1, -1],
+            ['103', 187, -1, -1],
+            ['104', 183, -1, -1],
+        ],
     ]
     NPOB = '2010'
     NFAC = 2
     NDEM = 2
     NSEC = 6
     N_VAR_CAL     = 165
-    #                     NFAC   pY pQ pD   epsilon  Apz
-    #                     NFAC + 3 * NSEC  +   1   +  1
+    #             NFAC   pY pQ pD   epsilon  Apz
+    #             NFAC + 3 * NSEC  +   1   +  1
     PRECIOS       = 2 + 3 * 6 + 2      # incluidos epsilon y Apz
     RESTO_SOL     = 51 - (PRECIOS - 1)     # NVEC - (PRECIOS - 1) los precios incluyen los dos factores
     V_C_UNICO     = 3 * 6      # 3 * NSEC  ( pz pe pm )
@@ -50,27 +52,27 @@ if   NMCS == 4:
     ULT_LINEA     = LIN_INI_Spase + N_VAR_CAL - 1
     TOL_PRECIOS   = 0.00001
     TOL_VARIABLES = 0.001
-    p_VAB = 0
-    p_Ti  = 0
-    p_Tz  = 0
-    p_Tm  = 0
-    p_Td  = 0
-    p_cotizacion_SS = 0
-    p_suma_Z = 0
-    p_suma_Q = 0
+    p_VAB = 236
+    p_Ti  = 400
+    p_Tz  = 310
+    p_Tm  = 316
+    p_Td  = 308
+    p_cotizacion_SS = 332
+    p_suma_Z = 284
+    p_suma_Q = 302
 elif NMCS == 5:
     SENDAS = [
-        'C:/MEGA/Salidas/Mcs5/',
         'C:/MEGA/Salidas/Mcs5/Phillips/',
+        'C:/MEGA/Salidas/Mcs5/',
     ]
     IDS = [
         [
-            ['300', 5441],
+            ['310', 5445, -1, -1],
+            ['311', 5439, -1, -1],
+            ['315', 5439, -1, -1],
         ],
         [
-            ['310', 5445],
-            ['311', 5439],
-            ['315', 5439],
+            ['300', 5441,-1, -1],
         ],
     ]
     NPOB = '16020'
@@ -78,8 +80,8 @@ elif NMCS == 5:
     NDEM = 3
     NSEC = 63
     N_VAR_CAL     = 5195
-    #                     NFAC   pY pQ pD   epsilon  Apz
-    #                     NFAC + 3 * NSEC  +   1   +  1
+    #             NFAC   pY pQ pD   epsilon  Apz
+    #             NFAC + 3 * NSEC  +   1   +  1
     PRECIOS       = 193     # incluidos epsilon y Apz
     RESTO_SOL     = 313     # NVEC - (PRECIOS - 1) los precios incluyen los dos factores
     V_C_UNICO     = 189     # 3 * NSEC  ( pz pe pm )
@@ -98,25 +100,33 @@ elif NMCS == 5:
     p_suma_Q = 6586
 elif NMCS == 6:
     SENDAS = [
+        'C:/MEGA/Salidas/Mcs6/Phillips/',
+        'C:/MEGA/Salidas/Mcs6/Phillips/FUE/',
         'C:/MEGA/Salidas/Mcs6/',
-        'C:/MEGA/Salidas/Mcs6/Phillips/'
     ]
     IDS = [
         [
-            ['201', 1660],
-            ['202', 1660],
-            ['205', 1658],
-            ['206', 1662]
+            ['210', 1658, -1, -1],
+            ['211', 1662, -1, -1],
+            ['212', 1658, -1, -1],
+            ['213', 1662, -1, -1],
+            ['215', 1658, -1, -1],
+            ['220', 1658, -1, -1],
+            ['221', 1662, -1, -1],
+            ['230', 1658, -1, -1],
         ],
         [
-            ['210', 1658],
-            ['211', 1662],
-            ['212', 1658],
-            ['213', 1662],
-            ['215', 1658],
-            ['220', 1658],
-            ['221', 1662],
-            ['230', 1658],
+            ['1001',1662, -1, -1],
+            ['3001',1662, -1, -1],
+            ['3002',1664, -1, -1],
+            ['3022',1664, -1, -1],
+        ],
+        [
+            ['201', 1660, -1, -1],
+            ['202', 1660, -1, -1],
+            ['205', 1658, -1, -1],
+            ['2050',1658, -1, -1],
+            ['206', 1662, -1, -1]
         ],
     ]
     NPOB = '5400'
@@ -124,18 +134,18 @@ elif NMCS == 6:
     NDEM = 2
     NSEC = 31
     N_VAR_CAL     = 1540    # variables calculadas del modelo
-    # NFAC   pY pQ pD   epsilon  Apz
-    # NFAC + 3 * NSEC  +   1   +  1
+    #             NFAC   pY pQ pD   epsilon  Apz
+    #             NFAC + 3 * NSEC  +   1   +  1
     PRECIOS       = 97      # incluidos epsilon y Apz, ocupan fila_fin la línea 98 del fichero, inclusive
     RESTO_SOL     = 155     # NVEC - (PRECIOS - 1) el - 1 es porque los precios incluyen los dos factores
     V_C_UNICO     = 93      # 3 * NSEC  ( pz pe pm )
 
     # 347 = 
-    # + 1 primera línea
-    # + 97 precios +
-    # + 155 resto solución +
-    # + 1 el fichero contiene los dos factores y hemos quitado 1 a RESTO_SOL 
-    # + 93 V_C_UNICO
+    #   +   1 primera línea
+    #   +  97 precios +
+    #   + 155 resto solución +
+    #   +   1 el fichero contiene los dos factores y hemos quitado 1 a RESTO_SOL 
+    #   +  93 V_C_UNICO
     LIN_INI_Ppase = 1 + PRECIOS + RESTO_SOL + V_C_UNICO + 1
 
     # 1887 = LIN_PPASE + 1540 variables calculadas del modelo
@@ -160,7 +170,7 @@ else:
 
 titulo = []
 for ids in IDS:
-    for eids,n in ids:
+    for eids,n, d, h in ids:
         titulo.append(eids)
 titulo_s = ['VAB', 'impuestos', 'cotización SS', 'Suma Z', 'Suma Q']
 
@@ -251,30 +261,30 @@ def GraficoEvolucion(x, log_ep, log_ev, log_d, log_m, corte_x_ep, corte_x_ev, co
     plt.xlabel('generaciones. Tolerancia: precios={} [log {:.1f}]; variables={} [log {:.1f}]'.format(TOL_PRECIOS,tolp,TOL_VARIABLES,tolv), fontsize=18)
     plt.ylabel('logaritmo base 10', fontsize=18)
 
-    plt.plot(x, log_ep, label = 'error pre', linewidth=2                    , color ='blue')
+    plt.plot(x, log_ep, label = 'error pre'      , linewidth=2                    , color ='blue')
     plt.vlines(x=corte_x_ep, ymin=ymin, ymax=ymax, linewidth=1, linestyle='dotted', colors='blue')
     plt.hlines(y=tolp, xmin=x[0], xmax=x[nm1]    , linewidth=1, linestyle='dotted', colors='blue')
     plt.text(corte_x_ep, ymax * 0.55,'p:{}'.format(int(corte_x_ep)), fontsize=16  , color ='blue')
     plt.text(x[0], tolp * 0.96,'p:{:.1f}'.format(tolp)             , fontsize=16  , color ='blue')
     plt.plot(corte_x_ep, tolp, 'bo') 
 
-    plt.plot(x, log_ev, label = 'error var', linewidth=2                    , color ='red')
+    plt.plot(x, log_ev, label = 'error var'      , linewidth=2                    , color ='red')
     plt.vlines(x=corte_x_ev, ymin=ymin, ymax=ymax, linewidth=1, linestyle='dotted', colors='red')
     plt.hlines(y=tolv, xmin=x[0], xmax=x[nm1]    , linewidth=1, linestyle='dotted', colors='red')
-    plt.text(corte_x_ev,ymax * 0.96,'v:{}'.format(int(corte_x_ev)), fontsize=16   , color ='red')
-    plt.text((x[nm1] - x[0]) / 5., tolv * 0.96,'v:{:.1f}'.format(tolv)            , fontsize=16   , color ='red')
+    plt.text(corte_x_ev,ymax * 0.96,'v:{}'.format(int(corte_x_ev))    ,fontsize=16, color ='red')
+    plt.text((x[nm1] - x[0]) / 5., tolv * 0.96,'v:{:.1f}'.format(tolv),fontsize=16, color ='red')
     plt.plot(corte_x_ev, tolv, 'ro') 
 
-    plt.plot(x, log_d, label = 'dif.pases', linewidth=2                     , color ='green')
+    plt.plot(x, log_d, label = 'dif.pases'      , linewidth=2                     , color ='green')
     plt.vlines(x=corte_x_d, ymin=ymin, ymax=ymax, linewidth=1                     , colors='green')
     plt.text(corte_x_d, ymin * 0.76,'d:{}'.format(int(corte_x_d)) , fontsize=16   , color ='green')
     plt.plot(corte_x_d, tolv, 'go') 
 
-    plt.plot(x, log_m, label = 'raíz mérito', linewidth=2                       , color ='black')
-    plt.vlines(x=corte_x_m, ymin=ymin, ymax=ymax   , linewidth=1  , linestyle='dashed', colors='black')
-    plt.hlines(y=corte_y_m, xmin=x[0], xmax=x[nm1] , linewidth=1  , linestyle='dashed', colors='black')
-    plt.text(corte_x_m, ymax * 0.76,'m:{}'.format(int(corte_x_m)) , fontsize=16       , color ='black')
-    plt.text(x[0], corte_y_m * 0.96,'m:{:.1f}'.format(corte_y_m)  , fontsize=16       , color ='black')
+    plt.plot(x, log_m, label = 'raíz mérito'    , linewidth=2                        , color ='black')
+    plt.vlines(x=corte_x_m, ymin=ymin, ymax=ymax, linewidth=1    , linestyle='dashed', colors='black')
+    plt.hlines(y=corte_y_m, xmin=x[0], xmax=x[nm1],linewidth=1   , linestyle='dashed', colors='black')
+    plt.text(corte_x_m, ymax * 0.76,'m:{}'.format(int(corte_x_m)), fontsize=16       , color ='black')
+    plt.text(x[0], corte_y_m * 0.96,'m:{:.1f}'.format(corte_y_m) , fontsize=16       , color ='black')
     plt.plot(corte_x_m, corte_y_m, 'ko') 
     
     plt.legend(fontsize=16)
@@ -307,9 +317,9 @@ def GraficoPares(x, y, b, m, R2, rot_x, rot_y, senda, nombre):
     y1 = b + m * xmin
     y2 = b + m * xmax
     ymax = max(max(y), y1, y2)
-    plt.plot([xmin,xmax], [y1,y2], linewidth=2, color ='blue')
+    plt.plot([xmin,xmax], [y1,y2], linewidth=2, color='blue')
 
-    plt.text(xmin, ymax, 'y = {:.3f} + {:.3f} * x    R2={:.3f}  10**b={:9.2e}'.format(b, m, R2, 10**b), fontsize=16, color ='blue')
+    plt.text(xmin, ymax, 'y = {:.3f} + {:.3f} * x    R2={:.3f}  10**b={:9.2e}'.format(b, m, R2, 10**b), fontsize=16, color='blue')
 
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
@@ -332,13 +342,12 @@ def GraficoResumenPares(n_filas, n_cols, x, y, rl, senda, nombnre, titulo):
     fig, axes = plt.subplots(nrows=n_filas_img, ncols=n_cols, figsize=(24., alto))
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
     m = 0
-    #mu = nimg - 1
     for fil in range(n_filas_img):
         for col in range(n_cols):
             axes[fil, col].tick_params(axis='both', which='major', labelsize=16)
             axes[fil, col].title.set_size(20)
             if m < nimg:
-                axes[fil, col].scatter(x[m] , y[m]  , s=28, c='red', marker='o')
+                axes[fil, col].scatter(x[m], y[m], s=48, c='red', marker='o')
                 xmin = min(x[m])
                 xmax = max(x[m])
                 if len(rl) > 0:
@@ -348,9 +357,24 @@ def GraficoResumenPares(n_filas, n_cols, x, y, rl, senda, nombnre, titulo):
                     y2 = b + p * xmax
                     ymin = min(min(y[m]), y1, y2)
                     ymax = max(max(y[m]), y1, y2)
-                    axes[fil, col].text(xmin, ymin + 5./6. * (ymax - ymin), 'y = {:.3f} + {:.3f} * x'.format(b, p), fontsize=20, color ='blue')
-                    axes[fil, col].plot([xmin,xmax], [y1,y2], linewidth=2, color ='blue')
+                    axes[fil, col].text(xmin, ymin + 5./6. * (ymax - ymin), 'y = {:.3f} + {:.3f} * x'.format(b, p), fontsize=20, color='blue')
+                    axes[fil, col].plot([xmin,xmax], [y1,y2], linewidth=2, color='blue')
                 else:
+                    # para mostrar mejor detalle
+                    k = len(y[m])//2 - 1
+                    if k < 0:
+                        k = 0
+                    ymax = max(y[m][k:-1])
+                    ymin = min(y[m][k:-1])
+                    dif = abs(ymax - ymin)
+                    ymax += dif * 0.1
+                    ymin -= dif * 0.1
+                    if ymax < dif * 0.1:
+                        ymax = dif * 0.1
+                    if ymin > -dif * 0.1:
+                        ymin = -dif * 0.1
+                    axes[fil, col].set_ylim(ymin, ymax)
+
                     axes[fil, col].hlines(y=0., xmin=xmin, xmax=xmax, linewidth=3, linestyle='dotted', colors='gray')
                 axes[fil, col].title.set_text(titulo[m])
             else:
@@ -370,13 +394,13 @@ def GraficoEvolucionDerivadas(x, ep, ev, d, m, roty, senda, nombre):
     plt.ylabel(roty, fontsize=18)
     plt.hlines(y=0., xmin=x[0], xmax=x[len(x) - 1], linewidth=1, linestyle='dotted', colors='gray')
     if len(ep) > 0:
-        plt.plot(x, ep, label = 'error pre'  , linewidth=2, color ='blue')
+        plt.plot(x, ep, label = 'error pre'  , linewidth=2, color='blue')
     if len(ev) > 0:
-        plt.plot(x, ev, label = 'error var'  , linewidth=2, color ='red')
+        plt.plot(x, ev, label = 'error var'  , linewidth=2, color='red')
     if len(d) > 0:
-        plt.plot(x, d , label = 'dif.pases'  , linewidth=2, color ='green')
+        plt.plot(x, d , label = 'dif.pases'  , linewidth=2, color='green')
     if len(m) > 0:
-        plt.plot(x, m , label = 'raíz mérito', linewidth=2, color ='black')
+        plt.plot(x, m , label = 'raíz mérito', linewidth=2, color='black')
 
     plt.legend(fontsize=16)
     plt.xticks(fontsize=18)
@@ -411,8 +435,8 @@ def GraficoRangosY(x, vmin_y, vmax_y, vmin_ddvc, vmax_ddvc, senda, nombre, roty)
     plt.plot(x, vmax_ddvc, color='orange', linewidth=1)
     plt.plot(x, vmin_ddvc, color='green' , linewidth=1)
 
-    plt.scatter(x, vmax_y, s=28, c='blue'     , marker='o', label='dif max')
-    plt.scatter(x, vmin_y, s=10, c='red'      , marker='o', label='dif min')
+    plt.scatter(x, vmax_y,    s=28, c='blue'  , marker='o', label='dif max')
+    plt.scatter(x, vmin_y,    s=10, c='red'   , marker='o', label='dif min')
     plt.scatter(x, vmax_ddvc, s=28, c='orange', marker='o', label='err max')
     plt.scatter(x, vmin_ddvc, s=10, c='green' , marker='o', label='err min')
 
@@ -523,39 +547,45 @@ def GraficoDispersion(n_filas, n_cols, deca, y, senda, nombre, titulo, limy, min
 
 ns = -1
 for SENDA in SENDAS:
-    SENDA_SALIDAS = SENDA + 'pSol/' + str(MENOS_FIN) + '/'
+    SENDA_SALIDAS = SENDA + 'pSol/' + str(MENOS_INI) + '_' + str(MENOS_FIN) + '/'
     FICHERO_LOG   = SENDA_SALIDAS   + 'correlaciones.log'
     os.makedirs(SENDA_SALIDAS, exist_ok=True)
     imprime(SENDA)
     ns += 1
-    for ID, N_DESVIOS in IDS[ns]:
+    for ID, N_DESVIOS, DESDE, HASTA in IDS[ns]:
         imprime('    ' + ID, False)
         FUENTE  = SENDA + ID + '_' + NPOB + SUFIJO
         DESTINO = SENDA_SALIDAS + ID + '_tabla.csv'
         patron  = FUENTE + "???.log"
         ficheros = glob.glob(patron)
-        imprime(' [{:4d} ficheros. Omitir los {:4d} últimos]'.format(len(ficheros), MENOS_FIN))
+        if DESDE == -1:
+            DESDE = MENOS_INI
+        if HASTA == -1:
+            HASTA = MENOS_FIN
+        imprime(' [{:4d} ficheros. Omitir los {:4d} primeros y los {:4d} últimos]'.format(len(ficheros), MENOS_INI, DESDE))
         NUM_FICHEROS = len(ficheros) - 1    # quitar el 'fin.log'
         FI_FIN = NUM_FICHEROS 
-        if NUM_FICHEROS < MENOS_FIN + 1:
-            imprime('Se necesitan al menos {} ficheros de soluciones'.format(MENOS_FIN + 1 + 1))
+        if NUM_FICHEROS < MENOS_INI + MENOS_FIN + 1:
+            imprime('Se necesitan al menos {} ficheros de soluciones'.format(MENOS_INI + MENOS_FIN + 1 + 1))
             continue
         
         fichero = FUENTE + 'fin' + '.log'
         if os.path.isfile(fichero) == False:
             # al no encontrarse 'fin.log, se excluye el último para utilizarlo como 'fin.log'
             NUM_FICHEROS -= 1
-            if NUM_FICHEROS < MENOS_FIN + 1:
-                imprime('Si no existe el final, se necesitan al menos {} ficheros de soluciones'.format(MENOS_FIN + 1 + 1 + 1))
+            if NUM_FICHEROS < MENOS_INI + MENOS_FIN + 1:
+                imprime('Si no existe el final, se necesitan al menos {} ficheros de soluciones'.format(MENOS_INI + MENOS_FIN + 1 + 1))
                 continue
             else:
                 imprime('No existe el fichero final:\n    {}\nse utilizará el último de los ficheros de soluciones:\n    {}{:03d}.log'.format(fichero, FUENTE, FI_FIN))
 
+        # excluir los primeros MENOS_INI ficheros de soluciones
+        NUM_FICHEROS -= MENOS_INI
         # excluir los últimos MENOS_FIN ficheros de soluciones
         NUM_FICHEROS -= MENOS_FIN
 
-        # contar el número de lineas en el primer fichero        
-        fichero = FUENTE + '{:03d}'.format(0) + '.log'
+        # contar el número de líneas en el primer fichero        
+        fichero = FUENTE + '{:03d}'.format(MENOS_INI) + '.log'
         with open(fichero, "r", encoding="utf-8") as f:
             LINEAS_FICHERO = sum(1 for linea in f)
         if LINEAS_FICHERO != ULT_LINEA:
@@ -564,27 +594,29 @@ for SENDA in SENDAS:
 
         # el número de columnas añade las tres iniciales: 'N','variable' y 'indice' y la final 'fin'
         cabeceras = ['N','variable','indice'] + list(range(0,NUM_FICHEROS)) + ['fin',]
-        # al número de filas del fichero se añaden:
-        #   las primeras FIL_ADD_INI:
-        #        0 'Generaciones'
-        #        1 'Prec.max.err'
-        #        2 'Err.max.prec'
-        #        3 'Vari.max.err'
-        #        4 'Err.max.vari'
-        #        5 'Error maximo'
-        #        6 'Vari.max.dif'
-        #        7 'Dif.max.pases'
-        #        8 'Suma diferencias'
-        #        9 'suma error'
-        #       10 log10(Error maximo)
-        #       11 log10(Dif.max.pases)
-        #       12 VAB
-        #       13 impuestos
-        #       14 cotizacion SS
-        #       15 suma Z
-        #       16 suma Q
-        #   las N_VAR_CAL al final:
-        #        para las diferencias entre el primer y el segundo pase de cada variable
+        '''
+        al número de filas del fichero se añaden:
+          las primeras FIL_ADD_INI:
+               0 'Generaciones'
+               1 'Prec.max.err'
+               2 'Err.max.prec'
+               3 'Vari.max.err'
+               4 'Err.max.vari'
+               5 'Error maximo'
+               6 'Vari.max.dif'
+               7 'Dif.max.pases'
+               8 'Suma diferencias'
+               9 'suma error'
+              10 log10(Error maximo)
+              11 log10(Dif.max.pases)
+              12 VAB
+              13 impuestos
+              14 cotizacion SS
+              15 suma Z
+              16 suma Q
+          las N_VAR_CAL al final:
+               para las diferencias entre el primer y el segundo pase de cada variable
+        '''
         tabla = DataFrame(columns=cabeceras,index=range(0, FIL_ADD_INI + LINEAS_FICHERO + N_VAR_CAL))
         # rotulos de las tres primeras columnas (COL_ADD_INI) de las filas adicionales al principio
         for i in range(FIL_ADD_INI):
@@ -598,7 +630,7 @@ for SENDA in SENDAS:
         # procesar los ficheros con las soluciones, excepto el de la última ('fin')
 
         for i in range(0, NUM_FICHEROS):
-            fichero = FUENTE + '{:03d}'.format(i) + '.log'
+            fichero = FUENTE + '{:03d}'.format(MENOS_INI + i) + '.log'
             with open(fichero, "r", encoding="utf-8") as f:
                 n = FIL_ADD_INI
                 while True:
@@ -1073,13 +1105,13 @@ for SENDA in SENDAS:
         g_log_m_s.append(log_m)
         g_log_m_s.append(log_m)
         g_log_m_s.append(log_m)
-        g_sumas = []
-        g_sumas.append(tabla.iloc[12, COL_ADD_INI + 1:-1].values)
-        g_sumas.append(tabla.iloc[13, COL_ADD_INI + 1:-1].values)
-        g_sumas.append(tabla.iloc[14, COL_ADD_INI + 1:-1].values)
-        g_sumas.append(tabla.iloc[15, COL_ADD_INI + 1:-1].values)
-        g_sumas.append(tabla.iloc[16, COL_ADD_INI + 1:-1].values)
-        GraficoResumenPares(3, 2, g_log_m_s, g_sumas, [], SENDA_SALIDAS, 'resumen_m_sumas_' + ID, titulo_s)
+        g_agregados = []
+        g_agregados.append(tabla.iloc[12, COL_ADD_INI + 1:-1].values)
+        g_agregados.append(tabla.iloc[13, COL_ADD_INI + 1:-1].values)
+        g_agregados.append(tabla.iloc[14, COL_ADD_INI + 1:-1].values)
+        g_agregados.append(tabla.iloc[15, COL_ADD_INI + 1:-1].values)
+        g_agregados.append(tabla.iloc[16, COL_ADD_INI + 1:-1].values)
+        GraficoResumenPares(3, 2, g_log_m_s, g_agregados, [], SENDA_SALIDAS, 'resumen_m_sumas_' + ID, titulo_s)
 
         xd  = sm.add_constant(log_d)
         res_d_ep = sm.OLS(log_ep , xd ).fit()
