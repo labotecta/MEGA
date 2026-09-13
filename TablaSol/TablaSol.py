@@ -100,11 +100,15 @@ elif NMCS == 5:
     p_suma_Q = 6586
 elif NMCS == 6:
     SENDAS = [
-        'C:/MEGA/Salidas/Mcs6/Phillips/',
         'C:/MEGA/Salidas/Mcs6/Phillips/FUE/',
+        'C:/MEGA/Salidas/Mcs6/Phillips/',
         'C:/MEGA/Salidas/Mcs6/',
     ]
     IDS = [
+        [
+            ['1001',1662, -1, -1],
+            ['3001',1662, -1, -1],
+        ],
         [
             ['210', 1658, -1, -1],
             ['211', 1662, -1, -1],
@@ -114,12 +118,6 @@ elif NMCS == 6:
             ['220', 1658, -1, -1],
             ['221', 1662, -1, -1],
             ['230', 1658, -1, -1],
-        ],
-        [
-            ['1001',1662, -1, -1],
-            ['3001',1662, -1, -1],
-            ['3002',1664, -1, -1],
-            ['3022',1664, -1, -1],
         ],
         [
             ['201', 1660, -1, -1],
@@ -164,6 +162,51 @@ elif NMCS == 6:
     p_cotizacion_SS = 2357
     p_suma_Z = 2134
     p_suma_Q = 2227
+elif NMCS == 7:
+    SENDAS = [
+        'C:/MEGA/Salidas/Mcs6/Phillips/FUE/',
+    ]
+    IDS = [
+        [
+            ['3002',1664, -1, -1],
+            ['3022',1664, -1, -1],
+        ],
+    ]
+    NPOB = '5400'
+    NFAC = 2
+    NDEM = 2
+    NSEC = 31
+    N_VAR_CAL     = 1540    # variables calculadas del modelo
+    #             NFAC   pY pQ pD   epsilon  Apz
+    #             NFAC + 3 * NSEC  +   1   +  1
+    PRECIOS       = 97      # incluidos epsilon y Apz, ocupan fila_fin la línea 98 del fichero, inclusive
+    RESTO_SOL     = 157     # NVEC - (PRECIOS - 1) el - 1 es porque los precios incluyen los dos factores
+    V_C_UNICO     = 93      # 3 * NSEC  ( pz pe pm )
+
+    # 347 = 
+    #   +   1 primera línea
+    #   +  97 precios +
+    #   + 155 resto solución +
+    #   +   1 el fichero contiene los dos factores y hemos quitado 1 a RESTO_SOL 
+    #   +  93 V_C_UNICO
+    LIN_INI_Ppase = 1 + PRECIOS + RESTO_SOL + V_C_UNICO + 1
+
+    # 1887 = LIN_PPASE + 1540 variables calculadas del modelo
+    LIN_INI_Spase = LIN_INI_Ppase + N_VAR_CAL
+    
+    # 3426
+    ULT_LINEA     = LIN_INI_Spase + N_VAR_CAL - 1   
+    
+    TOL_PRECIOS   = 0.0001
+    TOL_VARIABLES = 0.01
+    p_VAB = 1888
+    p_Ti  = 3427
+    p_Tz  = 2262
+    p_Tm  = 2293
+    p_Td  = 2260
+    p_cotizacion_SS = 2359
+    p_suma_Z = 2136
+    p_suma_Q = 2229
 else:
     print('número de MCS (NMCS) incorrecto')
     sys.exit()
