@@ -1,6 +1,6 @@
 
-## *Todo el material del repositorio, incluido el código de las aplicaciones es de libre utilización, pero esperamos que su uso se acompañe de la cita correspondiente, de acuerdo con las normas habituales de citación.*
-## *Así mismo nos gustaría recibir, si es posible, una copia de los modelos que se construyan a partir de este material.*
+### *Todo el material del repositorio, incluido el código de las aplicaciones es de libre utilización, pero esperamos que su uso se acompañe de la cita correspondiente, de acuerdo con las normas habituales de citación.*
+### *Así mismo nos gustaría recibir, si es posible, una copia de los modelos que se construyan a partir de este material.*
 
 ___
 
