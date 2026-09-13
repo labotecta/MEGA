@@ -1,94 +1,162 @@
-C:/MEGA/Salidas/Mcs4/
-    101 [  36 ficheros. Omitir los    0 primeros y los    0 últimos]
+C:/MEGA/Salidas/Mcs4/Phillips/
+    120 [  27 ficheros. Omitir los    0 primeros y los    0 últimos]
 tolerancia precios   1e-05
 tolerancia variables 0.001
-generacion de corte 2530
+generacion de corte 1861
 
-covarianza merito  - precios     11.978
-covarianza merito  - variables   11.691
-covarianza merito  - diferencias 11.357
-covarianza precios - variables   12.581
+covarianza merito  - precios     6.748
+covarianza merito  - variables   6.310
+covarianza merito  - diferencias 6.477
+covarianza precios - variables   6.383
 
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par m_ep    -4.142e+00    7.216e-05    1.075e+00    9.906e-01    2.361e-35    4.968e-34
-par m_ev     1.021e+00    1.050e+01    1.049e+00    9.969e-01    4.123e-24    1.187e-41
-par m_d      5.135e-01    3.262e+00    1.019e+00    9.960e-01    4.145e-14    7.260e-40
-par ep_ev    5.022e+00    1.052e+05    9.684e-01    9.905e-01    7.483e-31    6.214e-34
+par m_ep    -4.079e+00    8.345e-05    1.028e+00    9.551e-01    6.355e-18    5.362e-17
+par m_ev     1.520e+00    3.308e+01    9.611e-01    9.726e-01    9.251e-12    1.824e-19
+par m_d      4.707e-01    2.956e+00    9.865e-01    9.881e-01    6.835e-06    1.242e-23
+par ep_ev    4.955e+00    9.016e+04    8.789e-01    8.996e-01    8.804e-11    5.701e-13
 --------- ------------ ------------ ------------ ------------ ------------ ------------
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par d_ep    -4.686e+00    2.061e-05    1.051e+00    9.878e-01    8.100e-36    3.236e-32
-par d_ev     4.907e-01    3.095e+00    1.027e+00    9.961e-01    7.111e-14    4.757e-40
-par d_m     -5.069e-01    3.112e-01    9.776e-01    9.960e-01    1.119e-14    7.260e-40
+par d_ep    -4.567e+00    2.709e-05    1.043e+00    9.683e-01    1.162e-21    9.811e-19
+par d_ev     1.027e+00    1.064e+01    9.579e-01    9.516e-01    3.690e-07    1.267e-16
+par d_m     -5.023e-01    3.146e-01    1.002e+00    9.881e-01    6.962e-07    1.242e-23
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-    102 [  28 ficheros. Omitir los    0 primeros y los    0 últimos]
+    121 [  26 ficheros. Omitir los    0 primeros y los    0 últimos]
 tolerancia precios   1e-05
 tolerancia variables 0.001
-generacion de corte 1713
+generacion de corte 1653
 
-covarianza merito  - precios     7.887
-covarianza merito  - variables   6.925
-covarianza merito  - diferencias 6.552
-covarianza precios - variables   7.593
+covarianza merito  - precios     6.809
+covarianza merito  - variables   5.682
+covarianza merito  - diferencias 5.709
+covarianza precios - variables   5.818
 
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par m_ep    -4.095e+00    8.036e-05    1.095e+00    9.753e-01    1.182e-20    8.261e-21
-par m_ev     9.333e-01    8.575e+00    9.616e-01    9.712e-01    1.623e-07    5.267e-20
-par m_d      4.466e-01    2.796e+00    9.098e-01    9.551e-01    7.479e-03    1.105e-17
-par ep_ev    4.382e+00    2.410e+04    8.573e-01    9.495e-01    3.796e-13    4.542e-17
+par m_ep    -4.030e+00    9.322e-05    1.037e+00    9.715e-01    5.913e-19    1.738e-18
+par m_ev     8.584e-01    7.218e+00    8.653e-01    9.629e-01    1.861e-06    3.091e-17
+par m_d      3.651e-01    2.318e+00    8.693e-01    9.614e-01    1.435e-02    4.894e-17
+par ep_ev    3.990e+00    9.779e+03    8.007e-01    9.124e-01    7.233e-10    4.075e-13
 --------- ------------ ------------ ------------ ------------ ------------ ------------
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par d_ep    -4.762e+00    1.729e-05    1.140e+00    9.164e-01    4.604e-17    1.963e-14
-par d_ev     3.955e-01    2.486e+00    1.025e+00    9.558e-01    1.096e-02    9.040e-18
-par d_m     -5.917e-01    2.561e-01    1.050e+00    9.551e-01    5.376e-04    1.105e-17
+par d_ep    -4.609e+00    2.463e-05    1.121e+00    8.930e-01    5.757e-15    3.719e-12
+par d_ev     4.764e-01    2.995e+00    9.860e-01    9.829e-01    8.652e-06    6.072e-21
+par d_m     -5.087e-01    3.100e-01    1.106e+00    9.614e-01    1.584e-03    4.894e-17
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-    103 [  29 ficheros. Omitir los    0 primeros y los    0 últimos]
+    122 [  28 ficheros. Omitir los    0 primeros y los    0 últimos]
 tolerancia precios   1e-05
 tolerancia variables 0.001
-generacion de corte 2750
+generacion de corte 1855
 
-covarianza merito  - precios     6.334
-covarianza merito  - variables   7.573
-covarianza merito  - diferencias 7.451
-covarianza precios - variables   6.055
+covarianza merito  - precios     7.524
+covarianza merito  - variables   6.570
+covarianza merito  - diferencias 6.040
+covarianza precios - variables   6.929
 
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par m_ep    -4.258e+00    5.527e-05    7.848e-01    5.446e-01    6.208e-09    1.118e-05
-par m_ev     9.550e-01    9.017e+00    9.383e-01    9.872e-01    1.321e-12    3.322e-25
-par m_d      4.795e-01    3.017e+00    9.232e-01    9.895e-01    1.224e-07    3.082e-26
-par ep_ev    2.929e+00    8.487e+02    6.632e-01    5.579e-01    8.699e-04    7.635e-06
+par m_ep    -4.094e+00    8.056e-05    1.061e+00    9.748e-01    6.057e-21    1.066e-20
+par m_ev     1.461e+00    2.891e+01    9.260e-01    9.735e-01    5.920e-12    1.936e-20
+par m_d      3.637e-01    2.311e+00    8.513e-01    9.816e-01    4.544e-04    2.435e-22
+par ep_ev    4.849e+00    7.069e+04    8.464e-01    9.385e-01    2.011e-13    4.893e-16
 --------- ------------ ------------ ------------ ------------ ------------ ------------
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par d_ep    -4.703e+00    1.981e-05    8.230e-01    5.158e-01    3.035e-10    2.462e-05
-par d_ev     4.621e-01    2.898e+00    1.012e+00    9.900e-01    4.385e-08    1.553e-26
-par d_m     -5.354e-01    2.915e-01    1.072e+00    9.895e-01    1.406e-08    3.082e-26
+par d_ep    -4.617e+00    2.416e-05    1.210e+00    9.367e-01    2.287e-18    6.889e-16
+par d_ev     1.035e+00    1.085e+01    1.072e+00    9.637e-01    2.031e-08    8.559e-19
+par d_m     -4.694e-01    3.393e-01    1.153e+00    9.816e-01    5.327e-05    2.435e-22
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-    104 [  31 ficheros. Omitir los    0 primeros y los    0 últimos]
+    123 [  26 ficheros. Omitir los    0 primeros y los    0 últimos]
 tolerancia precios   1e-05
 tolerancia variables 0.001
-generacion de corte 2950
+generacion de corte 1631
 
-covarianza merito  - precios     5.728
-covarianza merito  - variables   9.372
-covarianza merito  - diferencias 8.497
-covarianza precios - variables   6.264
+covarianza merito  - precios     7.300
+covarianza merito  - variables   6.451
+covarianza merito  - diferencias 6.825
+covarianza precios - variables   6.685
 
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par m_ep    -4.001e+00    9.970e-05    6.107e-01    3.555e-01    1.427e-07    6.418e-04
-par m_ev     2.024e+00    1.057e+02    9.992e-01    9.707e-01    7.077e-16    3.040e-22
-par m_d      4.653e-01    2.920e+00    9.059e-01    9.904e-01    4.067e-08    8.981e-29
-par ep_ev    3.376e+00    2.379e+03    6.366e-01    4.134e-01    6.954e-04    1.690e-04
+par m_ep    -4.220e+00    6.028e-05    1.034e+00    9.719e-01    2.834e-19    1.489e-18
+par m_ev     9.651e-01    9.228e+00    9.136e-01    9.762e-01    2.582e-08    2.329e-19
+par m_d      4.918e-01    3.103e+00    9.665e-01    9.854e-01    3.304e-05    1.071e-21
+par ep_ev    4.534e+00    3.419e+04    8.610e-01    9.534e-01    6.737e-13    3.913e-16
 --------- ------------ ------------ ------------ ------------ ------------ ------------
     xy         y0         10**y0          m            R2      p-value y0    p-value m
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-par d_ep    -4.308e+00    4.921e-05    6.795e-01    3.647e-01    7.902e-09    5.227e-04
-par d_ev     1.506e+00    3.209e+01    1.100e+00    9.744e-01    3.152e-14    5.113e-23
-par d_m     -5.276e-01    2.968e-01    1.093e+00    9.904e-01    5.397e-09    8.981e-29
+par d_ep    -4.743e+00    1.808e-05    1.071e+00    9.889e-01    1.069e-25    5.502e-23
+par d_ev     4.823e-01    3.036e+00    9.370e-01    9.734e-01    2.334e-04    8.115e-19
+par d_m     -5.414e-01    2.875e-01    1.020e+00    9.854e-01    3.398e-06    1.071e-21
 --------- ------------ ------------ ------------ ------------ ------------ ------------
-fin
+    125 [  27 ficheros. Omitir los    0 primeros y los    0 últimos]
+tolerancia precios   1e-05
+tolerancia variables 0.001
+generacion de corte 1878
+
+covarianza merito  - precios     6.896
+covarianza merito  - variables   6.541
+covarianza merito  - diferencias 6.838
+covarianza precios - variables   6.380
+
+    xy         y0         10**y0          m            R2      p-value y0    p-value m
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+par m_ep    -4.234e+00    5.835e-05    9.784e-01    9.754e-01    2.434e-21    5.247e-20
+par m_ev     1.303e+00    2.010e+01    9.280e-01    9.826e-01    2.326e-12    9.520e-22
+par m_d      5.274e-01    3.368e+00    9.702e-01    9.823e-01    3.247e-05    1.162e-21
+par ep_ev    5.138e+00    1.373e+05    9.223e-01    9.524e-01    4.491e-14    1.039e-16
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+    xy         y0         10**y0          m            R2      p-value y0    p-value m
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+par d_ep    -4.823e+00    1.504e-05    9.817e-01    9.410e-01    2.155e-19    1.246e-15
+par d_ev     7.712e-01    5.905e+00    9.436e-01    9.735e-01    2.722e-07    1.222e-19
+par d_m     -5.823e-01    2.616e-01    1.012e+00    9.823e-01    2.541e-06    1.162e-21
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+    130 [  26 ficheros. Omitir los    0 primeros y los    0 últimos]
+tolerancia precios   1e-05
+tolerancia variables 0.001
+generacion de corte 1900
+
+covarianza merito  - precios     6.467
+covarianza merito  - variables   6.154
+covarianza merito  - diferencias 5.616
+covarianza precios - variables   6.163
+
+    xy         y0         10**y0          m            R2      p-value y0    p-value m
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+par m_ep    -4.225e+00    5.960e-05    9.953e-01    9.583e-01    4.351e-18    1.127e-16
+par m_ev     1.573e+00    3.738e+01    9.472e-01    9.750e-01    4.907e-12    4.010e-19
+par m_d      3.764e-01    2.379e+00    8.644e-01    9.614e-01    1.046e-02    4.855e-17
+par ep_ev    5.359e+00    2.288e+05    9.176e-01    9.460e-01    2.049e-13    1.975e-15
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+    xy         y0         10**y0          m            R2      p-value y0    p-value m
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+par d_ep    -4.708e+00    1.958e-05    1.125e+00    9.522e-01    2.406e-19    5.144e-16
+par d_ev     1.118e+00    1.313e+01    1.074e+00    9.739e-01    8.040e-10    6.539e-19
+par d_m     -5.210e-01    3.013e-01    1.112e+00    9.614e-01    1.085e-03    4.855e-17
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+    131 [  26 ficheros. Omitir los    0 primeros y los    0 últimos]
+tolerancia precios   1e-05
+tolerancia variables 0.001
+generacion de corte 1612
+
+covarianza merito  - precios     5.880
+covarianza merito  - variables   6.460
+covarianza merito  - diferencias 6.633
+covarianza precios - variables   5.690
+
+    xy         y0         10**y0          m            R2      p-value y0    p-value m
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+par m_ep    -4.401e+00    3.973e-05    8.712e-01    9.747e-01    9.032e-22    4.631e-19
+par m_ev     1.028e+00    1.067e+01    9.570e-01    9.840e-01    5.459e-10    2.982e-21
+par m_d      4.771e-01    3.000e+00    9.827e-01    9.832e-01    1.392e-04    5.176e-21
+par ep_ev    5.754e+00    5.676e+05    1.083e+00    9.806e-01    1.679e-17    2.498e-20
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+    xy         y0         10**y0          m            R2      p-value y0    p-value m
+--------- ------------ ------------ ------------ ------------ ------------ ------------
+par d_ep    -4.858e+00    1.387e-05    8.716e-01    9.582e-01    2.874e-21    1.175e-16
+par d_ev     5.329e-01    3.411e+00    9.604e-01    9.734e-01    1.281e-04    8.062e-19
+par d_m     -5.244e-01    2.989e-01    1.001e+00    9.832e-01    1.460e-05    5.176e-21
+--------- ------------ ------------ ------------ ------------ ------------ ------------
