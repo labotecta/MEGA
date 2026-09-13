@@ -80,7 +80,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_VERIFICAR        1.e-08 ^
 --GE_PROGRESO         1000 ^
 --GE_MIN_PROGRESO     0.05 ^
---ALGE_UMBRAL_REGUL   10. ^
+--ALGE_UMBRAL_REGUL   0. ^
 --ALGE_FRAC_REGUL     0.3 ^
 --GE_HISTORIAL        100 ^
 --GE_SOLUCIONES       100 ^
