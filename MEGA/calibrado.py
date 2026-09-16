@@ -37,7 +37,7 @@ class datos(object):
         self.epsilon  = np.float64(1.)      # tipo de cambio (cotización)
         self.epsilon0 = self.epsilon
 
-        # consumos (imputs) intermedios de los sectores en las columnas y ventas (outputs) intermedias en las filas
+        # consumos (imputs -compras-) intermedios de los sectores en las columnas y ventas (outputs) intermedias en las filas
         self.X0 = DataFrame(sam, index=ind, columns=ind)
         '''
                 AP1      AP2       AP3      AP4       AP5      AP6
@@ -327,8 +327,9 @@ class datos(object):
             self.AgH0 = np.nan_to_num(self.AgH0, copy=True) # si no hay datos (NAN) se sustituye por 0
 
         # tasa de impuesto a la producción = impuestos pagados / producción
-        self.tauz = (self.Tz0) / self.Z0        # (len(ind), ) / (len(ind), ) se dividen uno a uno
-        np.nan_to_num(self.tauz, copy=False)    # si no hay datos (NAN) se sustituye por 0
+        self.tauz = np.divide(self.Tz0, self.Z0, out=np.zeros_like(self.Tz0), where=self.Z0!=0)
+        # self.tauz = (self.Tz0) / self.Z0        # (len(ind), ) / (len(ind), ) se dividen uno a uno
+        # np.nan_to_num(self.tauz, copy=False)    # si no hay datos (NAN) se sustituye por 0
         self.tauz[self.tauz == np.inf] = 0      # porque algún elemento de F0 puede ser 0
         '''
         [0.0, 0.01618823165784492, 0.0, 0.009487489895610537, 0.02342987623673422, 0.03661325355518216]
@@ -572,8 +573,8 @@ class parametros(object):
         np.nan_to_num(self.ctzsse, copy=False)      # si no hay datos (NAN) se sustituye por 0
         self.ctzsse[self.ctzsse == np.inf] = 0      # porque algún elemento de F0 puede ser 0
 
-        self.ctzssez = datos.CssE0 / datos.Z0
-        self.ctzagez = datos.AgE0 / datos.Z0
+        self.ctzssez = np.divide(datos.CssE0, datos.Z0, out=np.zeros_like(datos.CssE0), where=datos.Z0!=0)
+        self.ctzagez = np.divide(datos.AgE0, datos.Z0, out=np.zeros_like(datos.AgE0), where=datos.Z0!=0)
 
         # porcentaje de la seguridad social sobre la prestación de factor laboral por los hogares (FF0)
         # las pensiones no cotizan a la seguridad social

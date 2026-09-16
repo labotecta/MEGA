@@ -80,27 +80,44 @@ def produccion_para_exportacion_E(teta, xie, pz, pe, Z, phi, tauz, CssE, AgE, Ap
     b_teta = abs(teta)
     expo = 1. / (1. - phi)
     if modo_pseudoimptos == 0:
-        if np.any(xie == 0):
-            nsec = xie.shape[0]
-            E = np.zeros(nsec, dtype=np.float64)
-            for i in range(nsec):
-                if xie[i] > 0:
-                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xie[i] / pe[i]).item()
-                    E[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
-        else:
-            base = s_teta * (b_teta ** phi) * (1. + tauz + (CssE - AgE) / Z + Apz) * pz * xie / pe
-            E = Z * np.copysign(1, base) * (abs(base) ** expo)
-    else:
         if np.any(xie < 0.000001):
+            # forma de cálculo individual
             nsec = xie.shape[0]
             E = np.zeros(nsec, dtype=np.float64)
             for i in range(nsec):
                 if xie[i] > 0.000001:
-                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xie[i] / pe[i]).item()
-                    E[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
+                    if Z[i] > 0.000001:
+                        tasa_c = (CssE[i] - AgE[i]) / Z[i]
+                    else:
+                        tasa_c = 0.
+                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xie[i] / pe[i]).item()
+                    if base < 0.000001:
+                        E[i] = 0.
+                    else:
+                        E[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
         else:
-            base = s_teta * (b_teta ** phi) * (1. + tauz + ctzssez - ctzagez + Apz) * pz * xie / pe
-            E = Z * np.copysign(1, base) * (abs(base) ** expo)
+            # forma de cálculo vectorial
+            tasa_c = np.divide((CssE - AgE), Z, out=np.zeros_like(Z), where=Z!=0)
+            base = s_teta * (b_teta ** phi) * (1. + tauz + tasa_c + Apz) * pz * xie / pe
+            E = np.where(base == 0, 0., Z * np.copysign(1, base) * (abs(base) ** expo))
+    else:
+        if np.any(xie < 0.000001):
+            # forma de cálculo individual
+            nsec = xie.shape[0]
+            E = np.zeros(nsec, dtype=np.float64)
+            for i in range(nsec):
+                if xie[i] > 0.000001:
+                    tasa_c = ctzssez[i] - ctzagez[i]
+                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xie[i] / pe[i]).item()
+                    if base < 0.000001:
+                        E[i] = 0.
+                    else:
+                        E[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
+        else:
+            # forma de cálculo vectorial
+            tasa_c = ctzssez - ctzagez
+            base = s_teta * (b_teta ** phi) * (1. + tauz + tasa_c + Apz) * pz * xie / pe
+            E = np.where(base == 0, 0., Z * np.copysign(1, base) * (abs(base) ** expo))
     return E
 
 def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz, ctzssez, ctzagez, modo_pseudoimptos):
@@ -134,26 +151,43 @@ def produccion_para_local_D(teta, xid, pz, pd, Z, phi, tauz, CssE, AgE, Apz, ctz
     expo = 1. / (1. - phi)
     if modo_pseudoimptos == 0:
         if np.any(xid < 0.000001):
+            # forma de cálculo individual
             nsec = xid.shape[0]
             D = np.zeros(nsec, dtype=np.float64)
             for i in range(nsec):
                 if xid[i] > 0.000001:
-                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xid[i] / pd[i]).item()
-                    D[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
+                    if Z[i] > 0.000001:
+                        tasa_c = (CssE[i] - AgE[i]) / Z[i]
+                    else:
+                        tasa_c = 0.
+                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xid[i] / pd[i]).item()
+                    if base < 0.000001:
+                        D[i] = 0.
+                    else:
+                        D[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
         else:
-            base = s_teta * (b_teta ** phi) * (1. + tauz + (CssE - AgE) / Z + Apz) * pz * xid / pd
-            D = Z * np.copysign(1, base) * (abs(base) ** expo)
+            # forma de cálculo vectorial
+            tasa_c = np.divide((CssE - AgE), Z, out=np.zeros_like(Z), where=Z!=0)
+            base = s_teta * (b_teta ** phi) * (1. + tauz + tasa_c + Apz) * pz * xid / pd
+            D = np.where(base == 0, 0., Z * np.copysign(1, base) * (abs(base) ** expo))
     else:
         if np.any(xid < 0.000001):
+            # forma de cálculo individual
             nsec = xid.shape[0]
             D = np.zeros(nsec, dtype=np.float64)
             for i in range(nsec):
                 if xid[i] >  0.000001:
-                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xid[i] / pd[i]).item()
-                    D[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
+                    tasa_c = ctzssez[i] - ctzagez[i]
+                    base = (s_teta[i] * (b_teta[i] ** phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xid[i] / pd[i]).item()
+                    if base < 0.000001:
+                        D[i] = 0.
+                    else:
+                        D[i] = Z[i] * np.copysign(1, base) * (abs(base) ** expo[i])
         else:
-            base = s_teta * (b_teta ** phi) * (1. + tauz + ctzssez - ctzagez + Apz) * pz * xid / pd
-            D = Z * np.copysign(1, base) * (abs(base) ** expo)
+            # forma de cálculo vectorial
+            tasa_c = ctzssez - ctzagez
+            base = s_teta * (b_teta ** phi) * (1. + tauz + tasa_c + Apz) * pz * xid / pd
+            D = np.where(base == 0, 0., Z * np.copysign(1, base) * (abs(base) ** expo))
     return D
 
 def restriccion_produccion_bruta_Z(teta, xie, xid, E, D, phi):

@@ -99,6 +99,7 @@ def demanda_StoneGeary_alfa(FF, PssH, AgH, Sp, Td, CssH, Xp, con_esen, pf, pq):
 def demanda_CobbDouglas_beta(F):
     '''
     Obtiene, para cada sector, los coeficientes de participación (beta) de los factores en la función de producción
+
     F : utilización de factores por cada sector (2, 2)
     '''
     nsec = F.shape[0]
@@ -107,7 +108,7 @@ def demanda_CobbDouglas_beta(F):
     denominador = F.sum(axis=1) # suma por fila (sector) (len(ind), )
     for i in range(nsec):
         for j in range(nfac):
-            if denominador[i] < 0:
+            if denominador[i] <= 0:
                 beta[i,j] = 0.
             else:
                 beta[i,j] = F[i,j] / denominador[i]
@@ -133,17 +134,19 @@ def demanda_CobbDouglas_b(Y, F, beta):
 def coeficientes_consumos_intermedios_ax(X, Z):
     '''
     Cantidad de producto intermedio 'j' necesario para producir una unidad de producto 'i'
-    X : consumos (imputs) intermedios de los sectores en las columnas  (2, 2)
-    Z : producción de cada sector = factor compuesto + ventas intermedias  (2, )
+    X : consumos (imputs) intermedios de los sectores en las columnas
+    Z : producción de cada sector = factor compuesto + ventas intermedias
     '''
     nsec = X.shape[0]
     ax = np.zeros((nsec,nsec),dtype=np.float64)
     for i in range(nsec):
         for j in range(nsec):
-            # X[j,i] son las compras de 'i' a los sectores 'j'
+            # X[j,i] son las las compras de 'i' a los sectores 'j', es decir, ventas de 'j' a 'i'
             # Z[i] producción bruta del sector 'i'
-            # ax[i,j] compras intermedias, por unidad de producción bruta, que hace el sector 'i' a los sectores 'j'
+            # ax[i,j] compras intermedias que hace el sector 'i' al sector 'j', por unidad de producción bruta de 'i'
+            # tiene los indices traspuestos respecto a X
             if X[j,i] > 0.000001 and Z[i] != 0:
+                # lo que compra el sector 'i' al 'j' por unidad de producción bruta del sector 'i'
                 ax[i,j] = X[j,i] / Z[i]
     return ax
 
@@ -154,17 +157,16 @@ def coeficientes_factor_compuesto_ay(Y, Z):
     Z : producción de cada sector = factor compuesto + ventas intermedias (2, )
     '''
     # división elemento a elemnto
-    ay = Y / Z
-    ay[ay == np.inf] = 0                    # porque el denominador puede ser 0, antes de np.nan_to_num porque puede cambiar el inf por un número
-    np.nan_to_num(ay, copy=False)           # si no hay datos (NAN) se sustituye por 0
+    ay = np.divide(Y, Z, out=np.zeros_like(Y), where=Z!=0)
     return ay
 
-def coeficientes_demanda_gobierno_mu(X):
+def coeficientes_demanda_gobierno_mu(Xg):
     '''
     Coeficiente para repartir la demanda total del gobierno entre sectores
-    X : demanda del gobierno a cada sector
+
+    Xg : demanda del gobierno a cada sector
     '''
-    return X / X.sum()
+    return Xg / Xg.sum()
 
 def coeficientes_inversiones_landa(Xv, Sp, Sg, Sc, epsilon, Sf, Ti, Te):
     '''
@@ -199,10 +201,22 @@ def coeficientes_armington_deltam_deltad(taum, eta, M, D):
     De = np.copysign(1, D) * (abs(D) ** (1. - eta))
     # se añaden los aranceles a la importación
     a = (1. + taum) * Me
+    b = a + De
+    '''
     b = (1. + taum) * Me + De
-
-    deltam = a / b
-    deltad = De / b
+    n = taum.shape[0]
+    deltam = np.zeros(n, dtype=np.float64)
+    deltad = np.zeros(n, dtype=np.float64)
+    for i in range(n):
+        if b[i] == 0:
+            deltam[i] = 0.
+            deltad[i] = 0.
+        else:
+            deltam[i] = a[i] / b[i]
+            deltad[i] = De[i] / b[i]
+    '''
+    deltam = np.divide(a, b, out=np.zeros_like(a), where=b!=0)
+    deltad = np.divide(De, b, out=np.zeros_like(De), where=b!=0)
     assert np.all(deltam >= 0.), 'detam negativo\n'
     assert np.all(deltad >= 0.), 'detad negativo\n'
     return (deltam, deltad)
@@ -221,16 +235,22 @@ def coeficiente_escala_armington_gamma(Q, deltam, deltad, eta, M, D):
     # mientras 'eta' sea positivo no hay problema en que algún elemento de M sea 0
     Me = np.copysign(1, M) * (abs(M) ** eta)
     De = np.copysign(1, D) * (abs(D) ** eta)
-    return Q / ((deltam * Me + deltad * De) ** (1. / eta))
+    V = ((deltam * Me + deltad * De) ** (1. / eta))
+    gamma = np.divide(Q, V, out=np.zeros_like(Q), where=V!=0)
+    return gamma
 
 def coeficiente_CET_local_xid(fi, E, D):
     '''
     Coeficiente de participación en la CET de la demanda local para cada sector
     '''
-    # si E tiene algún valor a 0 y 'umfi' es negativo (que es lo normal) se produce una división por 0
     umfi = 1. - fi
-    De = np.copysign(1, D) * (abs(D) ** umfi)
     nsec = fi.shape[0]
+    De = np.zeros(nsec, dtype=np.float64)
+    for i in range(nsec):
+        if D[i] == 0:
+            De[i] = 1.
+        else:
+            De[i] = np.copysign(1, D[i]) * (abs(D[i]) ** umfi[i])
     xid = np.zeros(nsec, dtype=np.float64)
     for i in range(nsec):
         if E[i] == 0:
@@ -238,7 +258,6 @@ def coeficiente_CET_local_xid(fi, E, D):
         else:
             Ee = np.copysign(1, E[i]) * (abs(E[i]) ** umfi[i])
             xid[i] = De[i] / (Ee + De[i])
-    #np.nan_to_num(xid, copy=False) # convierte nan a 0, por lo que NO es una alternativa
     return xid
 
 def coeficiente_CET_exportacion_xie(fi, E, D):
@@ -247,7 +266,13 @@ def coeficiente_CET_exportacion_xie(fi, E, D):
     '''
     # si E tiene algún valor a 0 y 'umfi' es negativo (que es lo normal) se produce una división por 0
     umfi = 1. - fi
-    De = np.copysign(1, D) * (abs(D) ** umfi)
+    nsec = fi.shape[0]
+    De = np.zeros(nsec, dtype=np.float64)
+    for i in range(nsec):
+        if D[i] == 0:
+            De[i] = 1.
+        else:
+            De[i] = np.copysign(1, D[i]) * (abs(D[i]) ** umfi[i])
     nsec = fi.shape[0]
     xie = np.zeros(nsec, dtype=np.float64)
     for i in range(nsec):
@@ -256,7 +281,6 @@ def coeficiente_CET_exportacion_xie(fi, E, D):
         else:
             Ee = np.copysign(1, E[i]) * (abs(E[i]) ** umfi[i])
             xie[i] = Ee / (Ee + De[i])
-    #np.nan_to_num(xie, copy=False) # convierte nan a 0, por lo que SI es una alternativa
     return xie
 
 def coeficiente_escala_CET_teta(Z, xie, E, xid, D, fi):
@@ -265,7 +289,12 @@ def coeficiente_escala_CET_teta(Z, xie, E, xid, D, fi):
     '''
     #no hay problema si E tiene algún valor a 0 ya que 'fi' es normalmente positivo, y por tanto '1. / fi' tambien, con lo que no produce una división por 0
 
-    teta = Z / ((xie * E ** fi + xid * D ** fi) ** (1. / fi))
+    n = Z.shape[0]
+    teta = np.zeros(n, dtype=np.float64)
+    d = ((xie * E ** fi + xid * D ** fi) ** (1. / fi))
+    for i in range(n):
+        if d[i] != 0:
+            teta[i] = Z[i] / d[i]
 
     assert np.all(np.isnan(teta)==False), 'coeficiente_escala_CET_teta incorrecto\n'
 

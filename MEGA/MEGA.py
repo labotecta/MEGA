@@ -58,6 +58,7 @@ import datetime as dt
 from pandas          import Series
 from scipy.optimize  import differential_evolution
 from timeit          import default_timer as timer
+
 import argumentos
 import calibrado
 import funciones     as mfun
@@ -74,7 +75,7 @@ import restricciones as restri
 global datos
 global parametros
 
-VERSION = '1.7.0'
+VERSION = '1.8.0'
 
 # 7 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
@@ -119,16 +120,18 @@ etq_mpob =(
     'valores próximos, o iguales, al extremo inferior, con permutaciones distintas para cada variable y desplazamiento independiente',
 )
 
-# 'argumentos.valores_opciones()' extrae los argumentos de la línea de comandos y si no la hay de los
-#  valores por defecto. El módulo 'argumentos' tiene varias versiones de la función 'valores_opciones', una para
-#  cada tipo de MCS
-#       valores_opciones0()
-#       valores_opciones1()
-#       valores_opciones2()
-#       ...
-# es imprescindible que la que esté activa: 'valores_opciones()', que # es la que
-# no tiene un número al final, sea la que corresponda con la MCS que se va a usar, tanto si
-# se ejecuta desde la línea de comandos (BAT) como si se ejecuta desde un IDE
+'''
+'argumentos.valores_opciones()' extrae los argumentos de la línea de comandos y si no la hay de los
+ valores por defecto. El módulo 'argumentos' tiene varias versiones de la función 'valores_opciones', una para
+ cada tipo de MCS
+      valores_opciones0()
+      valores_opciones1()
+      valores_opciones2()
+      ...
+es imprescindible que la que esté activa: 'valores_opciones()', que es la que
+no tiene un número al final, sea la que corresponda con la MCS que se va a usar, tanto si
+se ejecuta desde la línea de comandos (BAT) como si se ejecuta desde un IDE
+'''
 try:
     args = argumentos.valores_opciones()
 except BaseException as e:
@@ -188,8 +191,8 @@ if DESV_RELATIVA == 1:
         except:
             DESV_RELATIVA = 0
             avisos_diferidos.append('Para usar DESV_RELATIVA es probable que haya que recompilar la DLL. Se desactiva DESV_RELATIVA')
-if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 0 and NSAM != 1 and NSAM != 2 and NSAM != 3 and NSAM != 4 and NSAM != 5 and NSAM != 6 and NSAM != 7:
-    errores_diferidos.append('La DLL solo se puede usar con las MCS 0, 1, 2, 3, 4, 5, 6 y 7 y se ha especificado la {}'.format(NSAM))
+if (USAR_DLL or USAR_ALGE_DLL) and NSAM != 0 and NSAM != 1 and NSAM != 2 and NSAM != 3 and NSAM != 4 and NSAM != 5 and NSAM != 6 and NSAM != 7 and NSAM != 8:
+    errores_diferidos.append('La DLL solo se puede usar con las MCS 0, 1, 2, 3, 4, 5, 6, 7 y 8 y se ha especificado la {}'.format(NSAM))
 ALGE_ID_SALIDA      = args.ALGE_ID_SALIDA
 ALGE_MAX_INTENTOS   = args.ALGE_MAX_INTENTOS
 ALGE_N_HILOS        = args.ALGE_N_HILOS
@@ -664,6 +667,30 @@ elif NSAM == 7:
     # sectores (industria)
     ind = []
     for i in range(31):
+        ind.append('R' + str(i + 1))
+    ind = tuple(ind)
+    h    = ('K','L')                                # factores de producción
+    dem  = ('C','FUE')                              # demanda final
+    idt  = ('INP',)                                 # impuestos a la producción, otros impuestos a la producción
+    trf  = ('TRF',)                                 # aranceles pagados por la producción (no los hay en esta MCS)
+    gov  = ('SP',)                                  # gobierno
+    ayd  = ('AYD',)                                 # ayudas del gobierno
+    inv  = ('A-I',)                                 # ahorro e inversión
+    ext  = ('SE',)                                  # sector exterior
+    css  = ('CSS',)                                 # cotizaciones a la seguridad social
+    alp  = ('ALP',)                                 # ahorro a largo plazo
+    #
+elif NSAM == 8:
+    # España 2008 con Fondos UE
+    FICHERO_SAM = '{}/{}.xlsx'.format('C:/MEGA/Datos', "MCS-ESP-RENO-FUE")
+    SAM_HOJA    = 'Interno'
+    # C3
+    SAM_COL     = 2     # columna C = 2 contando desde 0
+    SAM_FIL     = 2     # fila 3    = 2 contando desde 0
+    
+    # sectores (industria)
+    ind = []
+    for i in range(32):
         ind.append('R' + str(i + 1))
     ind = tuple(ind)
     h    = ('K','L')                                # factores de producción
@@ -1768,7 +1795,7 @@ if   NSAM == 5:
     primera fila    : sam.iloc[0,  0:]      TIO.iloc[:, 0] tiene nan
     datos           : sam.iloc[0:, 0:]
     '''
-elif NSAM == 6 or NSAM == 7:
+elif NSAM == 6 or NSAM == 7 or NSAM == 8:
     # 'dsam' las filas a procesar a partir de la fila con las cabeceras de las columnas 
     # el 8 = 7 cuentas + la suma (recursos)
     dsam = nsec + nfac + ndem + 8
@@ -2079,27 +2106,15 @@ if __name__ == '__main__':
 # adaptar algunos valores y parámetros según el escenario que se haya seleccionado
 #---------------------------------------------------------------------------------
 if __name__ == '__main__':
-        imprime('#################################################################')
-        imprime('Escenario')
-        imprime('#################################################################')
-(CON_ESENCIALES) = esce.escenarios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
-               NCASO, DEM_ADICIONAL, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES, UTILIDAD_DEMANDA, RENTA_FICTICIA,
-               AYD_ADICIONAL, GE_INCLUYE_XP, GE_INCLUYE_AgH,
-               PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
-               SIGMA_ESCENARIO, ARANCELES
-               )
-if __name__ == '__main__':
-    if abs(DEM_ADICIONAL).sum() != 0 or abs(AYD_ADICIONAL).sum() != 0:
-        mfun.i_tabla('F0', h, ind, datos_ini.F0, False, DECIMALES)
-        imprime('')
-        mfun.i_tabla('/' , ind, ['D0',], datos_ini.D0, False, DECIMALES)
-        imprime('')
-        mfun.i_tabla('F0', h, ind, datos.F0, False, DECIMALES)
-        imprime('')
-        mfun.i_tabla('/' , ind, ['D0',], datos.D0, False, DECIMALES)
-        imprime('')
     imprime('#################################################################')
-    imprime('')
+    imprime('Escenario')
+    imprime('#################################################################')
+(CON_ESENCIALES) = esce.escenarios(__name__ == '__main__', datos, parametros, DECIMALES, ind, dem, h,
+                NCASO, DEM_ADICIONAL, DEM_ADICIONAL_TIPO, DEM_ESENCIALES, CON_ESENCIALES, UTILIDAD_DEMANDA, RENTA_FICTICIA,
+                AYD_ADICIONAL, GE_INCLUYE_XP, GE_INCLUYE_AgH,
+                PRECIO_INI, VAR_FACTORES, FACTOR_CSSH, FACTOR_CSSE,
+                SIGMA_ESCENARIO, ARANCELES
+                )
 if n_precios_importacion > 0:
     for pre_m in precios_importacion:
         i = pre_m[0]
@@ -2113,6 +2128,18 @@ datos.Toi0[1]      = datos.Toi0[0]
 datos.Tid0[1]      = datos.Tid0[0]
 datos.Td0[1]       = datos.Td0[0]
 '''
+if __name__ == '__main__':
+    if abs(DEM_ADICIONAL).sum() != 0 or abs(AYD_ADICIONAL).sum() != 0:
+        mfun.i_tabla('F0', h, ind, datos_ini.F0, False, DECIMALES)
+        imprime('')
+        mfun.i_tabla('/' , ind, ['D0',], datos_ini.D0, False, DECIMALES)
+        imprime('')
+        mfun.i_tabla('F0', h, ind, datos.F0, False, DECIMALES)
+        imprime('')
+        mfun.i_tabla('/' , ind, ['D0',], datos.D0, False, DECIMALES)
+        imprime('')
+    imprime('#################################################################')
+    imprime('')
 #---------------------------------------------------------------------------------
 
 if USAR_DLL:
