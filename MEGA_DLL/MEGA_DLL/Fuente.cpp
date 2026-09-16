@@ -3711,16 +3711,21 @@ la parte de la DLL relacionada con el modelo: ecuaciones, parámetros, datos ini
 double AYD_ADI_DEM[NDEM]{};
 
 OPCIONES recibe_opciones(OPCIONES vopt) {
-	op = vopt;
-	pvec[0] = 0;
-	for (int i = 1; i < N_BLO_VEC + 1; i++) {
-		pvec[i] = pvec[i - 1] + len_var[i - 1];
-	}
-	for (int i = 0; i < NDEM; i++) {
-		AYD_ADI_DEM[i] = 0.;
-		for (int j = 0; j < NSEC; j++) {
-			AYD_ADI_DEM[i] += op.AYD_ADICIONAL[i][j];
+	try {
+		op = vopt;
+		pvec[0] = 0;
+		for (int i = 1; i < N_BLO_VEC + 1; i++) {
+			pvec[i] = pvec[i - 1] + len_var[i - 1];
 		}
+		for (int i = 0; i < NDEM; i++) {
+			AYD_ADI_DEM[i] = 0.;
+			for (int j = 0; j < NSEC; j++) {
+				AYD_ADI_DEM[i] += op.AYD_ADICIONAL[i][j];
+			}
+		}
+	}
+	catch (const std::exception& e) {
+		return vopt;
 	}
 	return op;
 }
@@ -8487,19 +8492,31 @@ void produccion_para_exportacion_E(double* E, double* teta, double* xie, double*
 	double base;
 	double signo_teta;
 	double abs_teta;
+	double tasa_c;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
 		if (xie[i] > 0.000001) {
 			signo_teta = copysign(1.0, teta[i]);
 			abs_teta = abs(teta[i]);
 			if (MODO_PSEUDOIMPTOS == 0) {
-				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xie[i] / pe[i];
+				if (Z[i] > 0.000001) {
+					tasa_c = (CssE[i] - AgE[i]) / Z[i];
+				}
+				else {
+					tasa_c = 0.;
+				}
 			}
 			else {
-				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xie[i] / pe[i];
+				tasa_c = ctzssez[i] - ctzagez[i];
 			}
-			expo = 1. / (1. - phi[i]);
-			E[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+			base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xie[i] / pe[i];
+			if (base < 0.000001) {
+				E[i] = 0.;
+			}
+			else {
+				expo = 1. / (1. - phi[i]);
+				E[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+			}
 		}
 		else {
 			E[i] = 0.;
@@ -8510,19 +8527,31 @@ void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, 
 	double base;
 	double signo_teta;
 	double abs_teta;
+	double tasa_c;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
 		if (xid[i] > 0.000001) {
 			signo_teta = copysign(1.0, teta[i]);
 			abs_teta = abs(teta[i]);
 			if (MODO_PSEUDOIMPTOS == 0) {
-				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + (CssE[i] - AgE[i]) / Z[i] + Apz) * pz[i] * xid[i] / pd[i];
+				if (Z[i] > 0.000001) {
+					tasa_c = (CssE[i] - AgE[i]) / Z[i];
+				}
+				else {
+					tasa_c = 0.;
+				}
 			}
 			else {
-				base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + ctzssez[i] - ctzagez[i] + Apz) * pz[i] * xid[i] / pd[i];
+				tasa_c = ctzssez[i] - ctzagez[i];
 			}
-			expo = 1. / (1. - phi[i]);
-			Dt[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+			base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xid[i] / pd[i];
+			if (base < 0.000001)	 {
+				Dt[i] = 0.;
+			}
+			else {
+				expo = 1. / (1. - phi[i]);
+				Dt[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+			}
 		}
 		else {
 			Dt[i] = 0.;

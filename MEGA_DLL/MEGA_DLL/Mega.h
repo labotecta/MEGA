@@ -17,7 +17,7 @@ además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'g
 desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 */
 
-#define MEGA5
+#define MEGA8
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -42,6 +42,9 @@ const int NSEC = 63;
 #elif defined(MEGA6)
 const int NDEM = 2;
 const int NSEC = 31;
+#elif defined(MEGA8)
+const int NDEM = 2;
+const int NSEC = 32;
 #endif
 
 // desastroso, 'FIJAR_VARIABLES' no funciona
