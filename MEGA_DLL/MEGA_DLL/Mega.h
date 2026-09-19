@@ -17,7 +17,7 @@ además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'g
 desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 */
 
-#define MEGA8
+#define MEGA6
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -96,6 +96,9 @@ double PESO_YDP = 10.;
 // calcula la función de mérito como ECM y no como ECT
 //#define ECM
 int N_DESVIACIONES = 1;
+
+// cacula el tiempo en los procesos de mutación y selección 
+#define TPO_MUTA_SELECCION
 
 // añade estadísticas de los cruces a las salidas
 //#define ESTA_CRUCES

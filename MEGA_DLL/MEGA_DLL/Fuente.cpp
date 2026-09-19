@@ -410,6 +410,10 @@ long long num_genes_progenitor_2[MAX_HILOS]{};
 long long num_mejoras[MAX_HILOS]{};
 long long num_mejoras_mejor{};
 #endif
+#ifdef TPO_MUTA_SELECCION
+double tpo_muta[MAX_HILOS]{};
+double tpo_sele[MAX_HILOS]{};
+#endif
 
 #ifdef SORTEOS
 long long n_sor[MAX_HILOS]{};
@@ -609,81 +613,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "inicio: %s\n", tmBuff);
 	fflush(salida);
 
-#ifdef CONSUMO_INTERMEDIO_INDESADO
-	/*
-	// la comprobación de si esto ahorra tiempo de cálculo, o todo lo contrario, resulta incoherente
-
-	fprintf(salida, "pares de 'ax'                  %d\n", NSEC * NSEC);
-	fprintf(salida, "pares de 'ax' distinto de cero %d\n\n", ndc_ax);
-	fflush(salida);
-	struct timeb tiempo_ini, tiempo_fin;
-	int diff;
-	double Z[NSEC]{ 10000 };
-	ftime(&tiempo_ini);
-	for (long long i = 0LL; i < 100LL; i++) {
-		for (long long j = 0LL; j < 1000000LL; j++) {
-			double X[NSEC][NSEC]{};
-			consumo_intermedio_op_X(X, Z, parametros.ax);
-			// si no hacemos nada con X, parece que el compilador omite su cálculo
-			for (int i1 = 0; i1 < NSEC; i1++) {
-				for (int i2 = 0; i2 < NSEC; i2++) {
-					if (X[i1][i2] > 0.) {
-						X[i1][i2] = X[i2][i1] + parametros.ax[i1][i2];
-					}
-					else {
-						X[i1][i2] = X[i2][i1] - parametros.ax[i1][i2];
-					}
-				}
-			}
-		}
-	}
-	ftime(&tiempo_fin);
-	diff = (int)(1000.0 * (tiempo_fin.time - tiempo_ini.time) + (tiempo_fin.millitm - tiempo_ini.millitm));
-	fprintf(salida, "tiempo Optimizado mili s : %d\n", diff);
-	fflush(salida);
-	ftime(&tiempo_ini);
-	for (long long i = 0LL; i < 100LL; i++) {
-		for (long long j = 0LL; j < 1000000LL; j++) {
-			double X[NSEC][NSEC];
-			consumo_intermedio_X(X, Z, parametros.ax);
-			for (int i1 = 0; i1 < NSEC; i1++) {
-				for (int i2 = 0; i2 < NSEC; i2++) {
-					if (X[i1][i2] > 0.) {
-						X[i1][i2] = X[i2][i1] + parametros.ax[i1][i2];
-					}
-					else {
-						X[i1][i2] = X[i2][i1] - parametros.ax[i1][i2];
-					}
-				}
-			}
-		}
-	}
-	ftime(&tiempo_fin);
-	diff = (int)(1000.0 * (tiempo_fin.time - tiempo_ini.time) + (tiempo_fin.millitm - tiempo_ini.millitm));
-	fprintf(salida, "tiempo            mili s : %d\n", diff);
-	fflush(salida);
-	ftime(&tiempo_ini);
-	for (long long i = 0LL; i < 100LL; i++) {
-		for (long long j = 0LL; j < 1000000LL; j++) {
-			double X[NSEC][NSEC]{};
-			for (int i1 = 0; i1 < NSEC; i1++) {
-				for (int i2 = 0; i2 < NSEC; i2++) {
-					if (X[i1][i2] > 0.) {
-						X[i1][i2] = X[i2][i1] - parametros.ax[i1][i2];
-					}
-					else {
-						X[i1][i2] = X[i2][i1] + parametros.ax[i1][i2];
-					}
-				}
-			}
-		}
-	}
-	ftime(&tiempo_fin);
-	diff = (int)(1000.0 * (tiempo_fin.time - tiempo_ini.time) + (tiempo_fin.millitm - tiempo_ini.millitm));
-	fprintf(salida, "tiempo referencia mili s : %d\n\n", diff);
-	fflush(salida);
-	*/
-#endif
 	if (inicia_cotas() == false) {
 		// Error al generar la poblacion
 		fin_soluciona();
@@ -1061,6 +990,10 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			num_genes_progenitor_2[i] = 0;
 #endif
 #endif
+#ifdef TPO_MUTA_SELECCION
+			tpo_muta[i] = 0.;
+			tpo_sele[i] = 0.;
+#endif
 		}
 		if (PreparaMP() == -1) {
 			fin_soluciona();
@@ -1227,6 +1160,8 @@ void fin_soluciona() {
 	ctime_s(tmBuff, sizeof(tmBuff), &fin);
 	double dist = distancia_clonacion();
 	ftime(&tiempo_act);
+	// 'time' da el número de segundos transcurridos desde el 1 de enero de 1970, y 'millitm' da los milisegundos transcurridos desde el último segundo completo
+	// dividimos los milisegundos por 1000. para pasarlos a segundos
 	dif_tpo_par = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
 	ftime(&tiempo_ant);
 	dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
@@ -1240,10 +1175,6 @@ void fin_soluciona() {
 		n_c_o += num_cruces_ok[i];
 		n_c_n += num_cruces_no[i];
 		n_c_f += num_cruces_fj[i];
-		num_cruces_si[i] = 0;
-		num_cruces_ok[i] = 0;
-		num_cruces_no[i] = 0;
-		num_cruces_fj[i] = 0;
 	}
 	fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
@@ -1263,6 +1194,30 @@ void fin_soluciona() {
 		fprintf(salida, "%3d %12.5e %12.5e %12.5e   %12.5e %12.5e %12.5e\n", i, media[0][i], media[1][i], media[2][i], sqrt(desviacion[0][i]), sqrt(desviacion[1][i]), sqrt(desviacion[2][i]));
 	}
 	fprintf(salida, "--- ------------ ------------ ------------   ------------ ------------ ------------\n\n");
+#endif
+#ifdef TPO_MUTA_SELECCION
+	double tot_tpo_muta = 0.;
+	double tot_tpo_sele = 0.;
+	/*
+	fprintf(salida, "\n     tiempo en segundos\n");
+	fprintf(salida, "hilo mu y cru. selección\n");
+	fprintf(salida, "---- --------- ---------\n");
+	for (int i = 0; i < n_hilos; i++) {
+		tot_tpo_muta += tpo_muta[i];
+		tot_tpo_sele += tpo_sele[i];
+		fprintf(salida, "%4d %9.1f %9.1f\n", i, tpo_muta[i], tpo_sele[i]);
+	}
+	fprintf(salida, "---- --------- ---------\n");
+	fprintf(salida, "\nlos hilos se ejecutan en paralelo por lo que no se pueden sumar sus tiempos");
+	*/
+	// los hilos se ejecutan simultáneamente por lo que no se pueden sumar los tiempos consumidos por cada uno de ellos
+	// y solo podemos hablar de un tiempo medio '... / n_hilos'
+	if ((tot_tpo_muta + tot_tpo_sele) / n_hilos / 60. <= 5.) {
+		fprintf(salida, "\ntiempo medio en segundos: mutación y cruce = %9.2f  selección = %9.2f\n", tot_tpo_muta / n_hilos, tot_tpo_sele / n_hilos);
+	}
+	else {
+		fprintf(salida, "\ntiempo medio en minutos: mutación y cruce = %9.3f  selección = %9.3f\n", tot_tpo_muta / n_hilos / 60., tot_tpo_sele / n_hilos / 60.);
+	}
 #endif
 	fprintf(salida, "\nfin   : %s\n", tmBuff);
 	fclose(salida);
@@ -2621,7 +2576,7 @@ void seleccionH(int desde, int hasta, int hilo) {
 }
 #ifdef SELECCION_MAXIMA
 void seleccion_maxima() {
-	// para no sustiyuir más de una vez el mismo individuo de la población, se marca con 'ya' los individuos que ya han sido sustituidos
+	// para no sustituir más de una vez el mismo individuo de la población, se marca con 'ya' los individuos que ya han sido sustituidos
 	int ya[30000] = { 0 };
 	double me_descendiente;
 	for (int i = 0; i < NPOB; i++) {
@@ -3621,26 +3576,54 @@ unsigned int WINAPI HiloTramos(LPVOID param)
 función que hace que cada hilo procese un tramo de la población, realizando mutación, cruce y selección.
 */
 void ProcesarTramo(int hilo, int desde, int hasta) {
+#ifdef TPO_MUTA_SELECCION
+	struct timeb tiempo_ant_ms, tiempo_act_ms;
+	double dif_tpo_ms;
+	ftime(&tiempo_ant_ms);
+#endif
+
 	mutacion_cruzeH(desde, hasta, hilo);
 
+#ifdef TPO_MUTA_SELECCION
+	ftime(&tiempo_act_ms);
+	dif_tpo_ms = (double)(tiempo_act_ms.time - tiempo_ant_ms.time) + (double)(tiempo_act_ms.millitm - tiempo_ant_ms.millitm) / 1000.;
+	tpo_muta[hilo] += dif_tpo_ms;
+	ftime(&tiempo_ant_ms);
+#endif
 	// si está definido 'SELECCION_MAXIMA' la selección se hace al final de cada generación, en el hilo director
 #ifndef SELECCION_MAXIMA
-
 #ifdef NUM_MEJORAS
 	seleccionH(desde, hasta, hilo);
 #else
 	seleccionH(desde, hasta);
 #endif
-
+#endif
+#ifdef TPO_MUTA_SELECCION
+	ftime(&tiempo_act_ms);
+	dif_tpo_ms = (double)(tiempo_act_ms.time - tiempo_ant_ms.time) + (double)(tiempo_act_ms.millitm - tiempo_ant_ms.millitm) / 1000.;
+	tpo_sele[hilo] += dif_tpo_ms;
 #endif
 }
 /*
 'ProcesarTramo' recibe 'gh, he, hi, hd' mediante referencia
 */
 void ProcesarTramo(int hilo, int desde, int hasta, mt19937& gh, uniform_int_distribution<int>& he, uniform_int_distribution<int>& hi, uniform_real_distribution<double>& hd) {
-	mutacion_cruzeH(desde, hasta, hilo, gh, he, hi, hd);
-#ifndef SELECCION_MAXIMA
+#ifdef TPO_MUTA_SELECCION
+	struct timeb tiempo_ant_ms, tiempo_act_ms;
+	double dif_tpo_ms;
+	ftime(&tiempo_ant_ms);
+#endif
 
+	mutacion_cruzeH(desde, hasta, hilo, gh, he, hi, hd);
+
+#ifdef TPO_MUTA_SELECCION
+	ftime(&tiempo_act_ms);
+	dif_tpo_ms = (double)(tiempo_act_ms.time - tiempo_ant_ms.time) + (double)(tiempo_act_ms.millitm - tiempo_ant_ms.millitm) / 1000.;
+	tpo_muta[hilo] += dif_tpo_ms;
+	ftime(&tiempo_ant_ms);
+#endif
+
+#ifndef SELECCION_MAXIMA
 #ifdef NUM_MEJORAS
 	seleccionH(desde, hasta, hilo);
 #else
@@ -3648,7 +3631,14 @@ void ProcesarTramo(int hilo, int desde, int hasta, mt19937& gh, uniform_int_dist
 #endif
 
 #endif
+
+#ifdef TPO_MUTA_SELECCION
+	ftime(&tiempo_act_ms);
+	dif_tpo_ms = (double)(tiempo_act_ms.time - tiempo_ant_ms.time) + (double)(tiempo_act_ms.millitm - tiempo_ant_ms.millitm) / 1000.;
+	tpo_sele[hilo] += dif_tpo_ms;
+#endif
 }
+
 #ifdef INI_AZAR_FICHERO
 // recibimos '*g' (g por referencia) y el número de hilo 'hilo' y no hgen[i], para que sea un paso por referencia y hgen[i] se inicialice correctamente
 void inicia_azar(mt19937* g, int hilo, unsigned int semilla)
@@ -8181,16 +8171,22 @@ void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]
 	__m256d ax_Z;
 	__m256d ax_ax;
 	__m256d ax_X{};
+	int j1;
+	int j2;
+	int j3;
 	double* ax_vX = (double*)&ax_X;
 	for (int i = 0; i < NSEC; i++) {
 		ax_Z = _mm256_set1_pd(Z[i]);
 		for (int j = 0; j < NSEC4; j += 4) {
-			ax_ax = _mm256_setr_pd(ax[i][j], ax[i][j + 1], ax[i][j + 2], ax[i][j + 3]);
+			j1 = j + 1;
+			j2 = j1 + 1;
+			j3 = j2 + 1;
+			ax_ax = _mm256_setr_pd(ax[i][j], ax[i][j1], ax[i][j2], ax[i][j3]);
 			ax_X = _mm256_mul_pd(ax_ax, ax_Z);
 			X[i][j] = ax_vX[0];
-			X[i][j + 1] = ax_vX[1];
-			X[i][j + 2] = ax_vX[2];
-			X[i][j + 3] = ax_vX[3];
+			X[i][j1] = ax_vX[1];
+			X[i][j2] = ax_vX[2];
+			X[i][j3] = ax_vX[3];
 		}
 		for (int j = NSEC4; j < NSEC; j++) {
 			X[i][j] = ax[i][j] * Z[i];
@@ -8545,7 +8541,7 @@ void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, 
 				tasa_c = ctzssez[i] - ctzagez[i];
 			}
 			base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xid[i] / pd[i];
-			if (base < 0.000001)	 {
+			if (base < 0.000001) {
 				Dt[i] = 0.;
 			}
 			else {
