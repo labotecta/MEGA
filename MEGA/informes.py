@@ -1082,8 +1082,11 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     #   por la forma de reparto, la única forma que el modelo tiene se saber cuanto corresponde a
     #   cada sector es por el descuadre entre la suma de la fila y columna del sector, pero esto
     #   es peligroso porque puede esconder errores, empíricamente se observa que el reparto correcto
-    #   es proporcionalmente a la producción bruta Z de cada sector.
-    #   Hay que investigar si guarda relación con el factor compuesto 'Y', o la variación del mismo
+    #   es cuasi proporcional a la producción bruta Z de cada sector.
+    #   Hay que investigar si guarda relación con el factor compuesto 'Y', o la variación del mismo. NEGATIVO
+
+    # Los descudres positivos se producen en los sectores con un mayor empleo del factor trabajo y
+    # negativos en el resto.
     #------------------------------------------------------------------------------------------------
     # repartir el total de Alp entre sectores (y en su caso el gobierno) en proporción a su
     # producción bruta
@@ -1109,12 +1112,32 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
             mcs[fil,col] = totAlp * Z[i] * pz[i] / totZ
             fil += 1
 
-    #------------------------------------------------------------------------------------------------
-    # comprobar cuadre de filas y columnas
-    #------------------------------------------------------------------------------------------------
     recursos    = mcs.sum(axis=1) # suma de las filas
     empleos     = mcs.sum(axis=0) # suma de las columnas
     diferencias = empleos - recursos
+    #------------------------------------------------------------------------------------------------
+    # reajuste de los Alp para cuadrar la MCS cuando hay Alp
+    #------------------------------------------------------------------------------------------------
+    dif_sec = diferencias[0:nsec].sum()
+    if len(alp) > 0 and abs(Alp).sum() > 0:
+        # Segundo reajuste de los Alp, para que los sectores con descuadres positivos reciban
+        # menos Alp y los que tienen descuadres negativos reciban más Alp
+        if abs(dif_sec) < tolerancia:
+            imprime('\nSegundo reajuste de los Alp para que cuadre la MCS. Diferencia total de los sectores: {:12.5e} tolerancia: {:12.5e}\n'.format(dif_sec, tolerancia))
+            col = fil_col_alp
+            fil = fil_col_ind
+            for i in range(nsec):
+                mcs[fil,col] += diferencias[i]
+                fil += 1
+            recursos    = mcs.sum(axis=1) # suma de las filas
+            empleos     = mcs.sum(axis=0) # suma de las columnas
+            diferencias = empleos - recursos
+        else:
+            if abs(dif_sec) < tolerancia:
+                imprime('\nNo hay segundo reajuste para que cuadre la MCS porque no hay Alp. Diferencia total de los sectores: {:12.5e} tolerancia: {:12.5e}\n'.format(dif_sec, tolerancia))
+    #------------------------------------------------------------------------------------------------
+    # comprobar cuadre de filas y columnas
+    #------------------------------------------------------------------------------------------------
     if infor_cuadre and (np.any(abs(diferencias) > tolerancia)):
         # al menos una cuenta difiere ( abs(columna - fila) ) en más que 'tolerancia'
         imprime('')

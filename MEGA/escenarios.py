@@ -355,12 +355,10 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                     mfun.tabla_2D(['Productos',], datos.taum)
             elif nc == 13:
                 if DEM_ESENCIALES == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    print('Número de caso {} es incorrecto si no hay DEM_ESENCIALES'.format(nc))
                     sys.exit()
                 if GE_INCLUYE_XP == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(nc))
                     sys.exit()
                 else:
                     CON_ESENCIALES = datos.Xp0
@@ -371,12 +369,10 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                         imprime('')
             elif nc == 14:
                 if DEM_ESENCIALES == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(nc))
                     sys.exit()
                 if GE_INCLUYE_XP == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(nc))
                     sys.exit()
                 else:
                     CON_ESENCIALES = datos.Xp0 - 1
@@ -387,12 +383,10 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                         imprime('')
             elif nc == 15:
                 if DEM_ESENCIALES == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(nc))
                     sys.exit()
                 if GE_INCLUYE_XP == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(nc))
                     sys.exit()
                 else:
                     CON_ESENCIALES = 0.9 * datos.Xp0
@@ -403,12 +397,10 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                         imprime('')
             elif nc == 16:
                 if DEM_ESENCIALES == False:
-                    if imprimir:
-                        print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(NCASO))
+                    print('Número de caso {} es incorrecto sin DEM_ESENCIALES'.format(nc))
                     sys.exit()
                 if GE_INCLUYE_XP == False:
-                    if imprimir:
-                       print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(NCASO))
+                    print('Número de caso {} es incorrecto cuando no se incluyen los Xp en la solución (se ha establecido GE_INCLUYE_XP=False)'.format(nc))
                     sys.exit()
                 else:
                     CON_ESENCIALES = datos.Xp0 - DEM_ADICIONAL - 1
@@ -418,8 +410,7 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
                         mfun.i_tabla(''  , [] , dem             , CON_ESENCIALES, False     , DECIMALES)
                         imprime('')
             else:
-                if imprimir:
-                    imprime('Número de caso {} incorrecto'.format(NCASO))
+                print('Número de caso {} incorrecto'.format(nc))
                 sys.exit()
         if imprimir:
             imprime('')

@@ -15,7 +15,9 @@ La aplicación sólo llama a una de ellas, la que que NO termina en un dígito '
 especialmente por la posibilidad de utilizar archivos .BAT, que es una forma mucho más útil de ejecutar la aplicación.
 
 ------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------
 ES IMPRESCINDIBLE QUE LA FUNCION 'valores_opciones()' SEA LA CORRECTA AL EJECUTAR UN FICHERO BAT
+------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------
 '''
 
@@ -78,7 +80,6 @@ def valores_opciones0():
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float, default=0.001 , help="factor de alcance para generar de la población inicial")
     parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float, default=0.1   , help="sigma de la distribución normal para generar de la población inicial")
     parser.add_argument('--ALGE_VAR_DISPERSION', type=float, default=1.5   , help="variación del factor de alcance para generar de la población inicial a cada intento")
-
     parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int  , default=400   , help="Tnúmero de tramos en los que se divide el intervalo de existencia de las variables para generar sus valores en la población inicial")
     parser.add_argument('--ALGE_NPOB'          , type=int  , default=1000  , help="Número de individuos en la población")
     parser.add_argument('--ALGE_F_MUTACION'    , type=float, default=[0.75 , 0.85], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
@@ -1028,7 +1029,7 @@ def valores_opciones4():
     parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10 , help="tanto por uno de paro para la curva Phillips")
     parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5 , help="relación desempleo salarios, en la bibliografía se encuentra -0.4566") 
 
-    parser.add_argument('--ALP_FACTOR'         , type=float, default=0.0  , help="tanto por uno de los excesos de factores aportados, sobre sus valores iniciales, que se lleva a la cuenta Alp") 
+    parser.add_argument('--ALP_FACTOR'         , type=float, default=1.0  , help="tanto por uno de los excesos de factores aportados, sobre sus valores iniciales, que se lleva a la cuenta Alp") 
     parser.add_argument('--EQ_BAL_PAGOS'       , type=sab  , default=True , help="si True se exige que el importe de la balanza de pagos se amntenga constante e igual a la de la MCS, lo contrario es incoherente")
 
     parser.add_argument('--FIX'                , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
@@ -1037,7 +1038,7 @@ def valores_opciones4():
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # escenarios predefinidos
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    parser.add_argument('--NCASO'              , type=int  , default=[10,13]     , nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
+    parser.add_argument('--NCASO'              , type=int  , default=[10]     , nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
     parser.add_argument('--FDO_UE'             , type=float, default=0.0     , help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_AD_LON'         , type=int  , default=0       , help="número de demandas adicionales exógenas de productos para los hogares")
@@ -1153,7 +1154,7 @@ def valores_opciones4():
 
     return args
 
-def valores_opciones5():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=5      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1207,7 +1208,7 @@ def valores_opciones5():
     parser.add_argument('--ALGE_MODO_POB_INI'  , type=int  , default=0      , help="de 0 a 15 formas de generar la población inicial")
     parser.add_argument('--ALGE_MODO_REINI_POB', type=int  , default=0      , help="modo reinicio de la población; 0=normal; 1=con variación del factor de dispersión")
     parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int  , default=5      , help="número máximo de veces que se reinician los calculos, desde una nueva población inicial, si no se alcanza el objetico")
-    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=20     , help="número de procesos simultáneos")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=30     , help="número de procesos simultáneos")
     parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float, default=1.e-04 , help="valor del error de la función objetivo por debajo del cual se considera una solución aceptable si no se ha podido alcanzar el objetivo GE_TOLERANCIA, no interviene el los cálculos, solo se usa a efectos informativos")
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float, default=0.0008, help="factor de alcance para generar de la población inicial")
     parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float, default=0.75  , help="sigma de la distribución normal para generar de la población inicial")
@@ -1375,7 +1376,7 @@ def valores_opciones6():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=6      , help="Matriz de Contabilidad Social asociada a esta función")
     
-    # 205_salarios_1_5_42_det_0_00.bat
+    # 206_salarios_1_5_42_det_1_00.bat
 
     '''
     las matrices se especifican aplanadas como vectores.
@@ -1421,7 +1422,7 @@ def valores_opciones6():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs6_075_085_999_54k' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=1008_Salarios_1_5' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
 
     parser.add_argument('--NSAM'               , type=int  , default=6      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1437,24 +1438,24 @@ def valores_opciones6():
     # Si GE_PROGRESO es demasiado pequeño, la minimización puede terminar incorrectamente porque no ha tenido tiempo de progresar
     parser.add_argument('--GE_PROGRESO'        , type=int  , default=10000  , help="número de generaciones para comprobar el progreso")
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
-    parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
+    parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-06 , help="límite para considerar que una ecuación se cumple")
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
-    parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=1004   , help="un número que identifica la salida de la DLL")
+    parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=1008   , help="un número que identifica la salida de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
     parser.add_argument('--ALGE_MODO_POB_INI'  , type=int  , default=0      , help="de 0 a 15 formas de generar la población inicial")
     parser.add_argument('--ALGE_MODO_REINI_POB', type=int  , default=0      , help="modo reinicio de la población; 0=normal; 1=con variación del factor de dispersión")
     parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int  , default=5      , help="número máximo de veces que se reinician los calculos, desde una nueva población inicial, si no se alcanza el objetico")
-    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=15     , help="número de procesos simultáneos")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=30     , help="número de procesos simultáneos")
     parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float, default=1.e-05 , help="valor del error de la función objetivo por debajo del cual se considera una solución aceptable si no se ha podido alcanzar el objetivo GE_TOLERANCIA, no interviene el los cálculos, solo se usa a efectos informativos")
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float, default=0.001 , help="factor de alcance para generar de la población inicial")
     parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float, default=0.1   , help="sigma de la distribución normal para generar de la población inicial")
     parser.add_argument('--ALGE_VAR_DISPERSION', type=float, default=1.5   , help="variación del factor de alcance para generar de la población inicial a cada intento")
-    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int  , default=400   , help="Tnúmero de tramos en los que se divide el intervalo de existencia de las variables para generar sus valores en la población inicial")
+    parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int  , default=100   , help="Tnúmero de tramos en los que se divide el intervalo de existencia de las variables para generar sus valores en la población inicial")
     parser.add_argument('--ALGE_NPOB'          , type=int  , default=5400  , help="Número de individuos en la población")
     parser.add_argument('--ALGE_F_MUTACION'    , type=float, default=[0.75 , 0.85], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
     parser.add_argument('--ALGE_RECOMBINACION' , type=float, default=0.999 , help="constante de recombinación")
@@ -1488,8 +1489,8 @@ def valores_opciones6():
     parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10 , help="tanto por uno de paro para la curva Phillips")
     parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5 , help="relación desempleo salarios, en la bibliografía se encuentra -0.4566") 
 
-    parser.add_argument('--ALP_FACTOR'         , type=float, default=0.0  , help="tanto por uno de los excesos de factores aportados, sobre sus valores iniciales, que se lleva a la cuenta Alp") 
-    parser.add_argument('--EQ_BAL_PAGOS'       , type=sab  , default=True  , help="si True se exige que el importe de la balanza de pagos se amntenga constante e igual a la de la MCS, lo contrario es incoherente")
+    parser.add_argument('--ALP_FACTOR'         , type=float, default=1.0  , help="tanto por uno de los excesos de factores aportados, sobre sus valores iniciales, que se lleva a la cuenta Alp") 
+    parser.add_argument('--EQ_BAL_PAGOS'       , type=sab  , default=True , help="si True se exige que el importe de la balanza de pagos se amntenga constante e igual a la de la MCS, lo contrario es incoherente")
 
     parser.add_argument('--FIX'                , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
     parser.add_argument('--FIX_LON'            , type=int  , default=[1], nargs='*', help="número de ternas para cada variable en FIX")
@@ -1536,9 +1537,9 @@ def valores_opciones6():
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False  , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False  , help="salida de los valores iniciales de las variables y sus límites")
-    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=True   , help="informe de los valores iniciales de las variables")
+    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=False  , help="informe de los valores iniciales de las variables")
     parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False  , help="calcular una primera valoración de modelo")
-    parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=True   , help="salida con el detalla de las desviaciones")
+    parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False  , help="salida con el detalla de las desviaciones")
     parser.add_argument('--SAL_AUXILIARES'     , type=sab  , default=False  , help="imprimir los valores del historial y la evolución de la solución")
     parser.add_argument('--SAL_GRAFICOS_EVOL'  , type=sab  , default=False  , help="generar gráficos de las evoluciones")
     parser.add_argument('--SAL_GRAFICO_CES_DM' , type=sab  , default=False  , help="generar graficos de isocuantas CES")
@@ -1550,8 +1551,8 @@ def valores_opciones6():
     parser.add_argument('--GE_IMG_COL'         , type=int  , default=6      , help="número de columnas del mapa de gráficos con la evolución de los precios y las variables")
 
     parser.add_argument('--GE_HISTORIAL'       , type=int  , default=10000  , help="número de generaciones para mostrar evolución y en su caso salvar el historial")
-    parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=10000  , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
-    parser.add_argument('--GE_MAX_ITER'        , type=int  , default=1000000, help="máximo número de generaciones a simular")
+    parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=-1     , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
+    parser.add_argument('--GE_MAX_ITER'        , type=int  , default=3000000, help="máximo número de generaciones a simular")
     parser.add_argument('--GE_PRE_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de los precios es su valor inicial por   (1 - GE_PRE_MIN/100)")
     parser.add_argument('--GE_PRE_MAX'         , type=float, default=99.0   , help="el límite superior del rango de variación de los precios es su valor inicial por   (1 + GE_PRE_MAX/100)")
     parser.add_argument('--GE_VAR_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de las variables es su valor inicial por (1 - GE_PRE_MIN/100)")
@@ -1604,16 +1605,16 @@ def valores_opciones6():
     parser.add_argument('--SENDA_SALIDAS'      , type=str  , default='C:/MEGA/Salidas_IDE'                   , help="senda para las salidas")
     parser.add_argument('--SENDA_GRAFICOS'     , type=str  , default='C:/MEGA/Graficos_IDE'                  , help="senda para los gráficos")
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
-    parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Release/MEGA6.dll', help="senda para la DLL")
+    parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll', help="senda para la DLL")
 
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
-    parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs6.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
-    parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs6.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
+    parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
+    parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
 
     args = parser.parse_args()
     return args
 
-def valores_opciones():
+def valores_opciones7():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=7      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1660,7 +1661,7 @@ def valores_opciones():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=1000' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=1002' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
 
     parser.add_argument('--NSAM'               , type=int  , default=7      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1683,7 +1684,7 @@ def valores_opciones():
 
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
-    parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=1000   , help="un número que identifica la salida de la DLL")
+    parser.add_argument('--ALGE_ID_SALIDA'     , type=int  , default=1002   , help="un número que identifica la salida de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
     parser.add_argument('--ALGE_MODO_POB_INI'  , type=int  , default=0      , help="de 0 a 15 formas de generar la población inicial")
     parser.add_argument('--ALGE_MODO_REINI_POB', type=int  , default=1      , help="modo reinicio de la población; 0=normal; 1=con variación del factor de dispersión")

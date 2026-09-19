@@ -44,6 +44,13 @@ Mejoras:
 
     4. Incorporar las salidas al exterior de fondos (pagos) desde los hogares (salarios inmigrantes) y la inversión (repatriación de dividendos)
 '''
+'''
+-----------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
+ES IMPRESCINDIBLE QUE LA FUNCION 'argumentos.valores_opciones()' SEA LA CORRECTA AL EJECUTAR UN FICHERO BAT
+-----------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
+'''
 import os
 import sys
 import psutil 
@@ -77,10 +84,11 @@ global parametros
 
 VERSION = '1.8.0'
 
-# 7 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
+# 9 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
-#               0           1              2              3               4              5            6
-etq_sam  = ('1_hogar', '2_hogares', '2_hogares_SS', '3_hogares_AMP', 'MCA-ESP-05', 'españa 2022', 'MCA-ESP-08')
+#               0           1              2              3               4              5             6                    7                         8
+etq_sam  = ('1_hogar', '2_hogares', '2_hogares_SS', '3_hogares_AMP', 'MCA-ESP-05', 'españa 2022', 'MCA-ESP-08','MCS-ESP-RENO-FUE.Ajustada','MCS-ESP-RENO-FUE.Interno')
+
 # escenarios para las pruebas, se selecciona con NCASO
 etq_caso = (
     'base',                     #  0
@@ -99,25 +107,6 @@ etq_caso = (
     'aranceles',                # 12
     'Xp0',                      # 13 consumos esenciales = Xp0
     'Xp0m1',                    # 14 consumos esenciales = Xp0 - 1
-)
-
-etq_mpob =(
-    "intervalo simétrico centrado en 'vec_ini' con distribución uniforme",
-    "centrado en el centro de intervalo de validez de la variable con distribución uniforme",
-    "intervalo simétrico centrado en 'vec_ini' con distribución normal",
-    "centrado en el centro de intervalo de validez de la variable con distribución normal",
-    "Latin Hypercube Sampling con permutaciones distintas para cada variable",
-    "Latin Hypercube Sampling con la misma permutación para todas las variables",
-    "secuencia de valores uniformemente espaciados entre cotas y permutaciones distintas para cada variable",
-	"secuencia de valores uniformemente espaciados entre cotas y la misma permutación para todas las variables",
-    "valores próximos al extremo inferior del entorno de existencia de las variables, con permutaciones distintas para cada variable",
-    "valores próximos al extremo inferior del entorno de existencia de las variables, con la misma permutación para todas las variables",
-    "valores próximos al extremo superior del entorno de existencia de las variables",
-    'valores próximos a los extremos de los entornos de existencia de las variables',
-    'valores próximos, o iguales, al extremo inferior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
-    'valores próximos, o iguales, al extremo inferior del entorno de existencia de las variables',
-    'valores próximos, o iguales, al extremo superior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
-    'valores próximos, o iguales, al extremo inferior, con permutaciones distintas para cada variable y desplazamiento independiente',
 )
 
 '''
@@ -457,16 +446,16 @@ SENDA_DATOS       = args.SENDA_DATOS
 SENDA_SALIDAS     = args.SENDA_SALIDAS
 SENDA_GRAFICOS    = args.SENDA_GRAFICOS
 SENDA_SOLUCIONES  = args.SENDA_SOLUCIONES
-if (13 in NCASO) and DEM_ESENCIALES == False:
-    errores_diferidos.append('Se ha especificado Consumos esenciales (caso=13) sin demandas esenciales')
-if (14 in NCASO) and DEM_ESENCIALES == False:
-    errores_diferidos.append('Se ha especificado Consumos esenciales (caso=14) sin demandas esenciales')
-if (15 in NCASO) and DEM_ESENCIALES == False:
-    errores_diferidos.append('Se ha especificado Consumos esenciales (caso=15) sin demandas esenciales')
-if (16 in NCASO) and DEM_ESENCIALES == False:
-    errores_diferidos.append('Se ha especificado Consumos esenciales (caso=16) sin demandas esenciales')
 if (13 in NCASO) and DEM_ESENCIALES:
     errores_diferidos.append('Consumos esenciales iguales a Xp0 (caso 13) es incompatible con Stone-Geary (rentas 0)')
+if (13 in NCASO) and DEM_ESENCIALES == False:
+    avisos_diferidos.append('Se ha especificado consumos esenciales iguales a Xp0 (caso=13) sin demandas esenciales')
+if (14 in NCASO) and DEM_ESENCIALES == False:
+    errores_diferidos.append('Se ha especificado consumos esenciales iguales a Xp0 - 1 (caso=14) sin demandas esenciales')
+if (15 in NCASO) and DEM_ESENCIALES == False:
+    errores_diferidos.append('Se ha especificado consumos esenciales iguales 0.9 * Xp0 (caso=15) sin demandas esenciales')
+if (16 in NCASO) and DEM_ESENCIALES == False:
+    errores_diferidos.append('Se ha especificado consumos esenciales iguales a (datos.Xp0 - DEM_ADICIONAL - 1) (caso=16) sin demandas esenciales')
 if USAR_ALGE_DLL:
     if (ALGE_NPOB % ALGE_N_HILOS) != 0:
         errores_diferidos.append('El número de individuos {} debe ser muútiplo del número de hilos {}'.format(ALGE_NPOB, ALGE_N_HILOS))
@@ -479,6 +468,27 @@ os.makedirs(SENDA_GRAFICOS  , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_SOLUCIONES, exist_ok=True)  # crear el directorio si no existe
 
 # para el algoritmo genético de la DLL
+
+# cuando se usa el algoritmo genético de la DLL, la población inicial se puede generar de varias formas, aunque
+# lo normal es usar el modo 0
+etq_mpob =(
+    "intervalo simétrico centrado en 'vec_ini' con distribución uniforme",
+    "centrado en el centro de intervalo de validez de la variable con distribución uniforme",
+    "intervalo simétrico centrado en 'vec_ini' con distribución normal",
+    "centrado en el centro de intervalo de validez de la variable con distribución normal",
+    "Latin Hypercube Sampling con permutaciones distintas para cada variable",
+    "Latin Hypercube Sampling con la misma permutación para todas las variables",
+    "secuencia de valores uniformemente espaciados entre cotas y permutaciones distintas para cada variable",
+	"secuencia de valores uniformemente espaciados entre cotas y la misma permutación para todas las variables",
+    "valores próximos al extremo inferior del entorno de existencia de las variables, con permutaciones distintas para cada variable",
+    "valores próximos al extremo inferior del entorno de existencia de las variables, con la misma permutación para todas las variables",
+    "valores próximos al extremo superior del entorno de existencia de las variables",
+    'valores próximos a los extremos de los entornos de existencia de las variables',
+    'valores próximos, o iguales, al extremo inferior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
+    'valores próximos, o iguales, al extremo inferior del entorno de existencia de las variables',
+    'valores próximos, o iguales, al extremo superior del entorno de existencia de las variables, con permutaciones distintas para cada variable',
+    'valores próximos, o iguales, al extremo inferior, con permutaciones distintas para cada variable y desplazamiento independiente',
+)
 rot_res_dll_ok = [
             "Solución encontrada",
             "No progresa, solución no aceptable",
@@ -499,7 +509,7 @@ rot_res_dll_error = [
             "Error al abrir el fichero de salida",
             "Error inesperado",
         ]
-# para asimilar el formato del resultado de la DLL al que devuelve scipy
+# para asimilar el formato del resultado que devuelve la DLL al que devuelve scipy
 class rmin_dll(object):
     def __init__(self, sol, dnit):
         self.x = sol
@@ -722,7 +732,7 @@ if len(PREFIJO) > 1 and PREFIJO[0] == '=':
     # ficheros de salida en lugar de componerlos a partir de las opciones seleccionadas
     CASO = PREFIJO[1:]
 else:
-    # componer el nombre de los ficheros de salida en función de las opciones
+    # componer el nombre de los ficheros de salida en función de las opciones, es poco útil
     CASO  = PREFIJO + h[INDICE_F_TRA] + '_Desv_{:1d}_'.format(OPT_DESVIOS) 
     CASO += 'Fref_{:1d}_'.format(OR_PRE_EXCLUIDO) + 'Pref_{:04.2f}_'.format(PRECIO_F_EXCLUIDO) + ('PfL_{:05.3f}_'.format(VALOR_F_TRA) if  VALOR_F_TRA != -1 else '')
     CASO += ('END' if FF_ENDOGENA else 'EXO') + '_Alp_{:04.2f}'.format(ALP_FACTOR)
@@ -738,7 +748,11 @@ else:
 FICHERO_IMG     = CASO
 SENDA_FI_SALIDA = '{}/{}'.format(SENDA_SALIDAS, CASO)
 FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
+
+# aunque la mayoría de los errores se imprimen el el fichero log 'FICHERO_LOG', también se escriben en un
+# fichero independiente 'FICHERO_ERR' para poder verlos de forma más rápida
 FICHERO_ERR     = SENDA_FI_SALIDA +'_Err'+ '.log'
+
 FI_HISTORIAL    = SENDA_FI_SALIDA + '_his.csv'
 FI_SOLUCIONES   = SENDA_FI_SALIDA + '_sol.csv'
 
@@ -1662,6 +1676,7 @@ def imprime_opciones(nvec_opt):
     imprime('')
 
 def salida_valores_solucion_variable(log, nb, rot_f, rot_c, v):
+    # si se ha especificado un fichero para escribir la solución, esta función añade los valores de una variable
     n_c = len(rot_c)
     n_f = len(rot_f)
     log.write('{:3} {:3} {}\n'.format(n_f , n_c, nb))
@@ -1761,7 +1776,7 @@ if __name__ == '__main__':
     necesitamos este control porque el uso de workers en Windows reinicia el programa desde el
     principio para cada worker y así evitamos que se impriman estos textos tantas veces como workers, ya que el
     '__name__' de los reinicios no es igual a '__main__' (es igual a __mp_main__), la asignación de variables hay que
-    repetirla en todos los workers por eso deben quedar fuera de este contol.
+    repetirla en todos los workers por eso deben quedar fuera de este contol. Esto también ocurre en modo depurar del IDE
     encontraremos este control en númerosos puntos de la aplicación
     '''
     imprime('python           {}'.format(sys.version))
@@ -2123,6 +2138,8 @@ if n_precios_importacion > 0:
 '''
 # prueba para el caso de impuestos sobre las ayudas adicionales a los hogares
 # cuando el segundo hogar (el 1) no tiene datos en la MCS para calcular 'taud'
+# aplicar impuestos a las ayudas adicionales a los hogares es algo extraordinario
+
 parametros.taud[1] = parametros.taud[0]
 datos.Toi0[1]      = datos.Toi0[0]
 datos.Tid0[1]      = datos.Tid0[0]
@@ -2158,26 +2175,29 @@ if USAR_DLL:
     # 'merito_s' y 'meriro_sol' se llaman internamente dentro de la DLL y no es imprescindible llamarlas desde la aplicación Python, salvo
     # porque las llamamos exprofeso para realizar comprobaciones al empezar y al terminar, cosa que se podría eliminar, aunque mejor
     # dejarlo porque permite comprobar que el valor de la función objetivo calculado por las dos funciones de la  DLL es el mismo e igual al calculado por Python.
-
-    # 'merido_s' es la función que la DLL llamará para calcular el valor de la función objetivo, por lo que hay que definir:
-    #       Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá para calcular el valor de la función objetivo
-    #       El tipo de su resultado, que es un double, el valor de la función objetivo calculado a partir del vector de prueba que se le ha pasado a esta función
+    '''
+    'merido_s' es la función que la DLL llamará para calcular el valor de la función objetivo, por lo que hay que definir:
+          Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá para calcular el valor de la función objetivo
+          El tipo de su resultado, que es un double, el valor de la función objetivo calculado a partir del vector de prueba que se le ha pasado a esta función
+    '''
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_s.restype = ct.c_double
 
     if DESV_RELATIVA == 1:
+        # usar desviaciones relativas y no absolutas, no conduce a nada
         libc.merito_s_relativa.argtypes = [ct.POINTER(ct.c_double)]
         libc.merito_s_relativa.restype = ct.c_double
         libc.merito_sol_relativa.argtypes = [ct.POINTER(ct.c_double)]
         libc.merito_sol_relativa.restype = ct.POINTER(ct.c_double)
-
-    # 'merido_sol' es la función de la DLL que calcula el valor de la función objetivo y el vector de desviaciones de todas las variables
-    # hay que definir el tipo de los argumentos y el de su resultado:
-    #       Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá
-    #       El tipo de su resultado 'ct.POINTER(ct.c_double)', que es un puntero a double, es un vector donde están concatenadas todos los valores que devuelve esta función:
-    #           el valor de la función objetivo
-    #           el vector de desviaciones
-    #           el vector solución, o el de los valores de todas la variables, dependiendo del parámetro 'extendida' que se haya pasado a la función 'soluciona' de la DLL
+    '''
+    'merido_sol' es la función de la DLL que calcula el valor de la función objetivo y el vector de desviaciones de todas las variables
+    hay que definir el tipo de los argumentos y el de su resultado:
+          Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá
+          El tipo de su resultado 'ct.POINTER(ct.c_double)', que es un puntero a double, es un vector donde están concatenadas todos los valores que devuelve esta función:
+              el valor de la función objetivo
+              el vector de desviaciones
+              el vector solución, o el de los valores de todas la variables, dependiendo del parámetro 'extendida' que se haya pasado a la función 'soluciona' de la DLL
+    '''
     libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_sol.restype = ct.POINTER(ct.c_double)
 
@@ -2225,34 +2245,7 @@ if __name__ == '__main__':
     historial   = []
     # para guardar el historial del vector de soluciones
     soluciones  = []
-
-    # 'vigila' función que 'differential_evolution' llamará después de probar cada posible solución, no se usa cuando se utiliza el algoritmo genético de la DLL  
-    mensaje_fin = []
-    vfa         = 1.0e+18
-    def vigila(intermediate_result):
-        nit = intermediate_result.nit   # número de generaciones
-        vf  = intermediate_result.fun   # valor de la función objetivo
-        if vf < GE_TOLERANCIA:
-            # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
-            mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
-            raise StopIteration
-        if nit % GE_PROGRESO == 0:
-            global vfa
-            if (vfa - vf) < GE_MIN_PROGRESO / 100. * vfa:
-                # no progresa significativamente, por lo que se da por terminada la minimización.
-                # es importante que GE_TOLERANCIA sea lo suficientemente grande par que no se camcele antes de tiempo
-                mensaje_fin.append('nit:{:9} mejora:{:12.5e} no progresa más'.format(nit, vfa - vf))
-                raise StopIteration
-            vfa = vf
-        if GE_HISTORIAL > 0 and (nit == 1 or (nit % GE_HISTORIAL == 0)):
-            if SAL_AUXILIARES:
-                # guardar el valor del error (función objetivo) que, al final, se escribirá en un fichero CSV
-                historial.append([nit,vf])
-            imprime('{:9} {:12.5e}'.format(nit, vf))
-        if SAL_AUXILIARES and GE_SOLUCIONES > 0 and (nit == 1 or (nit % GE_SOLUCIONES == 0)):
-            # guardar el vector solución que, al final, se escribirá en un fichero CSV
-            soluciones.append([nit,intermediate_result.x])
-    
+   
     # definir el rango de variación de los precios y variables
     (bnds, n_Efijas, n_Mfijas) = cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde)
     # hacer compatible el vector de prueba inicial con los límites de variación de las variables
@@ -2360,22 +2353,13 @@ if __name__ == '__main__':
         imprime('------------ ------------ ------------')
         imprime('')
     
-    if GE_RESTRICCIONES:
-        # restricciones para 'differential_evolution', estás son un ejemplo
-        # se pueden definir otras restricciones, incluso no lineales, aunque no he encontrado utilidad a esto hasta ahora, además solo funciona sin la DLL
-        restricciones = restri.restricciones_M_E(nvec_opt, ind_pvec_desde, datos,GE_TIPO_RE)
-    else:
-        restricciones = []
-
     res_ecuaciones = sec_ecuaciones(vec_opt)
     dist = calcula_desvios(res_ecuaciones, False)
     imprime('Número de desvios {}'.format(N_DESVIACIONES))
     imprime('')
     imprime('{:>9} {:12.5e}'.format('Python ', dist))
     imprime('')
-    if USAR_ALGE_DLL:
-        imprime('No se muestra en pantalla la evolución de los cálculos. Ver el fichero {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
-        imprime('')
+    
     if USAR_DLL:
         '''
         las función 'abre_salida' y 'cierra_salida' de la DLL se llaman explícitamente para abrir y cerrar el fichero de salida donde la DLL escribe, lo
@@ -2413,12 +2397,14 @@ if __name__ == '__main__':
         '''
     imprime('')
 
-    t_inicio = timer()
-
     # minimizar el error de la función objetivo
     #---------------------------------------------------------------------
+    t_inicio = timer()
 
+    mensaje_fin = []
     if USAR_ALGE_DLL:
+        imprime('No se muestra en pantalla la evolución de los cálculos. Ver el fichero {}/{}_{}_{}_{}_dll.log'.format(SENDA_SALIDAS, ALGE_ID_SALIDA, ALGE_NPOB, ALGE_MODO_POB_INI, GE_SEMILLA))
+        imprime('')
         # llamar al procedimiento 'soluciona' de la DLL, a traves de la función 'soluciona' en el módulo dll, pasándole los parámetros:
         #   'par' un vector con los parámetros de configuración del algoritmo
         #   'cotas_inf' un vector con las cotas inferiores de las variables
@@ -2833,6 +2819,40 @@ if __name__ == '__main__':
         imprime('')
     else:
         # Python 
+
+        # 'vigila' función que 'differential_evolution' llamará después de probar cada posible solución, no se usa cuando se utiliza el algoritmo genético de la DLL  
+        vfa         = 1.0e+18
+        def vigila(intermediate_result):
+            nit = intermediate_result.nit   # número de generaciones
+            vf  = intermediate_result.fun   # valor de la función objetivo
+            if vf < GE_TOLERANCIA:
+                # El desvio de la función objetivo es inferior al valor establecido, por lo que se da por terminada la minimización
+                mensaje_fin.append('nit:{:9} fo:{:12.5e} valor función objetivo inferior a la tolerancia '.format(nit, vf))
+                raise StopIteration
+            if nit % GE_PROGRESO == 0:
+                global vfa
+                if (vfa - vf) < GE_MIN_PROGRESO / 100. * vfa:
+                    # no progresa significativamente, por lo que se da por terminada la minimización.
+                    # es importante que GE_TOLERANCIA sea lo suficientemente grande par que no se camcele antes de tiempo
+                    mensaje_fin.append('nit:{:9} mejora:{:12.5e} no progresa más'.format(nit, vfa - vf))
+                    raise StopIteration
+                vfa = vf
+            if GE_HISTORIAL > 0 and (nit == 1 or (nit % GE_HISTORIAL == 0)):
+                if SAL_AUXILIARES:
+                    # guardar el valor del error (función objetivo) que, al final, se escribirá en un fichero CSV
+                    historial.append([nit,vf])
+                imprime('{:9} {:12.5e}'.format(nit, vf))
+            if SAL_AUXILIARES and GE_SOLUCIONES > 0 and (nit == 1 or (nit % GE_SOLUCIONES == 0)):
+                # guardar el vector solución que, al final, se escribirá en un fichero CSV
+                soluciones.append([nit,intermediate_result.x])
+
+        if GE_RESTRICCIONES:
+            # restricciones para 'differential_evolution', estás son un ejemplo
+            # se pueden definir otras restricciones, incluso no lineales, aunque no he encontrado utilidad a esto hasta ahora, además solo funciona sin la DLL
+            restricciones = restri.restricciones_M_E(nvec_opt, ind_pvec_desde, datos,GE_TIPO_RE)
+        else:
+            restricciones = []
+
         imprime('Evolución de la minimización')
         if ECT_ECM == 0:
             imprime('generacio      ECT')
@@ -2935,7 +2955,7 @@ if __name__ == '__main__':
             salida_valores_solucion_variable(log, 'E'   , '*', ind, Ei)
             salida_valores_solucion_variable(log, 'M'   , '*', ind, Mi)
             salida_valores_solucion_variable(log, 'D'   , '*', ind, Di)
-            # para que los bloques de la salida sean los mismops cuando se incluye Xp en el vector solución (Xpi), y cuando no se incluye
+            # para que los bloques de la salida sean los mismos cuando se incluye Xp en el vector solución (Xpi), y cuando no se incluye
             salida_valores_solucion_variable(log, 'Xp'  , dem, ind, Xp)
 
             salida_valores_solucion_variable(log, 'pE'  , '*', ind, pe)
@@ -3125,6 +3145,7 @@ if __name__ == '__main__':
         clave = 'nit'
         imprime('Número de generaciones {}'.format(rmin[clave]))
         imprime('')
+
     imprime('Precios      iniciales   equilibrio')
     imprime('--------- ------------ ------------')
     imprime('{:10}                {:9.7f}'.format('pF_' + h[0], pf[0]))
