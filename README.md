@@ -20,3 +20,5 @@ Un primer elemento clave son las matrices de contabilidad social (MCS), que más
 El objetivo de los Modelos de Equilibrio General Aplicado es obtener cual será el nuevo equilibrio de la economía y como cambiarán las variables fundamentales de esta, al poner en marcha una política.
 
 ## Contacto: alberto@interajedrez.com
+
+## El material de este repositorio es como es, sin ningún tipo de garantía ni responsabilidad relacionada con él.
