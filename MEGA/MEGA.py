@@ -82,7 +82,7 @@ import restricciones as restri
 global datos
 global parametros
 
-VERSION = '1.9.0'
+VERSION = '1.9.1'
 
 # 9 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
@@ -109,6 +109,12 @@ etq_caso = (
     'Xp0m1',                    # 14 consumos esenciales = Xp0 - 1
 )
 
+HISTO_MAX = 201
+
+# en estas listas se guardan las notificaciones hasta que esté disponible la función 'imprimir'
+errores_diferidos = []
+avisos_diferidos  = []
+
 '''
 'argumentos.valores_opciones()' extrae los argumentos de la línea de comandos y si no la hay de los
  valores por defecto. El módulo 'argumentos' tiene varias versiones de la función 'valores_opciones', una para
@@ -126,18 +132,11 @@ try:
 except BaseException as e:
     print('Error en la lectura de parámetros {}\n'.format(e.args))
     sys.exit()
-
 '''
-# máxima prioridad
-p = psutil.Process(os.getpid())
-p.nice(psutil.HIGH_PRIORITY_CLASS)
+copiamos a variables globales los parámetros de la línea de comando, o su valor por defecto, y ajustamos las dimensiones de
+las matrices ('reshape') cuando corresponde, ya que en la línea de comandos solo podemos incluir vectores, además se
+realizan algunas comprobaciones de la consistencia de los valores especificados
 '''
-
-# se guardan las notificaciones hasta que esté lista la función 'imprimir'
-errores_diferidos = []
-avisos_diferidos  = []
-
-HISTO_MAX = 201
 nfac = args.NFAC    # número de factores 
 ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
@@ -148,11 +147,6 @@ nsec = args.NSEC    # número de sectores
 #----------------------------------------------------------------------------
 import dll as dll
 #----------------------------------------------------------------------------
-'''
-copiamos a variables globales los parámetros de la línea de comando, o su valor por defecto, y ajustamos las dimensiones de
-las matrices ('reshape') cuando corresponde, ya que en la línea de comandos solo podemos incluir vectores, además se
-realizan algunas comprobaciones de la consistencia de los valores especificados
-'''
 NSAM                = args.NSAM
 if args.NSAM_OP    != args.NSAM:
     errores_diferidos.append('La función "valores_opciones()" para procesar los argumentos ({}) no es coherente con la MCS especificada ({})'.format(args.NSAM_OP, args.NSAM))
