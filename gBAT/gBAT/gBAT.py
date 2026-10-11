@@ -11,7 +11,7 @@ def imprime(texto, rc=True):
         print(texto)
         with open(FICHERO_LOG, "a", encoding="utf-8") as log: log.write(texto + '\n')
     else:
-        print(texto, end='')
+        print(texto, end="")
         with open(FICHERO_LOG, "a", encoding="utf-8") as log: log.write(texto)
 
 ancho = 22
@@ -88,5 +88,5 @@ for fi in ficheros:
     sal.write(e_dts[-1])
     sal.close()
     imprime('---------------------------------------------------\n')
-imprime('')
+imprime("")
 imprime('fin')

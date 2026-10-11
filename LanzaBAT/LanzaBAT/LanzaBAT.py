@@ -25,8 +25,12 @@ ficheros = glob.glob(patron, recursive=True)
 n = 0
 for fi in ficheros:
     n += 1
+    if fi.lower().endswith('_borra.bat'):
+        # de cierres anteriores, se borra
+        os.remove(fi)
+        continue
     imprime('{:4d} de {:4d} {}'.format(n, len(ficheros), fi))
-    fi_c = fi.replace('\\','/')[:-4] + '_c.bat'
+    fi_c = fi.replace('\\','/')[:-4] + '_borra.bat'
     sal = open(fi_c, "w", encoding="utf-8")
     with open(fi, "r", encoding="utf-8") as ent:
         while True:

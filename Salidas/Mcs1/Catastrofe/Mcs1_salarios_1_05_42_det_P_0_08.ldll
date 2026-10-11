@@ -1,0 +1,76 @@
+inicio: Sun Oct 11 15:26:36 2026
+
+Librería               : C:\MEGA\MEGA_DLL\x64\Ultimas\MEGA1.dll
+Caso                   : Mcs1_salarios_1_05_42_det_P_0_08
+
+Estrategia             : RAND1
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :            2
+
+Número procesos        :           20
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+Probab.copiar el mejor :  0.00000e+00
+-------------------------------------
+Progreso mínimo        :        0.020 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       10.000 % = 100 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Recombinación normal
+Factor Alp             :  8.00000e-02
+Inc.demanda              SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :           67
+-------------------------------------
+Xp incluido en la solución: NO
+AgH incluido en la solución: NO
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           68
+Variables recalculadas :           67
+-------------------------------------
+Total                  :          161
+
+Variables fijas en sol :            2
+Variables con valores fijos
+    0 pF           0   1.05000000e+00
+    7 epsilon      0   1.00000000e+00
+
+Fondos UE              :  0.00000e+00
+
+n.gen.pro2 máximoxtramo:      1700000
+
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+        0  1.42071e+00  6.07235e+02  1.45159e+01 Fi           3  8.715039e+02  3.473359e+02  0.000000e+00  1.450000e+03  1.690000e+03                             0
+      100  3.22569e+00  1.49922e+00  5.37233e-01 Dat          1  7.086402e+02  2.835151e+02  0.000000e+00  1.139618e+03  1.355713e+03      0.0      0.0        1619      26904         80
+      200  2.19926e-01  7.56151e-03  5.61459e-02 Fi           2  7.088597e+02  2.835889e+02  0.000000e+00  1.140133e+03  1.356196e+03      0.0      0.0        1651      19963         38
+      300  2.46994e-02  8.61247e-05  4.99993e-03 Qeq          0  7.084253e+02  2.834236e+02  0.000000e+00  1.139437e+03  1.355447e+03      0.0      0.0        1601      17048         47
+      400  1.74577e-03  3.08559e-07  2.47552e-04 Qeq          0  7.084143e+02  2.834188e+02  0.000000e+00  1.139411e+03  1.355419e+03      0.0      0.0        1689      20676         36
+      500  3.77066e-04  1.83872e-09  1.78659e-05 Fi           1  7.084101e+02  2.834172e+02  0.000000e+00  1.139405e+03  1.355411e+03      0.0      0.0        1638      19530         31
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+      599  3.63027e-04  9.38792e-12  1.42195e-06 Ydp          0  7.084102e+02  2.834172e+02  0.000000e+00  1.139405e+03  1.355411e+03      0.0      0.0         377
+
+tiempo medio en segundos: mutación y cruce =      0.01  selección =      0.06
+
+número de mutaciones extra =        577  media por generación =     0.963   % medio sobre total de mutaciones=    0.0963
+
+número de variables extra  =         47  media sobre mutaciones extra=    0.0815
+
+fin   : Sun Oct 11 15:26:37 2026
+

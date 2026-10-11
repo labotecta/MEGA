@@ -116,10 +116,10 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_UMBRAL_REGUL   0. ^
 --ALGE_FRAC_REGUL     0.3 ^
 --GE_SEMILLA          42 ^
---FI_CASO             '' ^
+--FI_CASO             "" ^
 --FI_SOL_LEE          "" ^
 --FI_SOL_SALVA        "" ^
---FI_SOL_TOT_SALVA    '' ^
+--FI_SOL_TOT_SALVA    "" ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs4/Python ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs4/Python ^

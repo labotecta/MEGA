@@ -116,7 +116,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_UMBRAL_REGUL   0. ^
 --ALGE_FRAC_REGUL     0.3 ^
 --GE_SEMILLA          42 ^
---FI_CASO             '' ^
+--FI_CASO             "" ^
 --FI_SOL_LEE          "" ^
 --FI_SOL_SALVA        "" ^
 --FI_SOL_TOT_SALVA    v_vars_solucion_215.log ^

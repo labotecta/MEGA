@@ -1,0 +1,77 @@
+inicio: Sun Oct 11 15:26:44 2026
+
+Librería               : C:\MEGA\MEGA_DLL\x64\Ultimas\MEGA1.dll
+Caso                   : Mcs1_salarios_1_05_42_det_P_0_10
+
+Estrategia             : RAND1
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :            2
+
+Número procesos        :           20
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+Probab.copiar el mejor :  0.00000e+00
+-------------------------------------
+Progreso mínimo        :        0.020 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       10.000 % = 100 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Recombinación normal
+Factor Alp             :  1.00000e-01
+Inc.demanda              SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :           67
+-------------------------------------
+Xp incluido en la solución: NO
+AgH incluido en la solución: NO
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           68
+Variables recalculadas :           67
+-------------------------------------
+Total                  :          161
+
+Variables fijas en sol :            2
+Variables con valores fijos
+    0 pF           0   1.05000000e+00
+    7 epsilon      0   1.00000000e+00
+
+Fondos UE              :  0.00000e+00
+
+n.gen.pro2 máximoxtramo:      1700000
+
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+        0  1.42071e+00  6.04323e+02  1.45159e+01 Fi           3  8.715039e+02  3.472866e+02  0.000000e+00  1.450000e+03  1.690000e+03                             0
+      100  4.19142e+00  2.78733e+00  8.77727e-01 Qeq          0  6.828077e+02  2.736744e+02  0.000000e+00  1.097279e+03  1.310147e+03      0.0      0.0        1619      27027         77
+      200  3.28595e-01  1.06393e-02  4.27242e-02 Fi           0  6.641909e+02  2.665960e+02  0.000000e+00  1.067484e+03  1.277735e+03      0.0      0.0        1651      20418         34
+      300  3.60104e-02  9.45993e-05  4.61063e-03 Q            0  6.641465e+02  2.665785e+02  0.000000e+00  1.067393e+03  1.277642e+03      0.0      0.0        1601      18251         35
+      400  2.38717e-03  2.28294e-07  2.68338e-04 ebp          0  6.641945e+02  2.665967e+02  0.000000e+00  1.067469e+03  1.277725e+03      0.0      0.0        1689      20422         34
+      500  3.91334e-04  2.24031e-09  2.56449e-05 Qeq          0  6.641884e+02  2.665943e+02  0.000000e+00  1.067459e+03  1.277713e+03      0.0      0.0        1638      18825         44
+      600  3.63216e-04  2.00768e-11  2.04239e-06 ebp          0  6.641886e+02  2.665944e+02  0.000000e+00  1.067459e+03  1.277714e+03      0.0      0.0        1572      18714         39
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+      612  3.63269e-04  9.31527e-12  1.44445e-06 Fi           1  6.641886e+02  2.665944e+02  0.000000e+00  1.067459e+03  1.277714e+03      0.0      0.0         573
+
+tiempo medio en segundos: mutación y cruce =      0.01  selección =      0.06
+
+número de mutaciones extra =        590  media por generación =     0.964   % medio sobre total de mutaciones=    0.0964
+
+número de variables extra  =         48  media sobre mutaciones extra=    0.0814
+
+fin   : Sun Oct 11 15:26:45 2026
+

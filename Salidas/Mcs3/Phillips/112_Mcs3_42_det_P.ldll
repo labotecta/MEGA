@@ -1,0 +1,75 @@
+inicio: Sun Oct 11 15:37:54 2026
+
+Librería               : C:\MEGA\MEGA_DLL\x64\Ultimas\MEGA3.dll
+Caso                   : 112_Mcs3_42_det_P
+
+Estrategia             : RAND1
+
+Número factores        :            2
+Número hogares         :            3
+Número sectores        :            2
+
+Número procesos        :           20
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+Probab.copiar el mejor :  0.00000e+00
+-------------------------------------
+Progreso mínimo        :        0.020 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       10.000 % = 100 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Recombinación normal
+Factor Alp             :  0.00000e+00
+Inc.demanda              SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :           71
+-------------------------------------
+Xp incluido en la solución: NO
+AgH incluido en la solución: NO
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           78
+Variables recalculadas :           77
+-------------------------------------
+Total                  :          181
+
+Variables fijas en sol :            2
+Variables con valores fijos
+    0 pF           0   1.00000000e+00
+    7 epsilon      0   1.00000000e+00
+
+Fondos UE              :  0.00000e+00
+
+n.gen.pro2 máximoxtramo:      1700000
+
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+        0  1.27628e+00  7.85759e-02  1.98212e-01 Qeq          0  1.100000e+03  3.340000e+02  6.500000e+01  1.650000e+03  1.922000e+03                             0
+      100  2.62909e-02  3.57603e-04  9.60591e-03 Qeq          1  1.100038e+03  3.340166e+02  6.500242e+01  1.650128e+03  1.922138e+03      0.0      0.0        1619      31487         37
+      200  2.20805e-03  3.76524e-06  1.13154e-03 Dai          1  1.099997e+03  3.340035e+02  6.499979e+01  1.650063e+03  1.922068e+03      0.0      0.0        1651      18771         37
+      300  2.37460e-04  1.84468e-08  6.53908e-05 Qeq          0  1.099994e+03  3.340028e+02  6.499965e+01  1.650060e+03  1.922065e+03      0.0      0.0        1601      18154         38
+      400  1.34496e-05  2.09755e-10  5.87158e-06 Ydp          0  1.099994e+03  3.340027e+02  6.499964e+01  1.650060e+03  1.922064e+03      0.0      0.0        1689      19866         32
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+      457  3.44330e-06  7.58643e-12  9.58992e-07 Qeq          1  1.099994e+03  3.340027e+02  6.499964e+01  1.650060e+03  1.922064e+03      0.0      0.0         507
+
+tiempo medio en segundos: mutación y cruce =      0.01  selección =      0.05
+
+número de mutaciones extra =        435  media por generación =     0.952   % medio sobre total de mutaciones=    0.0952
+
+número de variables extra  =         28  media sobre mutaciones extra=    0.0644
+
+fin   : Sun Oct 11 15:37:55 2026
+

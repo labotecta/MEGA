@@ -1,0 +1,77 @@
+inicio: Sun Oct 11 15:37:41 2026
+
+Librería               : C:\MEGA\MEGA_DLL\x64\Ultimas\MEGA3.dll
+Caso                   : 105_Mcs3_salarios_1_05_42_det_P_0_00
+
+Estrategia             : RAND1
+
+Número factores        :            2
+Número hogares         :            3
+Número sectores        :            2
+
+Número procesos        :           20
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Intentos (reinicios)   :           15
+Población              :         1000
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+Probab.copiar el mejor :  0.00000e+00
+-------------------------------------
+Progreso mínimo        :        0.020 %
+Umbral regularización  :  1.00000e+01 veces el progreso mínimo
+Regularización         :       10.000 % = 100 individuos
+Modo reinicio población:            0
+Factor dispersión reini:  1.00000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Recombinación normal
+Factor Alp             :  0.00000e+00
+Inc.demanda              SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :           71
+-------------------------------------
+Xp incluido en la solución: NO
+AgH incluido en la solución: NO
+Variables cabecera     :            7
+Variables solución     :           19
+Resto variables modelo :           78
+Variables recalculadas :           77
+-------------------------------------
+Total                  :          181
+
+Variables fijas en sol :            2
+Variables con valores fijos
+    0 pF           0   1.05000000e+00
+    7 epsilon      0   1.00000000e+00
+
+Fondos UE              :  0.00000e+00
+
+n.gen.pro2 máximoxtramo:      1700000
+
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+        0  1.27779e+00  6.02477e+02  1.40847e+01 Fi           3  1.071449e+03  3.320920e+02  6.442871e+01  1.650000e+03  1.922000e+03                             0
+      100  1.68275e+00  8.81242e-01  5.05826e-01 Qeq          1  9.843707e+02  3.047472e+02  5.919164e+01  1.476336e+03  1.733150e+03      0.0      0.0        1619      28352         75
+      200  1.29183e-01  6.67344e-03  4.85398e-02 Ydp          0  9.894626e+02  3.062518e+02  5.949799e+01  1.483761e+03  1.741411e+03      0.0      0.0        1651      19455         35
+      300  1.08033e-02  3.00653e-05  3.13811e-03 Ei           1  9.894935e+02  3.062577e+02  5.949988e+01  1.483738e+03  1.741393e+03      0.0      0.0        1601      19596         38
+      400  9.56897e-04  2.32183e-07  1.98713e-04 Dat          0  9.895027e+02  3.062604e+02  5.950043e+01  1.483753e+03  1.741409e+03      0.0      0.0        1689      19264         35
+      500  3.68252e-04  1.02191e-09  1.91216e-05 Qeq          1  9.895047e+02  3.062610e+02  5.950055e+01  1.483756e+03  1.741413e+03      0.0      0.0        1638      20137         38
+      600  3.62951e-04  1.18582e-11  1.58163e-06 Dat          0  9.895049e+02  3.062610e+02  5.950056e+01  1.483756e+03  1.741413e+03      0.0      0.0        1572      17918         35
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+      607  3.62944e-04  8.83948e-12  1.63605e-06 Fi           1  9.895049e+02  3.062610e+02  5.950056e+01  1.483756e+03  1.741413e+03      0.0      0.0         271
+
+tiempo medio en segundos: mutación y cruce =      0.01  selección =      0.06
+
+número de mutaciones extra =        587  media por generación =     0.967   % medio sobre total de mutaciones=    0.0967
+
+número de variables extra  =         48  media sobre mutaciones extra=    0.0818
+
+fin   : Sun Oct 11 15:37:42 2026
+
