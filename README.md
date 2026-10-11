@@ -8,7 +8,7 @@ ___
 ## Computable General Equilibrium (CGE)"
 ## Publicado en la Editorial universitaria Aula Magna McGraw Hill
 
-https://libros.cc/autor/Alberto-Ba%C3%B1%C3%B3n-Serrano.htm
+##<p align="center">[Tienda](https://libros.cc/autor/Alberto-Ba%C3%B1%C3%B3n-Serrano.htm)</p>
 
 El libro muestra cómo construir y resolver un Modelo de Equilibrio General Aplicado (MEGA), sin conocimientos previos y desde el principio. Una parte importante será el planteamiento y resolución de escenarios que, en definitiva, es lo que se pretende con un MEGA. El libro no se limita a exponer cómo construir un modelo, en él se construye uno plenamente operativo. El código fuente de la aplicación informática (Python y C++) está disponible en un repositorio público y es de libre utilización, así como los datos utilizados en el calibrado y resolución de los escenarios tratados en este libro.
 
@@ -23,4 +23,4 @@ El objetivo de los Modelos de Equilibrio General Aplicado es obtener cual será 
 
 ## Contacto: alberto@interajedrez.com
 
-## El material de este repositorio es como es, sin ningún tipo de garantía ni responsabilidad relacionada con él.
+## El material de este repositorio es como es, sin ningún tipo de garantía ni responsabilidad relacionados con él.
