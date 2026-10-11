@@ -35,11 +35,22 @@ a través de las funciones correspondientes para no tener que enviarlas a cada l
 OPCIONES   op;
 DATOS      datos;
 PARAMETROS parametros;
-// no parece que ahorre tiempo, más bien al contrario
+
 #ifdef CONSUMO_INTERMEDIO_INDESADO
+// no parece que ahorre tiempo, más bien al contrario
 int ndc_ax;
 int dc_ax[NSEC * NSEC][2]{};	// índices i,j de los elementos de ax distintos de cero
 #endif
+#ifdef FIJAR_VARIABLES
+int GENS_CALENTAR = 50000;
+int BLOQUE_FIJAR = 10000;
+double MIN_FIJAR = 0.1;
+double TOL_DISPERSION;
+#endif
+#ifdef USAR_PESO_YDP
+double PESO_YDP = 10.;
+#endif
+
 /*
 longitud de las variables y punteros a estas, en el vector solución
   0    1    2    3      4        5    6   7   8   9   10
@@ -64,6 +75,7 @@ const char* rot_blo_vec[N_BLO_VEC + 1] = {
 const int len_var[N_BLO_VEC] = { 1, NSEC, NSEC, NSEC, 1, 1, NSEC * NFAC, NSEC, NSEC, NSEC, NDEM * NSEC, NDEM };
 int pvec[N_BLO_VEC + 1]{};
 
+int N_DESVIACIONES = 1;
 const int HISTO_MAX = 201;
 int histogenera[HISTO_MAX]{};
 double histograma[HISTO_MAX]{};
@@ -395,6 +407,7 @@ static uniform_real_distribution<double> hdis_double{};
 
 #endif AZAR_HILOS_LOCAL
 
+
 #ifdef ESTA_CRUCES
 long long num_cruces_si[MAX_HILOS]{};
 long long num_cruces_ok[MAX_HILOS]{};
@@ -402,8 +415,17 @@ long long num_cruces_no[MAX_HILOS]{};
 long long num_cruces_fj[MAX_HILOS]{};
 #else
 #ifdef NUM_GENES_PROGENITOR_2
-long long num_genes_progenitor_2[MAX_HILOS]{};
+long long num_variables_progenitor_2[MAX_HILOS]{};
 #endif
+#endif
+
+long long num_mutaciones_extra[MAX_HILOS]{};
+long long num_variables_extra_2[MAX_HILOS]{};
+#ifdef MEJ_MUT_EXTA
+const int MAX_EXTRA = 1000;
+int num_extra[MAX_HILOS]{};
+int ind_extra[MAX_HILOS][MAX_EXTRA]{};
+long mej_extra = 0;
 #endif
 
 #ifdef NUM_MEJORAS
@@ -474,6 +496,8 @@ double factor_mutacion;
 // decir, que el 'descendiente' tome el valor del mutante y no el del individuo correspondiente. Si es 1., el 
 // 'descendiente' siempre toma el valor del mutante
 double cte_recombinacion;
+double cte_recombinacion_extra;
+
 double tolerancia;
 double tol_aceptable;
 int generaciones_control_progreso;
@@ -485,12 +509,14 @@ unsigned int semilla;
 bool poner_el_mejor_primero;
 bool incluir_x0;
 int NVEC;
-int id_salida;
+int estadistica_pob_ini;
 char senda_salidas[128];
+char nombre_caso[256];
 int desviaciones_relativas;
 double umbral_regularizacion;
 double fraccion_regularizacion;
-
+double prob_cop_mejor;
+// El mejor modo es el 0, el resto han sido pruebas nada concluyentes
 const int N_MODOS_INICIO = 15;
 double factor_dispersion_actualizado = 1.0;
 
@@ -513,10 +539,11 @@ Permite que la aplicación que llama a la DLL abra el archivo de salida y
 así poder escribir en este fichero información util para depurar errores, por ejemplo, en las
 funciones de 'merito' sin necesidad de haber llamado a la función 'soluciona'
 */
-bool abre_salida(const char* senda) {
+bool abre_salida(const char* senda, const char* caso) {
 	sprintf_s(senda_salidas, 127, "%s", senda);
-	char fichero[128];
-	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, 0, 0, 0, 0);
+	sprintf_s(nombre_caso, 255, "%s", caso);
+	char fichero[384];
+	sprintf_s(fichero, 382, "%s/%s.ldll", senda_salidas, nombre_caso);
 	salida = _fsopen(fichero, "w", _SH_DENYWR);
 	if (salida == 0) {
 		// Error al abrir el fichero de salida
@@ -554,8 +581,9 @@ si 'extendida' es igual a 0, 'soluciona' devuelve el vector solución, si es igu
 variables del modelo, esto último carece de utilidad, es preferible que quien llama a la DLL calcule
 las variables a partir del vector solución aplicando las ecuaciones del modelo.
 */
-double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda) {
+double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso) {
 	sprintf_s(senda_salidas, 127, "%s", senda);
+	sprintf_s(nombre_caso, 256, "%s", caso);
 	CANCELAR = false;
 
 	// capturar la señal Ctrl+C, al pulsar esta combinación de teclas se ejecuta la funciín 'cancelar'
@@ -577,8 +605,8 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
-	char fichero[128];
-	sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla);
+	char fichero[384];
+	sprintf_s(fichero, 382, "%s/%s.ldll", senda_salidas, nombre_caso);
 	if (salida != 0) {
 		fclose(salida);
 	}
@@ -645,10 +673,44 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
+
+	MEMORY_BASIC_INFORMATION mbi;
+	static int dummy{};
+	TCHAR szFileName[MAX_PATH];
+	VirtualQuery(&dummy, &mbi, sizeof(mbi));	// inicializa mbi
+	if (&mbi != nullptr) {
+		HMODULE hMod = (HMODULE)mbi.AllocationBase;
+		GetModuleFileName(hMod, szFileName, MAX_PATH);
+		fprintf(salida, "Librería               : %ws\n", szFileName);
+	}
+
+	/*
+	// obtiene la senda de la aplicación que llama a la DLL
+
+	char buffer[256];
+	DWORD length = GetModuleFileNameA(NULL, buffer, 256);
+	if (length > 0) {
+		fprintf(salida, "Librería               : %s\n", buffer);
+	}
+	else {
+		fprintf(salida, "Error al obtener la ruta de la app que llama a la librería\n\n");
+	}
+	*/
+
+	fprintf(salida, "Caso                   : %s\n\n", nombre_caso);
+
+#ifdef RAND1
+	fprintf(salida, "Estrategia             : %s\n\n", "RAND1");
+#else
+#ifdef RAND2
+	fprintf(salida, "Estrategia             : %s\n\n", "RAND2");
+#else
+	fprintf(salida, "Estrategia             : %s\n\n", "BEST1BIN");
+#endif
+#endif
 	fprintf(salida, "Número factores        : %12d\n", NFAC);
 	fprintf(salida, "Número hogares         : %12d\n", NDEM);
 	fprintf(salida, "Número sectores        : %12d\n\n", NSEC);
-	fprintf(salida, "Fondos UE              : %12.5e\n\n", datos.Fue);
 	fprintf(salida, "Número procesos        : %12d\n", n_hilos);
 #ifdef AZAR_HILOS_LOCAL
 	fprintf(salida, "Modo azar hilos        : local\n");
@@ -678,6 +740,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Modo población inicial : %12d\n", modo_poblacion_inicial);
 	fprintf(salida, "Factor dispersión unif.: %12.5e\n", factor_dispersion);
 	fprintf(salida, "Sigma dispersión normal: %12.5e\n", factor_sigma);
+	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", prob_cop_mejor);
 #ifdef AJUSTA_POB_INICIAL
 	fprintf(salida, "Población inicial ajustada\n");
 #endif
@@ -695,6 +758,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "-------------------------------------\n");
 	fprintf(salida, "Factor mutación (F)    : %12.5e %12.5e\n", par_mutacion[0], par_mutacion[1]);
 	fprintf(salida, "Recombinación (CR)     : %12.5e\n", cte_recombinacion);
+	fprintf(salida, "Recombinación extra    : %12.5e\n", cte_recombinacion_extra);
 #ifdef RECOMBINACION_NORMAL
 	fprintf(salida, "Recombinación normal\n");
 #else
@@ -702,10 +766,10 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #endif
 	fprintf(salida, "Factor Alp             : %12.5e\n", op.ALP_FACTOR);
 	if (op.RENTA_FICTICIA == true) {
-		fprintf(salida, "Inc.demanda CON renta ficticia\n");
+		fprintf(salida, "Inc.demanda              CON renta ficticia\n");
 	}
 	else {
-		fprintf(salida, "Inc.demanda SIN renta ficticia\n");
+		fprintf(salida, "Inc.demanda              SIN renta ficticia\n");
 	}
 	// llamamos a 'merito_sol' para que calcule N_DESVIACIONES
 	merito_sol(vec_ini);
@@ -713,18 +777,22 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Número de desviaciones : %12d\n", N_DESVIACIONES);
 	fprintf(salida, "-------------------------------------\n");
 	if (op.GE_INCLUYE_XP == true) {
-		fprintf(salida, "Xp incluido en la solución\n");
+		fprintf(salida, "Xp incluido en la solución: SI\n");
 	}
 	else {
-		fprintf(salida, "Xp NO incluido en la solución\n");
-
+		fprintf(salida, "Xp incluido en la solución: NO\n");
 	}
 	if (op.GE_INCLUYE_AgH == true) {
-		fprintf(salida, "AgH incluido en la solución\n");
-		fprintf(salida, "Impuestos a las ayudas AgH\n");
+		fprintf(salida, "AgH incluido en la solución: SI\n");
+		if (op.GE_IMPUESTOS_AgH == true) {
+			fprintf(salida, "Impuestos a las ayudas AgH : SI\n");
+		}
+		else {
+			fprintf(salida, "Impuestos a las ayudas AgH : NO\n");
+		}
 	}
 	else {
-		fprintf(salida, "AgH NO incluido en la solución\n");
+		fprintf(salida, "AgH incluido en la solución: NO\n");
 	}
 	fprintf(salida, "Variables cabecera     : %12d\n", LCAB);
 	int lsol = LSOL - 1;
@@ -764,11 +832,12 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 						break;
 					}
 				}
-				fprintf(salida, "%5d %-8s %5d %15.8e\n", i, rot_blo_vec[p], d, cotasInf[i]);
+				fprintf(salida, "%5d %-8s %5d  %15.8e\n", i, rot_blo_vec[p], d, cotasInf[i]);
 			}
 		}
 	}
 	fprintf(salida, "\n");
+	fprintf(salida, "Fondos UE              : %12.5e\n\n", datos.Fue);
 #ifdef NUM_GENES_PROGENITOR_2
 	fprintf(salida, "n.gen.pro2 máximoxtramo:%13lld\n\n", (unsigned long long)((unsigned long long)(lsol - nvar_fijas)) * (unsigned long long)NPOB * (unsigned long long)histo_int);
 #endif
@@ -793,26 +862,26 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #endif
 #ifdef ESTA_CRUCES
 #ifdef ECM
-	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q    segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras n.mejs.mej\n");
+	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras n.mejs.mej\n");
 #else
-	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q    segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras n.mejs.mej\n");
+	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.cruce si n.cruce ok n.cruce no n.cruce fj  n.mejoras n.mejs.mej\n");
 #endif
-	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ---------- ---------- ---------- ----------\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ---------- ---------- ---------- ----------\n");
 #else
 #ifdef FIJAR_VARIABLES
 #ifdef ECM
-	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q     segs.p mins.tot  n.gen.pro2  var.fijas\n");
+	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  var.fijas\n");
 #else
-	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q     segs.p mins.tot  n.gen.pro2  var.fijas\n");
+	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  var.fijas\n");
 #endif
 #else
 #ifdef ECM
-	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q    segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
+	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
 #else
-	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q    segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
+	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
 #endif
 #endif
-	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ----------\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------\n");
 #endif
 	if (inicia_poblacion(factor_dispersion) == false) {
 		// Error al reservar memoria para la poblacion
@@ -851,85 +920,85 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
-
-	/*
-	// estadística de la población inicial
-	double* media;
-	media = (double*)malloc(NVEC * sizeof(double));
-	if (media == NULL) {
-		// Error, terminacion inesperada
-		fin_soluciona();
-		if (extendida == 1) {
-			me_sol[0] = -10.;
-			me_sol[2] = intentos;
-			me_sol[3] = generacion;
-			return me_sol;
+	if (estadistica_pob_ini == 1) {
+		// estadística de la población inicial
+		double* media;
+		media = (double*)malloc(NVEC * sizeof(double));
+		if (media == NULL) {
+			// Error, terminación inesperada
+			fin_soluciona();
+			if (extendida == 1) {
+				me_sol[0] = -10.;
+				me_sol[2] = intentos;
+				me_sol[3] = generacion;
+				return me_sol;
+			}
+			else {
+				VEC_OPT_E[0] = -10.;
+				VEC_OPT_E[2] = intentos;
+				VEC_OPT_E[3] = generacion;
+				return VEC_OPT_E;
+			}
 		}
-		else {
-			VEC_OPT_E[0] = -10.;
-			VEC_OPT_E[2] = intentos;
-			VEC_OPT_E[3] = generacion;
-			return VEC_OPT_E;
+		double* desest;
+		desest = (double*)malloc(NVEC * sizeof(double));
+		if (desest == NULL) {
+			// Error, terminación inesperada
+			fin_soluciona();
+			if (extendida == 1) {
+				me_sol[0] = -10.;
+				me_sol[2] = intentos;
+				me_sol[3] = generacion;
+				return me_sol;
+			}
+			else {
+				VEC_OPT_E[0] = -10.;
+				VEC_OPT_E[2] = intentos;
+				VEC_OPT_E[3] = generacion;
+				return VEC_OPT_E;
+			}
 		}
+		for (int i = 0; i < NVEC; i++) {
+			media[i] = 0;
+			for (int j = 0; j < NPOB; j++) {
+				media[i] += poblacion[j][i];
+			}
+			media[i] /= (double)NPOB;
+		}
+		double dd;
+		for (int i = 0; i < NVEC; i++) {
+			desest[i] = 0;
+			for (int j = 0; j < NPOB; j++) {
+				dd = poblacion[j][i] - media[i];
+				desest[i] += dd * dd;
+			}
+			desest[i] = sqrt(desest[i] / (double)(NPOB - 1));
+		}
+		FILE* se;
+		sprintf_s(fichero, 382, "%s/%s_epi.csv", senda_salidas, nombre_caso);
+		se = _fsopen(fichero, "w", _SH_DENYWR);
+		if (se == 0) {
+			if (extendida == 1) {
+				me_sol[0] = -9;
+				me_sol[2] = intentos;
+				me_sol[3] = generacion;
+				return me_sol;
+			}
+			else {
+				VEC_OPT_E[0] = -9;
+				VEC_OPT_E[2] = intentos;
+				VEC_OPT_E[3] = generacion;
+				return VEC_OPT_E;
+			}
+		}
+		fprintf(se, "n;vec;cota_inf;cota_sup;media;desv_est\n");
+		for (int i = 0; i < NVEC; i++) {
+			fprintf(se, "%7d;%14.6e;%14.6e;%14.6e;%14.6e;%14.6e\n", i, vec_ini[i], cotas[0][i], cotas[1][i], media[i], desest[i]);
+		}
+		fclose(se);
+		free(media);
+		free(desest);
 	}
-	double* desest;
-	desest = (double*)malloc(NVEC * sizeof(double));
-	if (desest == NULL) {
-		// Error, terminacion inesperada
-		fin_soluciona();
-		if (extendida == 1) {
-			me_sol[0] = -10.;
-			me_sol[2] = intentos;
-			me_sol[3] = generacion;
-			return me_sol;
-		}
-		else {
-			VEC_OPT_E[0] = -10.;
-			VEC_OPT_E[2] = intentos;
-			VEC_OPT_E[3] = generacion;
-			return VEC_OPT_E;
-		}
-	}
-	for (int i = 0; i < NVEC; i++) {
-		media[i] = 0;
-		for (int j = 0; j < NPOB; j++) {
-			media[i] += poblacion[j][i];
-		}
-		media[i] /= (double)NPOB;
-	}
-	double dd;
-	for (int i = 0; i < NVEC; i++) {
-		desest[i] = 0;
-		for (int j = 0; j < NPOB; j++) {
-			dd = poblacion[j][i] - media[i];
-			desest[i] += dd * dd;
-		}
-		desest[i] = sqrt(desest[i] / (double)(NPOB - 1));
-	}
-	FILE* se;
-	sprintf_s(fichero, 127, "%s/%d_dll_esta.log", senda_salidas, id_salida);
-	se = _fsopen(fichero, "w", _SH_DENYWR);
-	if (se == 0) {
-		if (extendida == 1) {
-			me_sol[0] = -9;
-			me_sol[2] = intentos;
-			me_sol[3] = generacion;
-			return me_sol;
-		}
-		else {
-			VEC_OPT_E[0] = -9;
-			VEC_OPT_E[2] = intentos;
-			VEC_OPT_E[3] = generacion;
-			return VEC_OPT_E;
-		}
-	}
-	for (int i = 0; i < NVEC; i++) {
-		fprintf(se, "%7d %14.6e %14.6e %14.6e %14.6e %14.6e\n", i, vec_ini[i], cotas[0][i], cotas[1][i], media[i], desest[i]);
-	}
-	fclose(se);
-	free(media);
-	free(desest);
-	*/
 
 	if (max_generaciones == 0) {
 		// para una valoración inicial del modelo
@@ -966,6 +1035,8 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 
 	if (n_hilos > 0) {
 		for (int i = 0; i < n_hilos; i++) {
+			num_mutaciones_extra[i] = 0;
+			num_variables_extra_2[i] = 0;
 #ifndef AZAR_HILOS_LOCAL
 			// establecemos los vectores globales
 #ifdef MT19937
@@ -979,7 +1050,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			hgen[i] = minstd_rand((unsigned int)(semilla + i));
 #endif MT19937
 #endif AZAR_HILOS_LOCAL
-
 #ifdef ESTA_CRUCES
 			num_cruces_si[i] = 0;
 			num_cruces_ok[i] = 0;
@@ -987,7 +1057,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			num_cruces_fj[i] = 0;
 #else
 #ifdef NUM_GENES_PROGENITOR_2
-			num_genes_progenitor_2[i] = 0;
+			num_variables_progenitor_2[i] = 0;
 #endif
 #endif
 #ifdef TPO_MUTA_SELECCION
@@ -1026,9 +1096,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		res_Simulacion = avanza();
 	}
 #ifdef ESTA_CRUCES
-	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ---------- ---------- ---------- ----------\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ---------- ---------- ---------- ----------\n");
 #else
-	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- ------ --------  ---------- ---------- ----------\n");
+	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------\n");
 #endif
 	if (res_Simulacion == -1) {
 		// Cancelado
@@ -1131,7 +1201,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	else {
-		// Error, terminacion inesperada
+		// Error, terminación inesperada
 		fin_soluciona();
 		if (extendida == 1) {
 			me_sol[0] = -10.;
@@ -1176,9 +1246,9 @@ void fin_soluciona() {
 		n_c_n += num_cruces_no[i];
 		n_c_f += num_cruces_fj[i];
 	}
-	fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
-	fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+	fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 #ifdef SORTEOS
 	fprintf(salida, "\n");
@@ -1202,11 +1272,13 @@ void fin_soluciona() {
 	fprintf(salida, "\n     tiempo en segundos\n");
 	fprintf(salida, "hilo mu y cru. selección\n");
 	fprintf(salida, "---- --------- ---------\n");
+	*/
 	for (int i = 0; i < n_hilos; i++) {
 		tot_tpo_muta += tpo_muta[i];
 		tot_tpo_sele += tpo_sele[i];
-		fprintf(salida, "%4d %9.1f %9.1f\n", i, tpo_muta[i], tpo_sele[i]);
+		// fprintf(salida, "%4d %9.1f %9.1f\n", i, tpo_muta[i], tpo_sele[i]);
 	}
+	/*
 	fprintf(salida, "---- --------- ---------\n");
 	fprintf(salida, "\nlos hilos se ejecutan en paralelo por lo que no se pueden sumar sus tiempos");
 	*/
@@ -1219,12 +1291,24 @@ void fin_soluciona() {
 		fprintf(salida, "\ntiempo medio en minutos: mutación y cruce = %9.3f  selección = %9.3f\n", tot_tpo_muta / n_hilos / 60., tot_tpo_sele / n_hilos / 60.);
 	}
 #endif
+	long long tot_num_mutaciones_extra = 0;
+	long long tot_num_variables_extra = 0;
+	for (int i = 0; i < n_hilos; i++) {
+		tot_num_mutaciones_extra += num_mutaciones_extra[i];
+		tot_num_variables_extra += num_variables_extra_2[i];
+	}
+#ifdef MEJ_MUT_EXTA
+	fprintf(salida, "\nnúmero de mutaciones extra = %10lld  media por generación = %9.3f   %% medio sobre total de mutaciones= %9.4f  mejor= %5d %7.3f%%\n", tot_num_mutaciones_extra, (double)tot_num_mutaciones_extra / (double)generacion, 100. * (double)tot_num_mutaciones_extra / (double)generacion / (double)NPOB, mej_extra, 100.0 * (double)mej_extra / (double)tot_num_mutaciones_extra);
+#else
+	fprintf(salida, "\nnúmero de mutaciones extra = %10lld  media por generación = %9.3f   %% medio sobre total de mutaciones= %9.4f\n", tot_num_mutaciones_extra, (double)tot_num_mutaciones_extra / (double)generacion, 100. * (double)tot_num_mutaciones_extra / (double)generacion / (double)NPOB);
+#endif
+	fprintf(salida, "\nnúmero de variables extra  = %10lld  media sobre mutaciones extra= %9.4f\n", tot_num_variables_extra, (double)tot_num_variables_extra / (double)tot_num_mutaciones_extra);
 	fprintf(salida, "\nfin   : %s\n", tmBuff);
 	fclose(salida);
 	if (histo_sol != 0) {
 		// se guarda el vector solución final, incluido cuando histo_sol = -1, solo se omite si histo_sol = 0
-		char fichero[128];
-		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_sol_fin.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla);
+		char fichero[384];
+		sprintf_s(fichero, 382, "%s/%s_dll_sol_fin.sol", senda_salidas, nombre_caso);
 		salida_solucion(fichero);
 	}
 }
@@ -1254,14 +1338,15 @@ int parametros_alge(double* par) {
 	par_mutacion[0] = par[ipar++];
 	par_mutacion[1] = par[ipar++];
 	cte_recombinacion = par[ipar++];
+	cte_recombinacion_extra = par[ipar++];
 	control_factibilidad = (int)par[ipar++] == 1;
 	semilla = (unsigned int)par[ipar++];
 	poner_el_mejor_primero = (int)par[ipar++] == 1;
 	incluir_x0 = (int)par[ipar++] == 1;
 	NVEC = (int)par[ipar++];
-	id_salida = (int)par[ipar++];
+	estadistica_pob_ini = (int)par[ipar++];
 	desviaciones_relativas = (int)par[ipar++];
-
+	prob_cop_mejor = par[ipar++];
 	if (fraccion_regularizacion > 0.9) fraccion_regularizacion = 0.9;
 	if (NVEC >= MAX_VEC) {
 		return -1;
@@ -2256,22 +2341,29 @@ void recolocar_al_mejor(int ind_mejor_merito) {
 inicia la ejecuciín en mono proceso (sin hilos), tiene poca utilidad o ninguna
 */
 int avanza() {
-	double a;
 	int desde = poner_el_mejor_primero ? 1 : 0;
 	factor_mutacion = (par_mutacion[0] + par_mutacion[1]) / 2.;
 	while (generacion < max_generaciones) {
-		mutacion_cruze(desde, NPOB, 0);
+		mutacion_cruze(desde, NPOB);
 		/*
 		no se hacen cambios en la población hasta completada la generación
 		para poder fraccionar la población en multiproceso
 		*/
 		seleccion(desde);
+#ifdef MEJ_MUT_EXTA
+		while (num_extra[0] > 0) {
+			if (ind_extra[0][num_extra[0]--] == ind_mejor_merito) {
+				mej_extra++;
+				num_extra[0] = 0;
+				break;
+			}
+		}
+#endif
 		res_Simulacion = comprobar_final();
 		if (res_Simulacion < 0) {
 			return res_Simulacion;
 		}
-		a = dis_double(gen);
-		factor_mutacion = par_mutacion[0] + a * (par_mutacion[1] - par_mutacion[0]);
+		factor_mutacion = par_mutacion[0] + dis_double(gen) * (par_mutacion[1] - par_mutacion[0]);
 		generacion++;
 	}
 	if (generacion == max_generaciones) {
@@ -2282,26 +2374,229 @@ int avanza() {
 /*
 versión mono proceso
 */
-void mutacion_cruze(int desde, int hasta, int hilo) {
-	int i1;
-	int i2;
-	int i3;
+void mutacion_cruze(int desde, int hasta) {
 	double v;
 	bool es_factible;
+	int i1;
+	int i3;
+#ifdef RAND1
+	// Mejor + F * (I2 - I1)
+	// en el libro esta es la que se usa y denomina best1bin
+	int i2;
 	for (int i = desde; i < hasta; i++) {
-		i1 = hdis_entero(hgen[hilo]);
-		i2 = hdis_entero(hgen[hilo]);
+		i1 = hdis_entero(hgen[0]);
+		i2 = hdis_entero(hgen[0]);
+		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
+		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
+		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[0]) < prob_cop_mejor)) {
+			if (prob_cop_mejor < 0) {
+				// solo puede haber llegado aquí si i1 == i2
+				// descartar el descendiente
+				/*
+				excluir cusndo 'i1' es igual a 'i2' ralentiza considerablemente la convergencia
+				no excluir significa que cuando son iguales, se cuasi duplica el mejor individuo
+				excepto cuando 'hdis_double(hgen[0]) <= cte_recombinacion' en cuyo caso se toma del mejor individuo
+				la probabilidad de que I1=i2 es 1./NPOB
+				*/
+				factible[i] = false;
+				continue;
+			}
+			num_mutaciones_extra[0]++;
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[0]++;
+				num_cruces_ok[0]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hdis_double(hgen[0]) <= cte_recombinacion_extra) {
+					// variable que se toma del mejor individuo de la población
+					descendiente[i][j] = poblacion[ind_mejor_merito][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[0]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[0]++;
+#endif
+					}
+				}
+			}
+#ifdef MEJ_MUT_EXTA
+			ind_extra[0][num_extra[0]++] = i;
+#endif
+			factible[i] = true;
+			continue;
+		}
 		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
-		i3 = hdis_entero_ivec(hgen[hilo]);
+		i3 = hdis_entero_ivec(hgen[0]);
 		es_factible = true;
-		// vamos a cruzar los individuos 'poblacion[i]' de la población con los mutantes 'v'
 		for (int j = 0; j < NVEC; j++) {
-			if (fijo[j] == 0 && (hdis_double(hgen[hilo]) <= cte_recombinacion || j == i3)) {
+			if (fijo[j] == 0 && (hdis_double(hgen[0]) <= cte_recombinacion || j == i3)) {
 				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
 				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
 
 				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
 				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
+				if (control_factibilidad) {
+					if (v < cotas[0][j] || v > cotas[1][j]) {
+						es_factible = false;
+						break;
+					}
+				}
+				descendiente[i][j] = v;
+			}
+			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo y todos los
+				// individuos tienen el mismo valor, o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
+#ifdef RECOMBINACION_NORMAL
+				// se podría hacer 'descendiente[i][j] = poblacion[  i1  ][j]' pero no parece que tenga efecto
+				descendiente[i][j] = poblacion[i][j];
+#else
+				descendiente[i][j] = poblacion[ind_mejor_merito][j];
+#endif
+			}
+		}
+		if (control_factibilidad) {
+			factible[i] = es_factible;
+		}
+	}
+
+#else
+#ifdef RAND2
+	// I0 + F * (I2 - I1) es poco eficiente, no se ajusta al Monte Carlo de aproximación a la solución que se describe en el anexo del libro
+	int i0;
+	int i2;
+	for (int i = desde; i < hasta; i++) {
+		i0 = hdis_entero(hgen[0]);
+		i1 = hdis_entero(hgen[0]);
+		i2 = hdis_entero(hgen[0]);
+		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
+		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
+		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[0]) < prob_cop_mejor)) {
+			if (prob_cop_mejor < 0) {
+				// solo puede haber llegado aquí si i1 == i2
+				// descartar el descendiente
+				/*
+				excluir cusndo 'i1' es igual a 'i2' ralentiza considerablemente la convergencia
+				no excluir significa que cuando son iguales, se cuasi duplica el mejor individuo
+				excepto cuando 'hdis_double(hgen[0])' <= cte_recombinacion' en cuyo caso se toma de i0
+				la probabilidad de que I1=i2 es 1./NPOB
+				*/
+				factible[i] = false;
+				continue;
+			}
+			num_mutaciones_extra[0]++;
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[0]++;
+				num_cruces_ok[0]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hdis_double(hgen[0]) <= cte_recombinacion_extra) {
+					// variable que se toma del individuo 'i0'
+					descendiente[i][j] = poblacion[i0][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[0]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[0]++;
+#endif
+					}
+					// se podría hacer 'descendiente[i][j] = poblacion[  i1  ][j]' pero no parece que tenga efecto
+				}
+			}
+			factible[i] = true;
+#ifdef MEJ_MUT_EXTA
+			ind_extra[0][num_extra[0]++] = i;
+#endif
+			continue;
+		}
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hdis_entero_ivec(hgen[0]);
+		es_factible = true;
+		for (int j = 0; j < NVEC; j++) {
+			if (fijo[j] == 0 && (hdis_double(hgen[0]) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+				v = poblacion[i0][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
+				if (control_factibilidad) {
+					if (v < cotas[0][j] || v > cotas[1][j]) {
+						es_factible = false;
+						break;
+					}
+				}
+				descendiente[i][j] = v;
+			}
+			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo y todos los
+				// individuos tienen el mismo valor, o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
+#ifdef RECOMBINACION_NORMAL
+				descendiente[i][j] = poblacion[i][j];
+#else
+				descendiente[i][j] = poblacion[i0][j];
+#endif
+			}
+		}
+		if (control_factibilidad) {
+			factible[i] = es_factible;
+		}
+	}
+#else
+	// best1bin: Mejor + F * (Mejor - I1). No converge en absoluto, colapsa sobre el primer mejor individuo
+
+	for (int i = desde; i < hasta; i++) {
+		i1 = hdis_entero(hgen[0]);
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hdis_entero_ivec(hgen[0]);
+		if (prob_cop_mejor > 0.0000001 && hdis_double(hgen[0]) < prob_cop_mejor) {
+			if (prob_cop_mejor < 0) {
+				// descartar el descendiente
+				factible[i] = false;
+				continue;
+			}
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[0]++;
+				num_cruces_ok[0]++;
+#endif
+				if (fijo[j] == 0 && (hdis_double(hgen[0]) <= cte_recombinacion || j == i3)) {
+					descendiente[i][j] = poblacion[ind_mejor_merito][j];
+				}
+				else {
+					descendiente[i][j] = poblacion[i][j];
+					if (fijo[j] == 0) {
+						num_variables_extra_2[0]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[0]++;
+#endif
+					}
+				}
+			}
+			factible[i] = true;
+			continue;
+		}
+		es_factible = true;
+		// vamos a cruzar los individuos 'poblacion[i]' de la población con los mutantes 'v'
+		for (int j = 0; j < NVEC; j++) {
+			if (fijo[j] == 0 && (hdis_double(hgen[0]) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[ind_mejor_merito][j] - poblacion[i1][j]);
 				if (control_factibilidad) {
 					if (v < cotas[0][j] || v > cotas[1][j]) {
 						es_factible = false;
@@ -2325,23 +2620,70 @@ void mutacion_cruze(int desde, int hasta, int hilo) {
 			factible[i] = es_factible;
 		}
 	}
+#endif
+#endif
 }
 /*
 versión multi proceso, cada hilo se encarga de cruzar una parte de la población, determinada por los parámetros 'desde' y 'hasta'
 */
 void mutacion_cruzeH(int desde, int hasta, int hilo) {
-	int i1;
-	int i2;
-	int i3;
 	double v;
 	bool es_factible;
-	// vamos a cruzar los individuos 'poblacion[i]' de la población con los mutantes 'v'
+	int i1;
+	int i3;
+#ifdef RAND1
+	// Mejor + F * (I2 - I1)
+	// en el libro esta es la que se usa y denomina best1bin
+
+	int i2;
 	for (int i = desde; i < hasta; i++) {
 		i1 = hdis_entero(hgen[hilo]);
 		i2 = hdis_entero(hgen[hilo]);
-		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
-		i3 = hdis_entero_ivec(hgen[hilo]);
-
+		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
+		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
+		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[hilo]) < prob_cop_mejor)) {
+			if (prob_cop_mejor < 0) {
+				// solo puede haber llegado aquí si i1 == i2
+				// descartar el descendiente
+				/*
+				excluir cusndo 'i1' es igual a 'i2' ralentiza considerablemente la convergencia
+				no excluir significa que cuando son iguales, se cuasi duplica el mejor individuo
+				excepto cuando 'hdis_double(hgen[hilo])' <= cte_recombinacion' en cuyo caso se toma del mejor individuo
+				la probabilidad de que I1=i2 es 1./NPOB
+				*/
+				factible[i] = false;
+				continue;
+			}
+			num_mutaciones_extra[hilo]++;
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+				num_cruces_ok[hilo]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hdis_double(hgen[hilo]) <= cte_recombinacion_extra) {
+					// variable que se toma del mejor individuo de la población
+					descendiente[i][j] = poblacion[ind_mejor_merito][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[hilo]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[hilo]++;
+#endif
+					}
+				}
+			}
+			factible[i] = true;
+#ifdef MEJ_MUT_EXTA
+			ind_extra[hilo][num_extra[hilo]++] = i;
+#endif
+			continue;
+		}
 #ifdef SORTEOS
 		n_sor[hilo]++;
 		media[0][hilo] += i1;
@@ -2355,6 +2697,8 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 		desviacion[2][hilo] += v * v;
 #endif
 
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hdis_entero_ivec(hgen[hilo]);
 		es_factible = true;
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 0 && (hdis_double(hgen[hilo]) <= cte_recombinacion || j == i3)) {
@@ -2394,7 +2738,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 #else
 #ifdef NUM_GENES_PROGENITOR_2
 				if (fijo[j] == 0) {
-					num_genes_progenitor_2[hilo]++;
+					num_variables_progenitor_2[hilo]++;
 				}
 #endif
 #endif
@@ -2404,21 +2748,162 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 			factible[i] = es_factible;
 		}
 	}
-}
-
-void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_distribution<int>& he, uniform_int_distribution<int>& hi, uniform_real_distribution<double>& hd) {
-	int i1;
+#else
+#ifdef RAND2
+	// I0 + F * (I2 - I1) es poco eficiente, no se ajusta al Monte Carlo de aproximación a la solución que se describe en el anexo del libro
+	int i0;
 	int i2;
-	int i3;
-	double v;
-	bool es_factible;
-	// vamos a cruzar los individuos 'poblacion[i]' de la población con los mutantes 'v'
 	for (int i = desde; i < hasta; i++) {
-		i1 = he(gh);
-		i2 = he(gh);
+		i0 = hdis_entero(hgen[hilo]);
+		i1 = hdis_entero(hgen[hilo]);
+		i2 = hdis_entero(hgen[hilo]);
+		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
+		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
+		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[hilo]) < prob_cop_mejor)) {
+			if (prob_cop_mejor < 0) {
+				// solo puede haber llegado aquí si i1 == i2
+				// descartar el descendiente
+				/*
+				excluir cusndo 'i1' es igual a 'i2' ralentiza considerablemente la convergencia
+				no excluir significa que cuando son iguales, se cuasi duplica el mejor individuo
+				excepto cuando 'hdis_double(hgen[hilo])' <= cte_recombinacion' en cuyo caso se toma de i0
+				la probabilidad de que I1=i2 es 1./NPOB
+				*/
+				factible[i] = false;
+				continue;
+			}
+			num_mutaciones_extra[hilo]++;
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+				num_cruces_ok[hilo]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hdis_double(hgen[hilo]) <= cte_recombinacion_extra) {
+					// variable que se toma del individuo 'i0'
+					descendiente[i][j] = poblacion[i0][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[hilo]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[hilo]++;
+#endif
+					}
+				}
+			}
+			factible[i] = true;
+#ifdef MEJ_MUT_EXTA
+			ind_extra[hilo][num_extra[hilo]++] = i;
+#endif
+			continue;
+		}
+#ifdef SORTEOS
+		n_sor[hilo]++;
+		media[0][hilo] += i1;
+		media[1][hilo] += i2;
+		media[2][hilo] += i3;
+		v = i1 - v_media[0][hilo];
+		desviacion[0][hilo] += v * v;
+		v = i2 - v_media[1][hilo];
+		desviacion[1][hilo] += v * v;
+		v = i3 - v_media[2][hilo];
+		desviacion[2][hilo] += v * v;
+#endif
 		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
-		i3 = hi(gh);
+		i3 = hdis_entero_ivec(hgen[hilo]);
+		es_factible = true;
+		for (int j = 0; j < NVEC; j++) {
+			if (fijo[j] == 0 && (hdis_double(hgen[hilo]) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
 
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+#endif
+				v = poblacion[i0][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
+				if (control_factibilidad) {
+					if (v < cotas[0][j] || v > cotas[1][j]) {
+						es_factible = false;
+						break;
+					}
+				}
+				descendiente[i][j] = v;
+#ifdef ESTA_CRUCES
+				num_cruces_ok[hilo]++;
+#endif
+			}
+			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo (todos los
+				// individuos tienen el mismo valor), o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
+#ifdef RECOMBINACION_NORMAL
+				descendiente[i][j] = poblacion[i][j];
+#else
+				descendiente[i][j] = poblacion[i0][j];
+#endif
+#ifdef ESTA_CRUCES
+				num_cruces_no[hilo]++;
+				if (fijo[j] == 1) {
+					num_cruces_fj[hilo]++;
+				}
+#else
+#ifdef NUM_GENES_PROGENITOR_2
+				if (fijo[j] == 0) {
+					num_variables_progenitor_2[hilo]++;
+				}
+#endif
+#endif
+			}
+		}
+		if (control_factibilidad) {
+			factible[i] = es_factible;
+		}
+	}
+#else
+	// best1bin: Mejor + F * (Mejor - I1), colapsa sobre el primer mejor individuo
+
+	for (int i = desde; i < hasta; i++) {
+		i1 = hdis_entero(hgen[hilo]);
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hdis_entero_ivec(hgen[hilo]);
+		if (prob_cop_mejor > 0.0000001 && hdis_double(hgen[hilo]) < prob_cop_mejor) {
+			if (prob_cop_mejor < 0) {
+				// descartar el descendiente
+				factible[i] = false;
+				continue;
+			}
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+				num_cruces_ok[hilo]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && (hdis_double(hgen[hilo]) <= cte_recombinacion || j == i3)) {
+					// variable que se toma del mejor individuo
+					descendiente[i][j] = poblacion[ind_mejor_merito][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[hilo]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[hilo]++;
+#endif
+					}
+				}
+			}
+			factible[i] = true;
+			continue;
+		}
 #ifdef SORTEOS
 		n_sor[hilo]++;
 		media[0][hilo] += i1;
@@ -2432,6 +2917,131 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 		desviacion[2][hilo] += v * v;
 #endif
 
+		es_factible = true;
+		for (int j = 0; j < NVEC; j++) {
+			if (fijo[j] == 0 && (hdis_double(hgen[hilo]) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+#endif
+				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[ind_mejor_merito][j] - poblacion[i1][j]);
+				if (control_factibilidad) {
+					if (v < cotas[0][j] || v > cotas[1][j]) {
+						es_factible = false;
+						break;
+					}
+				}
+				descendiente[i][j] = v;
+#ifdef ESTA_CRUCES
+				num_cruces_ok[hilo]++;
+#endif
+			}
+			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo (todos los
+				// individuos tienen el mismo valor), o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
+#ifdef RECOMBINACION_NORMAL
+				descendiente[i][j] = poblacion[i][j];
+#else
+				descendiente[i][j] = poblacion[ind_mejor_merito][j];
+#endif
+#ifdef ESTA_CRUCES
+				num_cruces_no[hilo]++;
+				if (fijo[j] == 1) {
+					num_cruces_fj[hilo]++;
+				}
+#else
+#ifdef NUM_GENES_PROGENITOR_2
+				if (fijo[j] == 0) {
+					num_variables_progenitor_2[hilo]++;
+				}
+#endif
+#endif
+			}
+		}
+		if (control_factibilidad) {
+			factible[i] = es_factible;
+		}
+	}
+#endif
+#endif
+}
+
+void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_distribution<int>& he, uniform_int_distribution<int>& hi, uniform_real_distribution<double>& hd) {
+	double v;
+	bool es_factible;
+	int i1;
+	int i3;
+#ifdef RAND1
+	// Mejor + F * (I2 - I1)
+	// en el libro esta es la que se usa y denomina best1bin
+
+	int i2;
+	for (int i = desde; i < hasta; i++) {
+		i1 = he(gh);
+		i2 = he(gh);
+		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
+		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
+		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hd(gh) < prob_cop_mejor)) {
+			if (prob_cop_mejor < 0) {
+				// solo puede haber llegado aquí si i1 == i2
+				// descartar el descendiente
+				/*
+				excluir cusndo 'i1' es igual a 'i2' ralentiza considerablemente la convergencia
+				no excluir significa que cuando son iguales, se cuasi duplica el mejor individuo
+				excepto cuando 'hd(gh)' <= cte_recombinacion' en cuyo caso se toma del mejor individuo
+				la probabilidad de que I1=i2 es 1./NPOB
+				*/
+				factible[i] = false;
+				continue;
+			}
+			num_mutaciones_extra[hilo]++;
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+				num_cruces_ok[hilo]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hd(gh) <= cte_recombinacion_extra) {
+					// variable que se toma del mejor individuo de la población
+					descendiente[i][j] = poblacion[ind_mejor_merito][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[hilo]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[hilo]++;
+#endif
+					}
+				}
+			}
+			factible[i] = true;
+#ifdef MEJ_MUT_EXTA
+			ind_extra[hilo][num_extra[hilo]++] = i;
+#endif
+			continue;
+		}
+#ifdef SORTEOS
+		n_sor[hilo]++;
+		media[0][hilo] += i1;
+		media[1][hilo] += i2;
+		media[2][hilo] += i3;
+		v = i1 - v_media[0][hilo];
+		desviacion[0][hilo] += v * v;
+		v = i2 - v_media[1][hilo];
+		desviacion[1][hilo] += v * v;
+		v = i3 - v_media[2][hilo];
+		desviacion[2][hilo] += v * v;
+#endif
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hi(gh);
 		es_factible = true;
 		for (int j = 0; j < NVEC; j++) {
 			if (fijo[j] == 0 && (hd(gh) <= cte_recombinacion || j == i3)) {
@@ -2472,7 +3082,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 #else
 #ifdef NUM_GENES_PROGENITOR_2
 				if (fijo[j] == 0) {
-					num_genes_progenitor_2[hilo]++;
+					num_variables_progenitor_2[hilo]++;
 				}
 #endif
 #endif
@@ -2482,10 +3092,232 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 			factible[i] = es_factible;
 		}
 	}
+#else
+#ifdef RAND2
+	// I0 + F * (I2 - I1) es poco eficiente, no se ajusta al Monte Carlo de aproximación a la solución que se describe en el anexo del libro
+	int i0;
+	int i2;
+	for (int i = desde; i < hasta; i++) {
+		i0 = he(gh);
+		i1 = he(gh);
+		i2 = he(gh);
+		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
+		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
+		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hd(gh) < prob_cop_mejor)) {
+			if (prob_cop_mejor < 0) {
+				// solo puede haber llegado aquí si i1 == i2
+				// descartar el descendiente
+				/*
+				excluir cusndo 'i1' es igual a 'i2' ralentiza considerablemente la convergencia
+				no excluir significa que cuando son iguales, se cuasi duplica el mejor individuo
+				excepto cuando 'hd(gh) <= cte_recombinacion' en cuyo caso se toma del individuo 'i0'
+				la probabilidad de que I1=i2 es 1./NPOB
+				*/
+				factible[i] = false;
+				continue;
+			}
+			num_mutaciones_extra[hilo]++;
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+				num_cruces_ok[hilo]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hd(gh) <= cte_recombinacion_extra) {
+					// variable que se toma del individuo 'i0
+					descendiente[i][j] = poblacion[i0][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[hilo]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[hilo]++;
+#endif
+					}
+				}
+			}
+#ifdef MEJ_MUT_EXTA
+			ind_extra[hilo][num_extra[hilo]++] = i;
+#endif
+			factible[i] = true;
+			continue;
+		}
+#ifdef SORTEOS
+		n_sor[hilo]++;
+		media[0][hilo] += i1;
+		media[1][hilo] += i2;
+		media[2][hilo] += i3;
+		v = i1 - v_media[0][hilo];
+		desviacion[0][hilo] += v * v;
+		v = i2 - v_media[1][hilo];
+		desviacion[1][hilo] += v * v;
+		v = i3 - v_media[2][hilo];
+		desviacion[2][hilo] += v * v;
+#endif
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hi(gh);
+		es_factible = true;
+		for (int j = 0; j < NVEC; j++) {
+			if (fijo[j] == 0 && (hd(gh) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+#endif
+				v = poblacion[i0][j] + factor_mutacion * (poblacion[i1][j] - poblacion[i2][j]);
+				if (control_factibilidad) {
+					if (v < cotas[0][j] || v > cotas[1][j]) {
+						es_factible = false;
+						break;
+					}
+				}
+				descendiente[i][j] = v;
+#ifdef ESTA_CRUCES
+				num_cruces_ok[hilo]++;
+#endif
+			}
+			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo (todos los
+				// individuos tienen el mismo valor), o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
+#ifdef RECOMBINACION_NORMAL
+				descendiente[i][j] = poblacion[i][j];
+#else
+				descendiente[i][j] = poblacion[i0][j];
+#endif
+
+#ifdef ESTA_CRUCES
+				num_cruces_no[hilo]++;
+				if (fijo[j] == 1) {
+					num_cruces_fj[hilo]++;
+				}
+#else
+#ifdef NUM_GENES_PROGENITOR_2
+				if (fijo[j] == 0) {
+					num_variables_progenitor_2[hilo]++;
+				}
+#endif
+#endif
+			}
+		}
+		if (control_factibilidad) {
+			factible[i] = es_factible;
+		}
+	}
+#else
+	// best1bin: Mejor + F * (Mejor - I1). No converge en absoluto, colapsa sobre el primer mejor individuo
+
+	for (int i = desde; i < hasta; i++) {
+		i1 = he(gh);
+		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
+		i3 = hi(gh);
+		if (prob_cop_mejor > 0.0000001 && hd(gh) < prob_cop_mejor) {
+			if (prob_cop_mejor < 0) {
+				factible[i] = false;
+				continue;
+			}
+			for (int j = 0; j < NVEC; j++) {
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+				num_cruces_ok[hilo]++;
+#endif
+				// las variables fijas tienen el mismo valor para el mejor individuo y para el segundo progenitor
+				// nosotros las tomaremos del segundo progenitor
+				if (fijo[j] == 0 && hd(gh) <= cte_recombinacion_extra) {
+					// variable que se toma del mejor individuo de la población
+					descendiente[i][j] = poblacion[ind_mejor_merito][j];
+				}
+				else {
+					// variable que se toma del segundo progenitor
+					descendiente[i][j] = poblacion[i][j];
+					// solo sumamos para las variables que no son fijas
+					if (fijo[j] == 0) {
+						num_variables_extra_2[hilo]++;
+#ifdef NUM_GENES_PROGENITOR_2
+						num_variables_progenitor_2[hilo]++;
+#endif
+					}
+				}
+			}
+			factible[i] = true;
+			continue;
+		}
+#ifdef SORTEOS
+		n_sor[hilo]++;
+		media[0][hilo] += i1;
+		media[1][hilo] += i2;
+		media[2][hilo] += i3;
+		v = i1 - v_media[0][hilo];
+		desviacion[0][hilo] += v * v;
+		v = i2 - v_media[1][hilo];
+		desviacion[1][hilo] += v * v;
+		v = i3 - v_media[2][hilo];
+		desviacion[2][hilo] += v * v;
+#endif
+		es_factible = true;
+		for (int j = 0; j < NVEC; j++) {
+			if (fijo[j] == 0 && (hd(gh) <= cte_recombinacion || j == i3)) {
+				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
+				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
+
+				// mutación diferencial: el valor se obtiene a partir del mejor individuo de la población y de la diferencia entre dos individuos aleatorios
+#ifdef ESTA_CRUCES
+				num_cruces_si[hilo]++;
+#endif
+				v = poblacion[ind_mejor_merito][j] + factor_mutacion * (poblacion[ind_mejor_merito][j] - poblacion[i1][j]);
+				if (control_factibilidad) {
+					if (v < cotas[0][j] || v > cotas[1][j]) {
+						es_factible = false;
+						break;
+					}
+				}
+				descendiente[i][j] = v;
+#ifdef ESTA_CRUCES
+				num_cruces_ok[hilo]++;
+#endif
+			}
+			else {
+				// la variable 'j' del 'descendiente' toma el valor del individuo de la población, bien porque es una variable de valor fijo (todos los
+				// individuos tienen el mismo valor), o porque no se cumple la condición de recombinación y no se trata de la variable 'i3' que se
+				// debe cruzar obligatoriamente
+#ifdef RECOMBINACION_NORMAL
+				descendiente[i][j] = poblacion[i][j];
+#else
+				descendiente[i][j] = poblacion[ind_mejor_merito][j];
+#endif
+
+#ifdef ESTA_CRUCES
+				num_cruces_no[hilo]++;
+				if (fijo[j] == 1) {
+					num_cruces_fj[hilo]++;
+				}
+#else
+#ifdef NUM_GENES_PROGENITOR_2
+				if (fijo[j] == 0) {
+					num_variables_progenitor_2[hilo]++;
+				}
+#endif
+#endif
+			}
+		}
+		if (control_factibilidad) {
+			factible[i] = es_factible;
+		}
+	}
+#endif
+#endif
 }
+
 /*
 versión mono proceso
 */
+
 void seleccion(int desde) {
 	double me_descendiente;
 	for (int i = desde; i < NPOB; i++) {
@@ -2682,9 +3514,9 @@ int comprobar_final() {
 	}
 #endif
 	if (histo_sol > 0 && (generacion % histo_sol) == 0) {
-		char fichero[128];
+		char fichero[384];
 		int n_sol = (int)(generacion / histo_sol);
-		sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_sol_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, n_sol);
+		sprintf_s(fichero, 382, "%s/%s_dll_sol_%03d.sol", senda_salidas, nombre_caso, n_sol);
 		salida_solucion(fichero);
 	}
 	if (histo_int > 0 && (generacion % histo_int) == 0) {
@@ -2710,9 +3542,9 @@ int comprobar_final() {
 				num_cruces_no[i] = 0;
 				num_cruces_fj[i] = 0;
 			}
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e                      %6d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, ind_mejor_merito);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e                      %8d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, ind_mejor_merito);
 #endif
 			ftime(&tiempo_ini);
 			ftime(&tiempo_ant);
@@ -2725,8 +3557,9 @@ int comprobar_final() {
 			// tiempo total desde el inicio del proceso en minutos
 			dif_tpo_tot = ((double)(tiempo_act.time - tiempo_ini.time) + (double)(tiempo_act.millitm - tiempo_ini.millitm) / 1000.) / 60.;
 			long long n_mej = 0;
-			long long n_mej_mej = num_mejoras_mejor;
+			long long n_mej_mej = 0;
 #ifdef NUM_MEJORAS
+			n_mej_mej = num_mejoras_mejor;
 			for (int i = 0; i < n_hilos; i++) {
 				n_mej += num_mejoras[i];
 				num_mejoras[i] = 0;
@@ -2748,19 +3581,19 @@ int comprobar_final() {
 				num_cruces_no[i] = 0;
 				num_cruces_fj[i] = 0;
 			}
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
 			long long n_v_h = 0;
 #ifdef NUM_GENES_PROGENITOR_2
 			for (int i = 0; i < n_hilos; i++) {
-				n_v_h += num_genes_progenitor_2[i];
-				num_genes_progenitor_2[i] = 0;
+				n_v_h += num_variables_progenitor_2[i];
+				num_variables_progenitor_2[i] = 0;
 			}
 #endif
 #ifdef FIJAR_VARIABLES
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_v_h, nvar_fijas);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_v_h, nvar_fijas);
 #else
-			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_v_h, n_mej, n_mej_mej);
+			fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_v_h, n_mej, n_mej_mej);
 #endif
 #endif
 		}
@@ -2795,8 +3628,8 @@ int comprobar_final() {
 				// intentar con una nueva población inicial
 				if (histo_sol != 0) {
 					// salvar la mejor solución obtenida hasta ahora
-					char fichero[128];
-					sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_gen_%08d_iter_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, generacion, intentos - 1);
+					char fichero[384];
+					sprintf_s(fichero, 382, "%s/%s_dll_gen_%08d_iter_%03d.sol", senda_salidas, nombre_caso, generacion, intentos - 1);
 					salida_solucion(fichero);
 				}
 				histogenera[histo_n] = generacion;
@@ -2840,9 +3673,9 @@ int comprobar_final() {
 					num_cruces_no[i] = 0;
 					num_cruces_fj[i] = 0;
 				}
-				fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
-				fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+				fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 				max_generaciones += generacion;
 				mejor_merito_anterior = 1.0e+99;
@@ -2870,8 +3703,8 @@ int comprobar_final() {
 					// intentar con una nueva población inicial
 					if (histo_sol != 0) {
 						// salvar la mejor solución obtenida hasta ahora
-						char fichero[128];
-						sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_gen_%08d_iter_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, generacion, intentos - 1);
+						char fichero[384];
+						sprintf_s(fichero, 382, "%s/%s_dll_gen_%08d_iter_%03d.sol", senda_salidas, nombre_caso, generacion, intentos - 1);
 						salida_solucion(fichero);
 					}
 					histogenera[histo_n] = generacion;
@@ -2915,9 +3748,9 @@ int comprobar_final() {
 						num_cruces_no[i] = 0;
 						num_cruces_fj[i] = 0;
 					}
-					fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
+					fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
-					fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+					fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 					max_generaciones += generacion;
 					mejor_merito_anterior = 1.0e+99;
@@ -3055,8 +3888,8 @@ int comprobar_final() {
 					if (intentos < max_intentos) {
 						if (histo_sol != 0) {
 							// salvar la mejor solución obtenida hasta ahora
-							char fichero[128];
-							sprintf_s(fichero, 127, "%s/%d_%d_%d_%d_dll_gen_%08d_iter_%03d.log", senda_salidas, id_salida, NPOB, modo_poblacion_inicial, (unsigned int)semilla, generacion, intentos - 1);
+							char fichero[384];
+							sprintf_s(fichero, 382, "%s/%s_dll_gen_%08d_iter_%03d.sol", senda_salidas, nombre_caso, generacion, intentos - 1);
 							salida_solucion(fichero);
 						}
 						histogenera[histo_n] = generacion;
@@ -3100,9 +3933,9 @@ int comprobar_final() {
 							num_cruces_no[i] = 0;
 							num_cruces_fj[i] = 0;
 						}
-						fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10lld %10lld %10lld %10lld %10lld %10lld\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, n_c_s, n_c_o, n_c_n, n_c_f, n_mej, n_mej_mej);
 #else
-						fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %6.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
+						fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
 						max_generaciones += generacion;
 						mejor_merito_anterior = 1.0e+99;
@@ -3429,9 +4262,22 @@ int ProcesoMP(int bloques) {
 				if (merito_individuo[i] < mejor_merito) {
 					mejor_merito = merito_individuo[i];
 					ind_mejor_merito = i;
+#ifdef NUM_MEJORAS
 					num_mejoras_mejor++;
+#endif
 				}
 			}
+#ifdef MEJ_MUT_EXTA
+			for (int i = 0; i < n_hilos; i++) {
+				while (num_extra[i] > 0) {
+					if (ind_extra[i][num_extra[i]--] == ind_mejor_merito) {
+						mej_extra++;
+						num_extra[i] = 0;
+						break;
+					}
+				}
+			}
+#endif
 #endif
 			if (poner_el_mejor_primero && ind_mejor_merito != 0) {
 				recolocar_al_mejor(ind_mejor_merito);
@@ -3643,8 +4489,8 @@ void ProcesarTramo(int hilo, int desde, int hasta, mt19937& gh, uniform_int_dist
 // recibimos '*g' (g por referencia) y el número de hilo 'hilo' y no hgen[i], para que sea un paso por referencia y hgen[i] se inicialice correctamente
 void inicia_azar(mt19937* g, int hilo, unsigned int semilla)
 {
-	char fichero[128];
-	sprintf_s(fichero, 127, "%s/%d.dat", senda_salidas, semilla);
+	char fichero[384];
+	sprintf_s(fichero, 382, "%s/%s_%d.dat", senda_salidas, nombre_caso, semilla);
 	ifstream frand(fichero);
 	if (frand.is_open())
 		// si existe el fichero con la semilla, se carga el generador de números aleatorios con los datos guardados en el fichero
@@ -3667,8 +4513,8 @@ void inicia_azar(mt19937* g, int hilo, unsigned int semilla)
 }
 void inicia_azar(mt19937& g, unsigned int semilla)
 {
-	char fichero[128];
-	sprintf_s(fichero, 127, "%s/%d.dat", senda_salidas, semilla);
+	char fichero[384];
+	sprintf_s(fichero, 382, "%s/%s_%d.dat", senda_salidas, nombre_caso, semilla);
 	ifstream frand(fichero);
 	if (frand.is_open())
 		// si existe el fichero con la semilla, se carga el generador de números aleatorios con los datos guardados en el fichero
@@ -3715,6 +4561,7 @@ OPCIONES recibe_opciones(OPCIONES vopt) {
 		}
 	}
 	catch (const std::exception& e) {
+		fprintf(salida, "\n%s\n", e.what());
 		return vopt;
 	}
 	return op;
@@ -3773,7 +4620,9 @@ double merito_s(double* vec_opt) {
 	double M[NSEC];
 	double Yp[NSEC];
 	double Yd[NSEC];
-	double Ypd[NSEC];		// no es una variable del modelo, es la media de Yp y Yd, para el cálculo de la optimización de los factores
+	// Ypd no es una variable del modelo, es la media de Yp y Yd, para el cálculo de la optimización de los factores
+	// es decisiva en comparación con usar Yp o Yd en 'uso_optimo_factores_F'
+	double Ypd[NSEC];
 	double Z[NSEC];
 #ifdef CONSUMO_INTERMEDIO_INDESADO
 	double X[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
@@ -3803,7 +4652,16 @@ double merito_s(double* vec_opt) {
 	double Ypr[NSEC];
 	double Ydr[NSEC];
 	double Zr[NSEC];
+#ifdef SIN_XR
+	double sum_Xi[NSEC];
+#else
+	double sum_X;
+#ifdef CONSUMO_INTERMEDIO_INDESADO
 	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
+#else
+	double Xr[NSEC][NSEC];
+#endif
+#endif
 	double FFr[NDEM][NFAC];
 	double Alpr[NDEM][NFAC];
 	double Tdr[NDEM];
@@ -3840,14 +4698,14 @@ double merito_s(double* vec_opt) {
 	double suma_F;
 	double suma_FF;
 	double sum_Xp;
-	double sum_X;
 
+	/*
 	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
 	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
 	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
 	epsilon = vec_opt[pvec[4]];
 	Apz = vec_opt[pvec[5]];
-	int n = pvec[6];
+	n = pvec[6];
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			Fi[i][j] = F[i][j] = vec_opt[n++];
@@ -3858,8 +4716,23 @@ double merito_s(double* vec_opt) {
 	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
 	std::copy(E, E + NSEC, Ei);
 	std::copy(M, M + NSEC, Mi);
+	*/
+
+	int n = pvec[1];
+	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pd[i] = vec_opt[n++];
+	epsilon = vec_opt[n++];
+	Apz = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			Fi[i][j] = F[i][j] = vec_opt[n++];
+		}
+	}
+	for (int i = 0; i < NSEC; i++) Ei[i] = E[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Mi[i] = M[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Di[i] = vec_opt[n++];
 	if (op.GE_INCLUYE_XP) {
-		int n = pvec[10];
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				Xpi[i][j] = vec_opt[n++];
@@ -3867,13 +4740,6 @@ double merito_s(double* vec_opt) {
 		}
 	}
 	if (op.GE_INCLUYE_AgH) {
-		int n;
-		if (op.GE_INCLUYE_XP) {
-			n = pvec[11];
-		}
-		else {
-			n = pvec[10];
-		}
 		for (int i = 0; i < NDEM; i++) {
 			AgHi[i] = vec_opt[n++];
 		}
@@ -3903,16 +4769,18 @@ double merito_s(double* vec_opt) {
 			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
 		}
 	}
-	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
 	restriccion_produccion_bruta_Z(Z, parametros.teta, parametros.xie, parametros.xid, E, Di, parametros.phi);
 	consumo_intermedio_X(X, Z, parametros.ax);
+
+	// la mayor desviación se produce casi siempre entre Yp y Yd
+	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Yd, Z, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
 		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
 	}
 	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
 
-	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq, datos.Ajc0, datos.Z0);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
 		if (op.ALP_FACTOR > 0.) {
@@ -3989,10 +4857,12 @@ double merito_s(double* vec_opt) {
 		}
 	}
 	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, Di, parametros.eta);
-	importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
-	produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
-	produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
-	produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
+	//produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
+	importacion_local_maxima_utilidad_armington_MD(M, Da, parametros.gamma, parametros.deltam, parametros.deltad, pq, pm, pd, Q, parametros.eta, datos.taum);
+	//produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_exportacion_local_ED(E, Dt, parametros.teta, parametros.xie, parametros.xid, pz, pe, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
 	if (op.EQ_BAL_PAGOS) {
 		ebp = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf);
 	}
@@ -4002,14 +4872,27 @@ double merito_s(double* vec_opt) {
 	// -----------------------
 	// segundo pase
 	// -----------------------
-	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
+#ifdef SIN_XR
+	// como no se calcula Xr, se calcula la suma de cada columna de X, para usarla en el cálculo de la desviación del cieere del mercado
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xi[i] = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_Xi[i] += X[j][i];
+		}
+	}
+	// X será la diferencia entre pases
+	consumo_intermedio_Xr(X, Zr, parametros.ax);
+#else
 	consumo_intermedio_X(Xr, Zr, parametros.ax);
+#endif
+	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
 		Ypd[i] = (Ypr[i] + Ydr[i]) / 2.;
 	}
 	uso_optimo_factores_F(Fr, parametros.beta, pf, py, Ypd);
+
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FFr, datos.FF0, Fr);
 		if (op.ALP_FACTOR > 0.) {
@@ -4082,10 +4965,12 @@ double merito_s(double* vec_opt) {
 		}
 	}
 	produccion_armington_Q(Qr, parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta);
-	importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
-	produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
-	produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
-	produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
+	//produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
+	importacion_local_maxima_utilidad_armington_MD(Mr, Dar, parametros.gamma, parametros.deltam, parametros.deltad, pq, pm, pd, Qr, parametros.eta, datos.taum);
+	//produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_exportacion_local_ED(Er, Dtr, parametros.teta, parametros.xie, parametros.xid, pz, pe, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
 	if (op.EQ_BAL_PAGOS) {
 		ebpr = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, Sfr);
 	}
@@ -4123,11 +5008,15 @@ double merito_s(double* vec_opt) {
 		for (int j = 0; j < NDEM; j++) {
 			sum_Xp += Xpr[j][i];
 		}
+#ifdef SIN_XR
+		dd = Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_Xi[i]);
+#else
 		sum_X = 0.;
 		for (int j = 0; j < NSEC; j++) {
 			sum_X += Xr[j][i];
 		}
-		dd = Qr[i] - (sum_Xp + Xgr[i] + Xvr[i] + sum_X);
+		dd = Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_X);
+#endif
 		dist += dd * dd;
 	}
 	if (op.FF_ENDOGENA) {
@@ -4239,7 +5128,11 @@ double merito_s(double* vec_opt) {
 			dist += dd * dd;
 		}
 		for (int j = 0; j < NSEC; j++) {
+#ifdef SIN_XR
+			dd = X[i][j];
+#else
 			dd = Xr[i][j] - X[i][j];
+#endif
 			dist += dd * dd;
 		}
 	}
@@ -4262,6 +5155,7 @@ double merito_s(double* vec_opt) {
 #endif
 	return dist;
 }
+
 #ifdef AJUSTA_POB_INICIAL
 double ajustar_vec_solucion(double* vec_opt) {
 	/*
@@ -4359,24 +5253,21 @@ double ajustar_vec_solucion(double* vec_opt) {
 	double sum_Xp;
 	double sum_X;
 
-	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
-	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
-	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
-	epsilon = vec_opt[pvec[4]];
-	Apz = vec_opt[pvec[5]];
-	int n = pvec[6];
+	int n = pvec[1];
+	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pd[i] = vec_opt[n++];
+	epsilon = vec_opt[n++];
+	Apz = vec_opt[n++];
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			Fi[i][j] = F[i][j] = vec_opt[n++];
 		}
 	}
-	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
-	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
-	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
-	std::copy(E, E + NSEC, Ei);
-	std::copy(M, M + NSEC, Mi);
+	for (int i = 0; i < NSEC; i++) Ei[i] = E[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Mi[i] = M[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Di[i] = vec_opt[n++];
 	if (op.GE_INCLUYE_XP) {
-		int n = pvec[10];
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				Xpi[i][j] = vec_opt[n++];
@@ -4384,13 +5275,6 @@ double ajustar_vec_solucion(double* vec_opt) {
 		}
 	}
 	if (op.GE_INCLUYE_AgH) {
-		int n;
-		if (op.GE_INCLUYE_XP) {
-			n = pvec[11];
-		}
-		else {
-			n = pvec[10];
-		}
 		for (int i = 0; i < NDEM; i++) {
 			AgHi[i] = vec_opt[n++];
 		}
@@ -4429,7 +5313,7 @@ double ajustar_vec_solucion(double* vec_opt) {
 	}
 	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
 
-	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq, datos.Ajc0, datos.Z0);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
 		if (op.ALP_FACTOR > 0.) {
@@ -4644,7 +5528,7 @@ double ajustar_vec_solucion(double* vec_opt) {
 		for (int j = 0; j < NSEC; j++) {
 			sum_X += Xr[j][i];
 		}
-		dd = Qr[i] - (sum_Xp + Xgr[i] + Xvr[i] + sum_X);
+		dd = Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_X);
 		dist += dd * dd;
 	}
 	if (op.FF_ENDOGENA) {
@@ -4799,11 +5683,18 @@ double ajustar_vec_solucion(double* vec_opt) {
 			}
 		}
 	}
+	if (op.GE_INCLUYE_AgH) {
+		for (int i = 0; i < NDEM; i++) {
+			AgHi[i] = vec_opt[n++];
+			vec_opt_nuevo[nv++] = AgHi[i];
+		}
+	}
 	vec_opt_nuevo[nv] = dist;
 
 	return dist;
 }
 #endif
+
 #ifdef FIN_MERITO_ANTICIPADO
 double merito_d(double* vec_opt, double liston) {
 	// la función se termina cuando la desviación supera un cierto liston, no ahorra ningún tiempo
@@ -4897,24 +5788,21 @@ double merito_d(double* vec_opt, double liston) {
 	double sum_Xpr;
 	double sum_Xr;
 
-	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
-	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
-	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
-	epsilon = vec_opt[pvec[4]];
-	Apz = vec_opt[pvec[5]];
-	int n = pvec[6];
+	int n = pvec[1];
+	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pd[i] = vec_opt[n++];
+	epsilon = vec_opt[n++];
+	Apz = vec_opt[n++];
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			Fi[i][j] = F[i][j] = vec_opt[n++];
 		}
 	}
-	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
-	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
-	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
-	std::copy(E, E + NSEC, Ei);
-	std::copy(M, M + NSEC, Mi);
+	for (int i = 0; i < NSEC; i++) Ei[i] = E[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Mi[i] = M[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Di[i] = vec_opt[n++];
 	if (op.GE_INCLUYE_XP) {
-		int n = pvec[10];
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				Xpi[i][j] = vec_opt[n++];
@@ -4922,13 +5810,6 @@ double merito_d(double* vec_opt, double liston) {
 		}
 	}
 	if (op.GE_INCLUYE_AgH) {
-		int n;
-		if (op.GE_INCLUYE_XP) {
-			n = pvec[11];
-		}
-		else {
-			n = pvec[10];
-		}
 		for (int i = 0; i < NDEM; i++) {
 			AgHi[i] = vec_opt[n++];
 		}
@@ -4966,7 +5847,7 @@ double merito_d(double* vec_opt, double liston) {
 		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
 	}
 	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
-	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq, datos.Ajc0, datos.Z0);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
 		if (op.ALP_FACTOR > 0) {
@@ -5446,25 +6327,21 @@ double* merito_sol(double* vec_opt) {
 	double sum_Xp;
 	double sum_X;
 
-	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
-	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
-	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
-	epsilon = vec_opt[pvec[4]];
-	Apz = vec_opt[pvec[5]];
-	int n = pvec[6];
+	int n = pvec[1];
+	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pd[i] = vec_opt[n++];
+	epsilon = vec_opt[n++];
+	Apz = vec_opt[n++];
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
-			Fi[i][j] = vec_opt[n];
-			F[i][j] = vec_opt[n++];
+			Fi[i][j] = F[i][j] = vec_opt[n++];
 		}
 	}
-	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
-	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
-	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
-	std::copy(E, E + NSEC, Ei);
-	std::copy(M, M + NSEC, Mi);
+	for (int i = 0; i < NSEC; i++) Ei[i] = E[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Mi[i] = M[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Di[i] = vec_opt[n++];
 	if (op.GE_INCLUYE_XP) {
-		int n = pvec[10];
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				Xpi[i][j] = vec_opt[n++];
@@ -5472,13 +6349,6 @@ double* merito_sol(double* vec_opt) {
 		}
 	}
 	if (op.GE_INCLUYE_AgH) {
-		int n;
-		if (op.GE_INCLUYE_XP) {
-			n = pvec[11];
-		}
-		else {
-			n = pvec[10];
-		}
 		for (int i = 0; i < NDEM; i++) {
 			AgHi[i] = vec_opt[n++];
 		}
@@ -5508,16 +6378,18 @@ double* merito_sol(double* vec_opt) {
 			pf[1] = precio_factor_trabajo_pFL(op.INDICE_F_TRA, datos.PobAct, op.ALFA_PHILLIPS, datos.pF0[op.INDICE_F_TRA], datos.F0, F);
 		}
 	}
-	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
 	restriccion_produccion_bruta_Z(Z, parametros.teta, parametros.xie, parametros.xid, E, Di, parametros.phi);
 	consumo_intermedio_X(X, Z, parametros.ax);
+
+	// la mayor desviación se produce casi siempre entre Yp y Yd
+	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Yd, Z, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
 		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
 	}
 	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
 
-	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq, datos.Ajc0, datos.Z0);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
 		if (op.ALP_FACTOR > 0) {
@@ -5594,10 +6466,14 @@ double* merito_sol(double* vec_opt) {
 		}
 	}
 	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, Di, parametros.eta);
-	importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
-	produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
-	produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
-	produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+
+	//importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
+	//produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
+	importacion_local_maxima_utilidad_armington_MD(M, Da, parametros.gamma, parametros.deltam, parametros.deltad, pq, pm, pd, Q, parametros.eta, datos.taum);
+	//produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_exportacion_local_ED(E, Dt, parametros.teta, parametros.xie, parametros.xid, pz, pe, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+
 	if (op.EQ_BAL_PAGOS) {
 		ebp = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf);
 	}
@@ -5607,14 +6483,16 @@ double* merito_sol(double* vec_opt) {
 	// -----------------------
 	// segundo pase
 	// -----------------------
-	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
 	consumo_intermedio_X(Xr, Zr, parametros.ax);
+
+	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
 		Ypd[i] = (Ypr[i] + Ydr[i]) / 2.;
 	}
 	uso_optimo_factores_F(Fr, parametros.beta, pf, py, Ypd);
+
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FFr, datos.FF0, Fr);
 		if (op.ALP_FACTOR > 0) {
@@ -5687,10 +6565,13 @@ double* merito_sol(double* vec_opt) {
 		}
 	}
 	produccion_armington_Q(Qr, parametros.gamma, parametros.deltam, parametros.deltad, M, Dt, parametros.eta);
-	importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
-	produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
-	produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
-	produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//importacion_maxima_utilidad_armington_M(Mr, parametros.gamma, parametros.deltam, pq, pm, Qr, parametros.eta, datos.taum);
+	//produccion_maxima_utilidad_armington_D(Dar, parametros.gamma, parametros.deltad, pq, pd, Qr, parametros.eta);
+	importacion_local_maxima_utilidad_armington_MD(Mr, Dar, parametros.gamma, parametros.deltam, parametros.deltad, pq, pm, pd, Qr, parametros.eta, datos.taum);
+	//produccion_para_exportacion_E(Er, parametros.teta, parametros.xie, pz, pe, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	//produccion_para_local_D(Dtr, parametros.teta, parametros.xid, pz, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+	produccion_para_exportacion_local_ED(Er, Dtr, parametros.teta, parametros.xie, parametros.xid, pz, pe, pd, Zr, parametros.phi, datos.tauz, CssEr, AgEr, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
+
 	if (op.EQ_BAL_PAGOS) {
 		ebpr = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, Er, datos.pWm, Mr, Sfr);
 	}
@@ -5757,7 +6638,7 @@ double* merito_sol(double* vec_opt) {
 		for (int j = 0; j < NSEC; j++) {
 			sum_X += Xr[j][i];
 		}
-		dd = abs(Qr[i] - (sum_Xp + Xgr[i] + Xvr[i] + sum_X));
+		dd = abs(Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_X));
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -6637,24 +7518,21 @@ double merito_s_relativa(double* vec_opt) {
 	double sum_Xpr;
 	double sum_Xr;
 
-	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
-	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
-	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
-	epsilon = vec_opt[pvec[4]];
-	Apz = vec_opt[pvec[5]];
-	int n = pvec[6];
+	int n = pvec[1];
+	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pd[i] = vec_opt[n++];
+	epsilon = vec_opt[n++];
+	Apz = vec_opt[n++];
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			Fi[i][j] = F[i][j] = vec_opt[n++];
 		}
 	}
-	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
-	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
-	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
-	std::copy(E, E + NSEC, Ei);
-	std::copy(M, M + NSEC, Mi);
+	for (int i = 0; i < NSEC; i++) Ei[i] = E[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Mi[i] = M[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Di[i] = vec_opt[n++];
 	if (op.GE_INCLUYE_XP) {
-		int n = pvec[10];
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				Xpi[i][j] = vec_opt[n++];
@@ -6662,13 +7540,6 @@ double merito_s_relativa(double* vec_opt) {
 		}
 	}
 	if (op.GE_INCLUYE_AgH) {
-		int n;
-		if (op.GE_INCLUYE_XP) {
-			n = pvec[11];
-		}
-		else {
-			n = pvec[10];
-		}
 		for (int i = 0; i < NDEM; i++) {
 			AgHi[i] = vec_opt[n++];
 		}
@@ -6706,7 +7577,7 @@ double merito_s_relativa(double* vec_opt) {
 		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
 	}
 	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
-	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq, datos.Ajc0, datos.Z0);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
 		if (op.ALP_FACTOR > 0) {
@@ -7147,25 +8018,21 @@ double* merito_sol_relativa(double* vec_opt) {
 	double sum_Xpr;
 	double sum_Xr;
 
-	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
-	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
-	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
-	epsilon = vec_opt[pvec[4]];
-	Apz = vec_opt[pvec[5]];
-	int n = pvec[6];
+	int n = pvec[1];
+	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) pd[i] = vec_opt[n++];
+	epsilon = vec_opt[n++];
+	Apz = vec_opt[n++];
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
-			Fi[i][j] = vec_opt[n];
-			F[i][j] = vec_opt[n++];
+			Fi[i][j] = F[i][j] = vec_opt[n++];
 		}
 	}
-	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
-	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
-	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
-	std::copy(E, E + NSEC, Ei);
-	std::copy(M, M + NSEC, Mi);
+	for (int i = 0; i < NSEC; i++) Ei[i] = E[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Mi[i] = M[i] = vec_opt[n++];
+	for (int i = 0; i < NSEC; i++) Di[i] = vec_opt[n++];
 	if (op.GE_INCLUYE_XP) {
-		int n = pvec[10];
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				Xpi[i][j] = vec_opt[n++];
@@ -7173,13 +8040,6 @@ double* merito_sol_relativa(double* vec_opt) {
 		}
 	}
 	if (op.GE_INCLUYE_AgH) {
-		int n;
-		if (op.GE_INCLUYE_XP) {
-			n = pvec[11];
-		}
-		else {
-			n = pvec[10];
-		}
 		for (int i = 0; i < NDEM; i++) {
 			AgHi[i] = vec_opt[n++];
 		}
@@ -7217,7 +8077,7 @@ double* merito_sol_relativa(double* vec_opt) {
 		Ypd[i] = (Yp[i] + Yd[i]) / 2.;
 	}
 	uso_optimo_factores_F(F, parametros.beta, pf, py, Ypd);
-	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq);
+	coste_unitario_produccion_pz(pz, parametros.ay, py, parametros.ax, pq, datos.Ajc0, datos.Z0);
 	if (op.FF_ENDOGENA) {
 		aportacion_factores_FF(FF, datos.FF0, F);
 		if (op.ALP_FACTOR > 0) {
@@ -8212,6 +9072,15 @@ void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]
 		}
 	}
 }
+#ifdef SIN_XR
+void consumo_intermedio_Xr(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			X[i][j] -= ax[i][j] * Z[i];
+		}
+	}
+}
+#endif
 #endif
 #endif
 /*
@@ -8228,9 +9097,9 @@ void uso_optimo_factores_F(double F[NSEC][NFAC], double beta[NSEC][NFAC], double
 		}
 	}
 }
-void coste_unitario_produccion_pz(double* pz, double* ay, double* py, double ax[NSEC][NSEC], double* pq) {
+void coste_unitario_produccion_pz(double* pz, double* ay, double* py, double ax[NSEC][NSEC], double* pq, double Ajc[NSEC], double Z0[NSEC]) {
 	for (int i = 0; i < NSEC; i++) {
-		pz[i] = ay[i] * py[i];
+		pz[i] = ay[i] * py[i] + Ajc[i] / Z0[i] * pq[i];
 		for (int j = 0; j < NSEC; j++) {
 			pz[i] += ax[i][j] * pq[j];
 		}
@@ -8256,6 +9125,7 @@ void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], doubl
 void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0, double AgH[NDEM]) {
 	double ingresos;
 	for (int i = 0; i < NDEM; i++) {
+		// queda la duda de si las ayudas del gobierno tributan, aquí se supone que si
 		ingresos = PssH0[i] + AgH[i];
 		for (int j = 0; j < NFAC; j++) {
 			ingresos += (FF[i][j] + Alp[i][j]) * pf[j];
@@ -8484,6 +9354,16 @@ void produccion_maxima_utilidad_armington_D(double* Da, double* gamma, double* d
 		Da[i] = Q[i] * pow(pow(gamma[i], eta[i]) * deltad[i] * pq[i] / pd[i], 1. / (1. - eta[i]));
 	}
 }
+void importacion_local_maxima_utilidad_armington_MD(double* M, double* Da, double* gamma, double* deltam, double* deltad, double* pq, double* pm, double* pd, double* Q, double* eta, double* taum) {
+	double expo;
+	double qg;
+	for (int i = 0; i < NSEC; i++) {
+		expo = 1. / (1. - eta[i]);
+		qg = pow(gamma[i], eta[i]) * pq[i];
+		M[i] = Q[i] * pow(qg * deltam[i] / ((1. + taum[i]) * pm[i]), expo);
+		Da[i] = Q[i] * pow(qg * deltad[i] / pd[i], expo);
+	}
+}
 void produccion_para_exportacion_E(double* E, double* teta, double* xie, double* pz, double* pe, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS) {
 	double base;
 	double signo_teta;
@@ -8554,6 +9434,61 @@ void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, 
 		}
 	}
 }
+void produccion_para_exportacion_local_ED(double* E, double* Dt, double* teta, double* xie, double* xid, double* pz, double* pe, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS) {
+	double basec;
+	double base;
+	double signo_teta;
+	double abs_teta;
+	double tasa_c;
+	double expo;
+	for (int i = 0; i < NSEC; i++) {
+		if (xie[i] < 0.000001 && xid[i] < 0.000001) {
+			E[i] = 0.;
+			Dt[i] = 0.;
+			continue;
+		}
+		signo_teta = copysign(1.0, teta[i]);
+		abs_teta = abs(teta[i]);
+		expo = 1. / (1. - phi[i]);
+		if (MODO_PSEUDOIMPTOS == 0) {
+			if (Z[i] > 0.000001) {
+				tasa_c = (CssE[i] - AgE[i]) / Z[i];
+			}
+			else {
+				tasa_c = 0.;
+			}
+		}
+		else {
+			tasa_c = ctzssez[i] - ctzagez[i];
+		}
+		basec = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i];
+		if (xie[i] > 0.000001) {
+			base = basec * xie[i] / pe[i];
+			if (base < 0.000001) {
+				E[i] = 0.;
+			}
+			else {
+				E[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+			}
+		}
+		else {
+			E[i] = 0.;
+		}
+		if (xid[i] > 0.000001) {
+			base = basec * xid[i] / pd[i];
+			if (base < 0.000001) {
+				Dt[i] = 0.;
+			}
+			else {
+				Dt[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+			}
+		}
+		else {
+			Dt[i] = 0.;
+		}
+	}
+}
+
 double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double* pWm, double* M, double Sf) {
 	double ebp = Sf;
 	for (int i = 0; i < NSEC; i++) {

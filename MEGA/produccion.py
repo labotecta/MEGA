@@ -96,7 +96,7 @@ def produccion_sector_Z(X, ax, Y, ay):
     Z = np.min(producción_posible, axis=1)
     return Z
 
-def coste_unitario_produccion_pz(ay, py, ax, pq):
+def coste_unitario_produccion_pz(ay, py, ax, pq, Ajc, Z0):
     '''
     ecuación 6.5 alternativa
     ay  : para cada sector, compras necesarias de su factor compuesto (composite factor) para producir una unidad
@@ -106,6 +106,7 @@ def coste_unitario_produccion_pz(ay, py, ax, pq):
     pz = np.zeros(nsec, dtype=np.float64)
     for i in range (nsec):
         pz[i] = ay[i] * py[i]
+        pz[i] += Ajc[i] / Z0[i] * pq[i]
         for j in range(nsec):
             pz[i] += ax[i,j] * pq[j]
     return pz

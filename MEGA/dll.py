@@ -62,6 +62,9 @@ class DATOS(ct.Structure):
         ('Sf0',      ct.c_double),
         ('Fue',      ct.c_double),
         ('PobAct',   ct.c_double),
+        ('Z',       (ct.c_double * nsec)),
+        ('Ajc',     (ct.c_double * nsec)),
+        ('Aji',     (ct.c_double * nsec)),
     )
 
 class PARAMETROS(ct.Structure):
@@ -152,6 +155,9 @@ def envia_datos(libc, d):
         ct.c_double(d.Sf0),
         ct.c_double(prin.FDO_UE),
         ct.c_double(d.PobAct),
+        (ct.c_double * nsec) (*(d.Z0  .flatten())),
+        (ct.c_double * nsec) (*(d.Ajc0.flatten())),
+        (ct.c_double * nsec) (*(d.Aji0.flatten())),
     )
     libc.recibe_datos.argtypes = [DATOS]
     libc.recibe_datos.restype = DATOS
@@ -371,14 +377,15 @@ def merito_sol(libc, vec_opt):
     return r_sol
     '''
 
-def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida, senda_salidas):
-    libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int, ct.c_char_p)
+def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida, senda_salidas, caso):
+    libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int, ct.c_char_p, ct.c_char_p)
     libc.soluciona.restype = ct.POINTER(ct.c_double)
     v1 = np.array(par).ctypes.data_as(ct.POINTER(ct.c_double))
     v2 = np.array(cotas_inf).ctypes.data_as(ct.POINTER(ct.c_double))
     v3 = np.array(cotas_sup).ctypes.data_as(ct.POINTER(ct.c_double))
     v4 = vec.ctypes.data_as(ct.POINTER(ct.c_double))
     v5 = ct.c_char_p(senda_salidas.encode('utf-8'))
-    res = libc.soluciona(v1, v2, v3, v4, extendida, v5)
+    v6 = ct.c_char_p(caso.encode('utf-8'))
+    res = libc.soluciona(v1, v2, v3, v4, extendida, v5, v6)
     return res
 

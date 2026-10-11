@@ -17,7 +17,7 @@ además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'g
 desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 */
 
-#define MEGA6
+#define MEGA4
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -47,24 +47,24 @@ const int NDEM = 2;
 const int NSEC = 32;
 #endif
 
-// desastroso, 'FIJAR_VARIABLES' no funciona
-//#define FIJAR_VARIABLES
-#ifdef FIJAR_VARIABLES
-int GENS_CALENTAR = 50000;
-int BLOQUE_FIJAR = 10000;
-double MIN_FIJAR = 0.1;
-double TOL_DISPERSION;
-#endif
+/*
+------------------------------------------------------------------------------------------------------------
+Opciones de compilación, no se trata de opciones en tiempo de ejecución.
+La mayoría son inútiles, pero se mantienen para que el olvido no haga que en el futuro se repita la historia
+------------------------------------------------------------------------------------------------------------
+*/
+// no define la matriz Xr em merito_s para ahorrar memoria, es incompatible con CONSUMO_INTERMEDIO_AX y CONSUMO_INTERMEDIO_INDESADO
+//#define SIN_XR
 
-// dar un peso distinto de 1 a PESO_YDP, ya sea mayor o menor, dificulta o imposibilita encontrar una solución
-//#define USAR_PESO_YDP
-#ifdef USAR_PESO_YDP
-double PESO_YDP = 10.;
-#endif
+// RAND1: Mejor + F * (I2 - I1)
+// en el libro esta es la que se usa y denomina best1bin
+#define RAND1
 
-// en los individuos de la población inicial se sustituyen los valores de las variables (F,E,M,D, y en su caso XP) por los que resultan de
-// recalcular dos veces las ecuaciones del modelo, como se hace en la función de mérito
-//#define AJUSTA_POB_INICIAL
+// RAND2: I0 + F * (I2 - I1) es poco eficiente, no se ajusta al Monte Carlo de aproximación a la solución que se describe en el anexo del libro
+// para activar RAND2 es necesario que RAND1 esté desactivada
+//#define RAND2
+
+// si no están definidas RAND1 ni RAND2, se utiliza la estrategia: Mejor + F * (Mejor - I1), que no converge en absoluto, colapsa sobre el primer mejor individuo
 
 // para utilizar la función 'std::copy' para copiar un 'vector' a otro, en lugar de un 'for', no hay un ahorro de tiempo significativo, si es que lo hay
 #define COPIAR_CON_COPY
@@ -84,21 +84,30 @@ double PESO_YDP = 10.;
 // RECOMBINACION_NORMAL esté definido porque recombinar con el mejor ofrece menos variedad que con los individuos de la población.
 #define RECOMBINACION_NORMAL
 
-// inviable. El descendiente se acepta (selecciona) si hay algún individuo en la población con peor mérito
-//#define SELECCION_MAXIMA
-
 // añade estadísticas de las mutaciones a las salidas, registra el número de genes que se toman del segundo progenitor y no del mutante
+// desactivarla no ahorra tiempo
 #define NUM_GENES_PROGENITOR_2
 
 // calcula el número de individuos que mejoran
+// desactivarla no ahorra tiempo
 #define NUM_MEJORAS
+
+// cacula el tiempo en los procesos de mutación y selección 
+// desactivarla no ahorra tiempo
+#define TPO_MUTA_SELECCION
+
+// estadística de cuando una mutación extra se convierte en el mejor individuo. resulta insignificante menos del 0.5% de las veces
+//#define MEJ_MUT_EXTA
 
 // calcula la función de mérito como ECM y no como ECT
 //#define ECM
-int N_DESVIACIONES = 1;
 
-// cacula el tiempo en los procesos de mutación y selección 
-#define TPO_MUTA_SELECCION
+// inviable. El descendiente se acepta (selecciona) si hay algún individuo en la población con peor mérito
+//#define SELECCION_MAXIMA
+
+// en los individuos de la población inicial se sustituyen los valores de las variables (F,E,M,D, y en su caso XP) por los que resultan de
+// recalcular dos veces las ecuaciones del modelo, como se hace en la función de mérito
+//#define AJUSTA_POB_INICIAL
 
 // añade estadísticas de los cruces a las salidas
 //#define ESTA_CRUCES
@@ -119,6 +128,15 @@ int N_DESVIACIONES = 1;
 
 // para calcular las medias de los sorteos
 //#define SORTEOS
+
+// desastroso, 'FIJAR_VARIABLES' no funciona
+//#define FIJAR_VARIABLES
+
+// dar un peso distinto de 1 a PESO_YDP, ya sea mayor o menor, dificulta o imposibilita encontrar una solución
+//#define USAR_PESO_YDP
+/*
+------------------------------------------------------------------------------------------------------------
+*/
 
 typedef struct
 {
@@ -170,6 +188,9 @@ public:
 	double Sf0;
 	double Fue;
 	double PobAct;
+	double Z0[NSEC];
+	double Ajc0[NSEC];
+	double Aji0[NSEC];
 } DATOS;
 
 typedef struct
@@ -210,7 +231,7 @@ extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
-extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso);
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
 
 // estas dos funciones fueron útiles durante el desarrollo  pero se podrían eliminar
@@ -232,9 +253,12 @@ extern "C" MEGA_DLL_API void indice_desviaciones();
 void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);
 void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
+#ifdef SIN_XR
+void consumo_intermedio_Xr(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
+#endif
 void utilizacion_factor_compuesto_Y(double* Y, double* Z, double* ay);
 void uso_optimo_factores_F(double F[NSEC][NFAC], double beta[NSEC][NFAC], double* pf, double* py, double* Ypd);
-void coste_unitario_produccion_pz(double* pz, double* ay, double* py, double ax[NSEC][NSEC], double* pq);
+void coste_unitario_produccion_pz(double* pz, double* ay, double* py, double ax[NSEC][NSEC], double* pq, double Ajc[NSEC], double Z0[NSEC]);
 void aportacion_factores_FF(double FF[NDEM][NFAC], double FF0[NDEM][NFAC], double F[NSEC][NFAC]);
 void impuestos_directos_Td(double* Td, double* taud, double* pf, double FF[NDEM][NFAC], double Alp[NDEM][NFAC], double* PssH0, double AgH[NDEM]);
 void impuestos_produccion_Tz(double* Tz, double* tauz, double* pz, double* Z);
@@ -253,8 +277,10 @@ void demanda_maxima_utilidad_CES_Xp(double Xp[NDEM][NSEC], double* eta_ces, doub
 void produccion_armington_Q(double* Q, double* gamma, double* deltam, double* deltad, double* M, double* D, double* eta);
 void importacion_maxima_utilidad_armington_M(double* M, double* gamma, double* deltam, double* pq, double* pm, double* Q, double* eta, double* taum);
 void produccion_maxima_utilidad_armington_D(double* Da, double* gamma, double* deltad, double* pq, double* pd, double* Q, double* eta);
+void importacion_local_maxima_utilidad_armington_MD(double* M, double* Da, double* gamma, double* deltam, double* deltad, double* pq, double* pm, double* pd, double* Q, double* eta, double* taum);
 void produccion_para_exportacion_E(double* E, double* teta, double* xie, double* pz, double* pe, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
 void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
+void produccion_para_exportacion_local_ED(double* E, double* Dt, double* teta, double* xie, double* xid, double* pz, double* pe, double* pd, double* Z, double* phi, double* tauz, double* CssE, double* AgE, double Apz, double* ctzssez, double* ctzagez, int MODO_PSEUDOIMPTOS);
 double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double* pWm, double* M, double Sf);
 double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, double pF0L, double F0[NSEC][NFAC], double F[NSEC][NFAC]);
 #pragma endregion
@@ -268,7 +294,7 @@ bool inicia_poblacion(double ajuste);
 static bool genera_poblacion(double* vec_central, int modo, double modulacion);
 void recolocar_al_mejor(int ind_mejor_merito);
 int avanza();
-void mutacion_cruze(int desde, int hasta, int hilo);
+void mutacion_cruze(int desde, int hasta);
 void seleccion(int desde);
 void seleccionH(int desde, int hasta);
 void seleccionH(int desde, int hasta, int hilo);

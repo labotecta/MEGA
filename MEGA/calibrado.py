@@ -1,6 +1,7 @@
 import sys
 import copy
 import numpy as np
+import pandas as pd
 from pandas import DataFrame
 import ecuaciones as ecua
 
@@ -14,7 +15,22 @@ Los valores que se muestran como comentarios son los correspondientes a la MCS '
 '''
 class datos(object):
 
-    def __init__(self, sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, INDICE_F_TRA, PARO_INICIAL):
+    def __init__(self, sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, ajci, INDICE_F_TRA, PARO_INICIAL):
+        # fila de ajuste en costes de los sectores
+        self.Ajc0 = DataFrame(sam, index=ajci, columns=ind)
+        if self.Ajc0.empty or np.all(pd.isnull(self.Ajc0)):
+            # está vacia o todos los elementos son 'nan'
+            self.Ajc0 = np.zeros((len(ind)), dtype=np.float64)
+        else:
+            self.Ajc0 = self.Ajc0.to_numpy(dtype=np.float64).reshape(len(ind))
+            self.Ajc0 = np.nan_to_num(self.Ajc0, copy=True) # si no hay datos (NAN) se sustituye por 0
+        # columna de ajuste en ingresos de los sectores
+        self.Aji0 = DataFrame(sam, index=ind, columns=ajci)
+        if self.Aji0.empty or np.all(pd.isnull(self.Aji0)):
+            self.Aji0 = np.zeros((len(ind)), dtype=np.float64)
+        else:
+            self.Aji0 = self.Aji0.to_numpy(dtype=np.float64).reshape(len(ind))
+            self.Aji0 = np.nan_to_num(self.Aji0, copy=True) # si no hay datos (NAN) se sustituye por 0
         '''
         (sam, h, ind, dem, idt, gov, trf, retg, inv, ext, css) son los nombres de filas y columnas de la 'sam'
 
@@ -367,7 +383,7 @@ class datos(object):
         # ahorro a largo plazo de los hogares
         self.Alp0 = DataFrame(sam, index=dem, columns=alp)
         # misteriosamente, a pesar de que no existe una columna 'alp' devuelve una slice
-        if self.Alp0.empty or np.all(np.isnan(self.Alp0)):
+        if self.Alp0.empty or np.all(pd.isnull(self.Alp0)):
             self.Alp0 = np.zeros((len(dem),len(h)), dtype=np.float64)
         else:
             self.Alp0 = self.Alp0.to_numpy(dtype=np.float64).reshape(len(dem),len(h))  # (len(dem), )

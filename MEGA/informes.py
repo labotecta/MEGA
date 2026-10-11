@@ -46,10 +46,14 @@ def valores_iniciales(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, V
     mfun.i_tabla(' ' , ind , ['Y0',]        , datos.Y0              , True , DECIMALES)
     imprime('Consumo intermedio filas: ventas, columnas: compras. X0')
     mfun.i_tabla(''  , [] , ind             , datos.X0              , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['compras X0',]  , datos.X0.sum(axis=0)  , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['compras X0',] , datos.X0.sum(axis=0)  , False, DECIMALES)
+    mfun.i_pie  ('/' , ind)
+    imprime('Ajuste costes-ingresos. Ajci')
+    mfun.i_tabla(''  , [] , ['Ajc0',]       , datos.Ajc0            , True , DECIMALES)
+    mfun.i_tabla(''  , [] , ['Aji0',]       , datos.Aji0            , True , DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp0')
-    mfun.i_tabla(''  , [] , dem             , datos.Xp0 , False     , DECIMALES)
+    mfun.i_tabla(''  , [] , dem             , datos.Xp0             , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['suma Xp0']    , datos.Xp0.sum(axis=0) , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo del gobierno. Xg0')
@@ -375,7 +379,7 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += X.size
     desviacion[3]  = Y     - prod.utilizacion_factor_compuesto_Y(Z, ay)                                     # 6. 4
     # no se incrementa nvar_end porque ya se ha calculado la variable Y
-    desviacion[4]  = pz    - prod.coste_unitario_produccion_pz(ay, py, ax, pq)                              # 6. 5 alternativa
+    desviacion[4]  = pz    - prod.coste_unitario_produccion_pz(ay, py, ax, pq, datos.Ajc0, datos.Z0)                              # 6. 5 alternativa
     # no se incrementa nvar_end porque ya lo hemos sumado al principio
     if prin.GE_INCLUYE_AgH and prin.GE_IMPUESTOS_AgH:
         desviacion[5]  = Td - gob.impuestos_directos_Td(parametros.taud, pf, FF, Alp, datos.PssH0, AgH)           # 6. 6
@@ -431,7 +435,7 @@ def veri_solucion(datos, parametros, ind, dem, h,
     nvar_end += AgE.size
     desviacion[23]  = AgH  - gob.ayudas_hogares_AgH(parametros.cagh, Td, Tz, Tm, datos.Tg0, Ti, datos.Te0, AYD_ADI_DEM)               # AgH
     nvar_end += AgH.size
-    desviacion[24]  = Q    - (Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))                                     # 6.23
+    desviacion[24]  = Q    - (datos.Aji0 + Xp.sum(axis=0) + Xg + Xv + X.sum(axis=1))                        # 6.23
     desviacion[25]  = F.sum(axis=0) - (FF.sum(axis=0) + Alp.sum(axis=0))                                    # 6.24
 
     '''
@@ -551,11 +555,15 @@ def salida_valores(datos, parametros, DECIMALES, ind, dem, h, INDICE_F_TRA, VALO
     mfun.i_pie('/'   , h)
     imprime('Factor compuesto. Y (Valor Añadido Bruto)')
     mfun.i_tabla('/' , ind                  , ['Y óptimo F',] , Ypr                   , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['Y nec.para Z',], Ydr                 , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Y nec.para Z',], Ydr                  , False, DECIMALES)
     imprime('Consumo intermedio filas: ventas, columnas: compras. X')
     mfun.i_tabla(''  , []                   , ind             , Xr                    , False, DECIMALES)
-    mfun.i_tabla(''  , []                   , ['compras X',]   , Xr.sum(axis=0)       , False, DECIMALES)
+    mfun.i_tabla(''  , []                   , ['compras X',]  , Xr.sum(axis=0)        , False, DECIMALES)
     mfun.i_pie('/'   , ind)
+    imprime('Ajuste costes-ingresos. Ajci')
+    mfun.i_tabla(''  , []                   , ['Ajc',]        , datos.Ajc0            , True , DECIMALES)
+    mfun.i_tabla(''  , []                   , ['Aji',]        , datos.Aji0            , True , DECIMALES)
+    mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp')
     mfun.i_tabla(''  , []                   , dem             , Xpr                   , False, DECIMALES)
     mfun.i_tabla(''  , []                   , ['suma Xp',]    , Xpr.sum(axis=0)       , False, DECIMALES)
@@ -794,8 +802,9 @@ def salida_desvios(res_ecuaciones, param, OPT_DESVIOS, dist):
         imprime('{:10} {:9.{prec}e} '.format       ('Suma      ', suma, prec=6))
         imprime('')
 
-def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp,
-                    indice_f_tra,pf,py,pq,pd,pz,epsilon,pe,pm,Y,X,F,Z,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Ti,Te,Tm,E,Sf,tolerancia,titulo,infor_cuadre, Fue):
+def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp, ajci, indice_f_tra,
+                    pf,py,pq,pd,pz,epsilon,pe,pm,
+                    Y,X,F,Z,CssE,Tz,M,AgE,FF,Alp,Xp,Sp,CssH,AgH,Td,Xv,PssH,Xg,Sg,Tg,Ti,Te,Tm,E,Sf,tolerancia,titulo,infor_cuadre, Fue):
 
     Sf = (M.dot(pm) - E.dot(pe))
 
@@ -803,17 +812,18 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     nfac = len(h)
     nsec = len(ind)
     ndem = len(dem)
-    fil_col_fac = fil_col_ind  + nsec
-    fil_col_dem = fil_col_fac  + nfac
-    fil_col_inv = fil_col_dem  + ndem
-    fil_col_css = fil_col_inv  + len(inv)
-    fil_col_idt = fil_col_css  + len(css)
-    fil_col_trf = fil_col_idt  + len(idt)
-    fil_col_gov = fil_col_trf  + len(trf)
-    fil_col_ext = fil_col_gov  + len(gov)
-    fil_col_ayd = fil_col_ext  + len(ext)
-    fil_col_alp = fil_col_ayd  + len(ayd)
-    n_fil_cols  = fil_col_alp  + len(alp)
+    fil_col_fac  = fil_col_ind   + nsec
+    fil_col_dem  = fil_col_fac   + nfac
+    fil_col_inv  = fil_col_dem   + ndem
+    fil_col_css  = fil_col_inv   + len(inv)
+    fil_col_idt  = fil_col_css   + len(css)
+    fil_col_trf  = fil_col_idt   + len(idt)
+    fil_col_gov  = fil_col_trf   + len(trf)
+    fil_col_ext   = fil_col_gov  + len(gov)
+    fil_col_ayd  = fil_col_ext   + len(ext)
+    fil_col_alp  = fil_col_ayd   + len(ayd)
+    fil_col_ajci = fil_col_alp   + len(alp)
+    n_fil_cols   = fil_col_ajci  + len(ajci)
 
     rot = []
     rot.extend(list(ind))
@@ -827,6 +837,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     rot.extend(list(ext))
     rot.extend(list(ayd))
     rot.extend(list(alp))
+    rot.extend(list(ajci))
 
     mcs  = np.zeros((n_fil_cols, n_fil_cols), dtype=np.float64)
 
@@ -884,6 +895,20 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     for i in range(nsec):
         mcs[fil,col] = imM[i]
         col += 1
+    # ajuste de pagos de las empresas
+    col = fil_col_ind
+    fil = fil_col_ajci
+    imAjc = datos.Ajc0
+    for i in range(nsec):
+        mcs[fil,col] = imAjc[i]
+        col += 1
+    # ajuste de ingresos de las empresas
+    col = fil_col_ajci
+    fil = fil_col_ind
+    imAji = datos.Aji0
+    for i in range(nsec):
+        mcs[fil,col] = imAji[i]
+        fil += 1
     #------------------------------------------------------------------------------------------------
     # columnas factores de producción. Las iguientes 'nfac' columnas
     #------------------------------------------------------------------------------------------------
@@ -1092,10 +1117,6 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     # producción bruta
     if len(alp) > 0 and abs(Alp).sum() > 0:
         # el gobierno ingresa Fue en la columna Alp y lo quitamos para repartir entre los sectores
-        '''
-        Hay que comprobar si esto solo funciona si el hogar que recibe las 
-        ayudas no presta factores de trabajo y capital
-        '''
         col = fil_col_alp
         fil = fil_col_gov
         mcs[fil,col] = Fue
@@ -1118,12 +1139,21 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
     #------------------------------------------------------------------------------------------------
     # reajuste de los Alp para cuadrar la MCS cuando hay Alp
     #------------------------------------------------------------------------------------------------
-    dif_sec = diferencias[0:nsec].sum()
     if len(alp) > 0 and abs(Alp).sum() > 0:
         # Segundo reajuste de los Alp, para que los sectores con descuadres positivos reciban
         # menos Alp y los que tienen descuadres negativos reciban más Alp
-        if abs(dif_sec) < tolerancia:
-            imprime('\nSegundo reajuste de los Alp para que cuadre la MCS. Diferencia total de los sectores: {:12.5e} tolerancia: {:12.5e}\n'.format(dif_sec, tolerancia))
+        if (np.any(abs(diferencias) > tolerancia)):
+            imprime('')
+            imprime('ERROR. ' + titulo + '. Después del ajuste de los Alp, no cuadra. La suma de fila y columna de al menos una cuenta no coincide.')
+            imprime('                 empleos     recursos   diferencia')
+            imprime('------------ ------------ ------------ ------------')
+            for i in range(len(empleos)):
+                imprime('{:<12} {:12.{prec}f} {:12.{prec}f} {:12.{prec}f}'.format(rot[i], empleos[i], recursos[i], empleos[i] - recursos[i], prec=prin.DECIMALES))
+            imprime('------------ ------------ ------------ ------------')
+            imprime('{:<12}                           {:12.{prec}f}'.format('suma', diferencias.sum(), prec=prin.DECIMALES))
+            imprime('')
+            imprime('Segundo reajuste de los Alp para que cuadre la MCS')
+            imprime('')
             col = fil_col_alp
             fil = fil_col_ind
             for i in range(nsec):
@@ -1133,7 +1163,7 @@ def reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext,
             empleos     = mcs.sum(axis=0) # suma de las columnas
             diferencias = empleos - recursos
         else:
-            if abs(dif_sec) < tolerancia:
+            if (np.any(abs(diferencias) > tolerancia)):
                 imprime('\nNo hay segundo reajuste para que cuadre la MCS porque no hay Alp. Diferencia total de los sectores: {:12.5e} tolerancia: {:12.5e}\n'.format(dif_sec, tolerancia))
     #------------------------------------------------------------------------------------------------
     # comprobar cuadre de filas y columnas
@@ -1281,11 +1311,17 @@ def diferencias_cantidades_finales_iniciales(datos, parametros, DECIMALES, ind, 
     imprime('Consumo intermedio filas: ventas, columnas: compras. X')
     dX0 = X - datos.X0
     mfun.i_tabla(''  , [] , ind            , dX0                   , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['compras X',]  , dX0.sum(axis=0)       , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['compras X',] , dX0.sum(axis=0)       , False, DECIMALES)
+    mfun.i_pie  ('/' , ind)
+    imprime('Ajuste costes-ingresos. Ajci')
+    dAjc0 = datos.Ajc0 - datos.Ajc0
+    mfun.i_tabla(''  , [] , ['Ajc',]       , dAjc0                 , True , DECIMALES)
+    dAji0 = datos.Aji0 - datos.Aji0
+    mfun.i_tabla(''  , [] , ['Aji',]       , dAji0                 , True , DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp')
     dXp0 = Xp - datos.Xp0
-    mfun.i_tabla(''  , [] , dem            , dXp0 , False          , DECIMALES)
+    mfun.i_tabla(''  , [] , dem            , dXp0                  , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['suma Xp']    , dXp0.sum(axis=0)      , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo del gobierno. Xg')
@@ -1414,11 +1450,17 @@ def diferencias_importes_finales_iniciales(datos, parametros, DECIMALES, ind, de
     imprime('Consumo intermedio filas: ventas, columnas: compras. X')
     dX0 = X * pq - datos.X0 * datos.pQ0
     mfun.i_tabla(''  , [] , ind            , dX0                   , False, DECIMALES)
-    mfun.i_tabla(''  , [] , ['compras X',]  , dX0.sum(axis=0)       , False, DECIMALES)
+    mfun.i_tabla(''  , [] , ['compras X',] , dX0.sum(axis=0)       , False, DECIMALES)
+    mfun.i_pie  ('/' , ind)
+    imprime('Ajuste costes-ingresos. Ajci')
+    dAjc0 = datos.Ajc0 * pq - datos.Ajc0 * datos.pQ0
+    mfun.i_tabla(''  , [] , ['Ajc',]       , dAjc0                 , True , DECIMALES)
+    dAji0 = datos.Aji0 * pq - datos.Aji0 * datos.pQ0
+    mfun.i_tabla(''  , [] , ['Aji',]       , dAji0                 , True , DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo de los hogares. Xp')
     dXp0 = Xp * pq - datos.Xp0 * datos.pQ0
-    mfun.i_tabla(''  , [] , dem            , dXp0 , False          , DECIMALES)
+    mfun.i_tabla(''  , [] , dem            , dXp0                  , False, DECIMALES)
     mfun.i_tabla(''  , [] , ['suma Xp']    , dXp0.sum(axis=0)      , False, DECIMALES)
     mfun.i_pie  ('/' , ind)
     imprime('Consumo del gobierno. Xg')

@@ -4,68 +4,66 @@ mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
 --PREFIJO             =Mcs1_salarios_1_05_42_det_P_0_23 ^
---ALP_FACTOR          0.23 ^
---DESV_RELATIVA       0 ^
---USAR_DLL            True ^ ^
---USAR_ALGE_DLL       True ^
---ALGE_MAX_INTENTOS   15 ^
---ALGE_N_HILOS        20 ^
---ALGE_TOL_ACEPTABLE  1.0e-05 ^
---ALGE_ID_SALID       0 ^
---ALGE_MODO_POB_INI   0 ^
---ALGE_MODO_REINI_POB 0 ^
---ALGE_F_INICIO_POB   0.001 ^
---ALGE_SIGMA_POB_INI  0.1 ^
---ALGE_VAR_DISPERSION 1.5 ^
---ALGE_NPOB           1000 ^
---ALGE_F_MUTACION     0.75 0.85 ^
---ALGE_RECOMBINACION  0.999 ^
---ALGE_CTRL_FACTIBLE  1 ^
---ALGE_RES_EXTENSA    0 ^
---EL_MEJOR_PRIMERO    0 ^
---ALGE_INCLUIR_X0     1 ^
---FI_SOL_LEE          "" ^
---FI_SOL_SALVA        "" ^
---FI_SOL_TOT_SALVA    "" ^
 --NSAM                1 ^
 --DECIMALES           4 ^
---GE_SEMILLA          42 ^
---NCASO               0 ^
 --NFAC                2 ^
 --NDEM                2 ^
 --NSEC                2 ^
---DEM_ADICIONAL_TIPO  0 ^
+--NCASO               0 ^
+--GE_MAX_ITER         1000000 ^
+--GE_PROGRESO         1000 ^
+--GE_MIN_PROGRESO     0.02 ^
+--GE_TOLERANCIA       1.e-11 ^
+--GE_VERIFICAR        1.e-08 ^
+--ALGE_TOL_ACEPTABLE  1.0e-05 ^
+--PROB_COP_MEJOR      0.0 ^
+--ALGE_NPOB           1000 ^
+--ALGE_N_HILOS        20 ^
+--ALGE_MODO_POB_INI   0 ^
+--ALGE_EST_POB_INI    0 ^
+--ALGE_F_INICIO_POB   0.001 ^
+--ALGE_F_MUTACION     0.75 0.85 ^
+--ALGE_RECOMBINACION  0.999 ^
+--RECOMBINACION_EXTRA 0.995 ^
+--FF_ENDOGENA         True ^
+--ALP_FACTOR          0.23 ^
+--FDO_UE              0.0 ^
+--OR_PRE_EXCLUIDO     0 ^
+--PRECIO_F_EXCLUIDO   1.0 ^
+--VALOR_F_TRA         1.05 ^
+--PARO_INICIAL        0.10 ^
+--ALFA_PHILLIPS       -0.5 ^
+--FIX                 epsilon ^
+--FIX_LON             1 ^
+--FIX_LIMITES         0 1.0 1.0 ^
 --DEM_AD_LON          0 ^
 --DEM_AD_HO_PRO       0 0 1000. ^
+--DEM_ADICIONAL_TIPO  0 ^
 --RENTA_FICTICIA      False ^
 --AYD_AD_LON          0 ^
 --AYD_AD_HO_PRO       0 0 1000. ^
+--CON_AD_LON          0 ^
+--CON_AD_HO_PRO       0 10. 1000. ^
+--DEM_ESENCIALES      False ^
+--AJC_AD_LON          0 ^
+--AJC_AD_PRO          0 0. ^
+--AJI_AD_LON          0 ^
+--AJI_AD_PRO          0 0. ^
 --ARANCELES_LON       0 ^
 --ARANCELES_PRO       2 0.002961 ^
 --EQ_BAL_PAGOS        True ^
 --PRECIO_IMPORTACION  ^
---OR_PRE_EXCLUIDO     0 ^
---PRECIO_F_EXCLUIDO   1.0 ^
---VALOR_F_TRA         1.05 ^
---FIX                 epsilon ^
---FIX_LON             1 ^
---FIX_LIMITES         0 1.0 1.0 ^
---PARO_INICIAL        0.10 ^
---ALFA_PHILLIPS       -0.5 ^
 --UTILIDAD_DEMANDA    0 ^
---SIGMA_CES_DEMANDA   2. 2. ^
---FF_ENDOGENA         True ^
---MODO_PSEUDOIMPTOS   0 ^
---GE_INCLUYE_XP       False ^
---GE_INCLUYE_AgH      False ^
---GE_IMPUESTOS_AgH    False ^
---CON_AD_LON          0 ^
---CON_AD_HO_PRO       0 10. 1000. ^
---DEM_ESENCIALES      False ^
---OPT_DESVIOS         1 ^
---PRIMERA_VALORACION  False ^
+--GE_PRE_MIN          90.0 ^
+--GE_PRE_MAX          99.0 ^
+--GE_VAR_MIN          400.0 ^
+--GE_VAR_MAX          400.0 ^
+--GE_VAR_CERO         10000.0 ^
+--GE_VAR_CAN_MIN      200 ^
 --SAL_CALIBRADO       False ^
 --SALIDA_VEC_OPT      False ^
+--SALIDA_VAL_INI      False ^
+--PRIMERA_VALORACION  False ^
 --SALIDA_DESVIOS      False ^
 --SAL_AUXILIARES      False ^
 --SAL_GRAFICOS_EVOL   False ^
@@ -74,33 +72,10 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --SAL_VARIACIONES     True  ^
 --SAL_MCS             True  ^
 --SAL_VAR_MCS         True  ^
---GE_RESTRICCIONES    False ^
---GE_TIPO_RE          0 ^
---GE_TOLERANCIA       1.e-11 ^
---GE_VERIFICAR        1.e-08 ^
---GE_PROGRESO         1000 ^
---GE_MIN_PROGRESO     0.02 ^
---ALGE_UMBRAL_REGUL   10. ^
---ALGE_FRAC_REGUL     0.1 ^
 --GE_HISTORIAL        100 ^
 --GE_SOLUCIONES       0 ^
---GE_PRE_MIN          90.0 ^
---GE_PRE_MAX          99.0 ^
---GE_VAR_MIN          400.0 ^
---GE_VAR_MAX          400.0 ^
---GE_VAR_CERO         10000.0 ^
---GE_VAR_CAN_MIN      200 ^
---GE_MAX_ITER         1000000 ^
---GE_ACTUALIZACION    deferred ^
---GE_F_MUTACION       0.75 0.85 ^
---GE_RECOMBINACION    0.999 ^
---GE_DIM_POBLACION    5 ^
---GE_WORKERS          32 ^
---GE_IMG_FIL          5 ^
---GE_IMG_COL          6 ^
---GE_ESTRATEGIA       best1bin ^
---METRICA_ERROR       0 ^
---POT_DESVIOS         2 ^
+--SIGMA_CES_DEMANDA   2. 2. ^
+--MODO_PSEUDOIMPTOS   0 ^
 --PRECIO_INI          0.5 ^
 --FACTOR_CSSH         1.0 1.0 ^
 --F_CSSE_LON          0 ^
@@ -108,9 +83,47 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --VAR_FACTORES        0. 0. 0. 0. ^
 --SIGMA_ESCE_LON      0 ^
 --SIGMA_ESCE          0 2.0 ^
+--GE_IMG_FIL          5 ^
+--GE_IMG_COL          6 ^
+--OPT_DESVIOS         1 ^
+--GE_WORKERS          32 ^
+--GE_RESTRICCIONES    False ^
+--GE_TIPO_RE          0 ^
+--GE_ACTUALIZACION    deferred ^
+--GE_F_MUTACION       0.75 0.85 ^
+--GE_RECOMBINACION    0.999 ^
+--GE_DIM_POBLACION    5 ^
+--GE_ESTRATEGIA       best1bin ^
+--METRICA_ERROR       0 ^
+--POT_DESVIOS         2 ^
+--USAR_DLL            True ^ ^
+--USAR_ALGE_DLL       True ^
+--ALGE_INCLUIR_X0     1 ^
+--GE_INCLUYE_XP       False ^
+--GE_INCLUYE_AgH      False ^
+--GE_IMPUESTOS_AgH    False ^
+--ALGE_CTRL_FACTIBLE  1 ^
+--ALGE_RES_EXTENSA    0 ^
+--EL_MEJOR_PRIMERO    0 ^
+--ALGE_MODO_REINI_POB 0 ^
+--ALGE_MAX_INTENTOS   15 ^
+--ALGE_SIGMA_POB_INI  0.1 ^
+--ALGE_VAR_DISPERSION 1.5 ^
+--ALGE_TRAMOS_LHS     100 ^
+--ECT_ECM             0 ^
+--DESV_RELATIVA       0 ^
+--SOLO_CASO           False ^
+--ALGE_UMBRAL_REGUL   10. ^
+--ALGE_FRAC_REGUL     0.1 ^
+--GE_SEMILLA          42 ^
+--FI_CASO             '' ^
+--FI_SOL_LEE          "" ^
+--FI_SOL_SALVA        "" ^
+--FI_SOL_TOT_SALVA    "" ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs1/Catastrofe ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs1/Catastrofe ^
 --SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs1/Catastrofe ^
 --SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA1.dll
+
 TIMEOUT 60
