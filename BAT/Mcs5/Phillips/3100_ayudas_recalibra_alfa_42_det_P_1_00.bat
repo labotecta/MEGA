@@ -22,7 +22,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_MODO_POB_INI   0 ^
 --ALGE_EST_POB_INI    0 ^
 --ALGE_F_INICIO_POB   0.001 ^
---ALGE_F_MUTACION     0.78 0.82 ^
+--ALGE_F_MUTACION     0.80 0.80 ^
 --ALGE_RECOMBINACION  0.9995 ^
 --RECOMBINACION_EXTRA 0.995 ^
 --FF_ENDOGENA         True ^
@@ -119,7 +119,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FI_CASO             "" ^
 --FI_SOL_LEE          "" ^
 --FI_SOL_SALVA        "" ^
---FI_SOL_TOT_SALVA    v_vars_solucion_3100.log ^
+--FI_SOL_TOT_SALVA    "" ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5/Phillips ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^

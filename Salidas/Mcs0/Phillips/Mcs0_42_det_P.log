@@ -5,7 +5,7 @@ pandas           3.0.5
 matplotlib       3.11.2
 
 #################################################################
-MEGA ampliado. versión 1.9.0  ---------------
+MEGA ampliado. versión 1.9.2  ---------------
 #################################################################
 -------------------------------------------------------------------------------------------------
 Mcs0_42_det_P
@@ -115,8 +115,9 @@ Número de desvios 55
 
   Python   1.45793e-26
 
+si se usa una DLL "...r" puede que no coincidan con Python, pero no importa
   DLL sol  1.46141e-26
-  DLL      1.46141e-26 si se usa una DLL "...r" no coincidirá, pero no importa
+  DLL      1.46141e-26
 
 No se muestra en pantalla la evolución de los cálculos. Ver el fichero:
 C:/MEGA/Salidas/Mcs0/Phillips/Mcs0_42_det_P.ldll

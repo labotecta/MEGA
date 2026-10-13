@@ -24,6 +24,7 @@ patron  = carpeta + "/**/*.bat"
 ficheros = glob.glob(patron, recursive=True)
 n = 0
 for fi in ficheros:
+    fi = fi.replace('\\','/')
     n += 1
     if fi.lower().endswith('_borra.bat'):
         # de cierres anteriores, se borra

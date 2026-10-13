@@ -17,7 +17,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_VERIFICAR        1.e-05 ^
 --ALGE_TOL_ACEPTABLE  1.0e-05 ^
 --PROB_COP_MEJOR      7.5e-04 ^
---ALGE_NPOB           10500 ^
+--ALGE_NPOB           16020 ^
 --ALGE_N_HILOS        30 ^
 --ALGE_MODO_POB_INI   0 ^
 --ALGE_EST_POB_INI    0 ^
@@ -37,7 +37,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FIX_LON             1 ^
 --FIX_LIMITES         0 1.0 1.0 ^
 --DEM_AD_LON          0 ^
---DEM_AD_HO_PRO       1 4 1000. ^
+--DEM_AD_HO_PRO       0 4 1000. ^
 --DEM_ADICIONAL_TIPO  0 ^
 --RENTA_FICTICIA      False ^
 --AYD_AD_LON          1 ^

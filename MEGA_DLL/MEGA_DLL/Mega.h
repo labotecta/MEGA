@@ -17,7 +17,7 @@ además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'g
 desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 */
 
-#define MEGA4
+#define MEGA8
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -54,7 +54,8 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 ------------------------------------------------------------------------------------------------------------
 */
 // no define la matriz Xr em merito_s para ahorrar memoria, es incompatible con CONSUMO_INTERMEDIO_AX y CONSUMO_INTERMEDIO_INDESADO
-//#define SIN_XR
+// tiene el inconveniente de que al perderse el valor individual de Xr, el cuadre de mercado se hace con X y no con Xr 
+#define SIN_XR
 
 // RAND1: Mejor + F * (I2 - I1)
 // en el libro esta es la que se usa y denomina best1bin
@@ -96,13 +97,16 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 // desactivarla no ahorra tiempo
 #define TPO_MUTA_SELECCION
 
+// prolongar en la dirección de mejora, no funciona
+//#define PROLONGAR
+
 // estadística de cuando una mutación extra se convierte en el mejor individuo. resulta insignificante menos del 0.5% de las veces
 //#define MEJ_MUT_EXTA
 
 // calcula la función de mérito como ECM y no como ECT
 //#define ECM
 
-// inviable. El descendiente se acepta (selecciona) si hay algún individuo en la población con peor mérito
+// inviable. El descendiente se acepta (selecciona) si hay algún individuo en la población con peor mérito, inutil
 //#define SELECCION_MAXIMA
 
 // en los individuos de la población inicial se sustituyen los valores de las variables (F,E,M,D, y en su caso XP) por los que resultan de
@@ -131,9 +135,6 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 
 // desastroso, 'FIJAR_VARIABLES' no funciona
 //#define FIJAR_VARIABLES
-
-// dar un peso distinto de 1 a PESO_YDP, ya sea mayor o menor, dificulta o imposibilita encontrar una solución
-//#define USAR_PESO_YDP
 /*
 ------------------------------------------------------------------------------------------------------------
 */
@@ -254,7 +255,7 @@ void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi);
 void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
 #ifdef SIN_XR
-void consumo_intermedio_Xr(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
+void consumo_intermedio_X_Xr(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]);
 #endif
 void utilizacion_factor_compuesto_Y(double* Y, double* Z, double* ay);
 void uso_optimo_factores_F(double F[NSEC][NFAC], double beta[NSEC][NFAC], double* pf, double* py, double* Ypd);
@@ -286,6 +287,8 @@ double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, d
 #pragma endregion
 
 #pragma region Genetico
+bool abre_salida(const char* senda, const char* caso);
+bool cierra_salida();
 void cancelar(int sig);
 int parametros_alge(double* par);
 bool inicia_cotas();

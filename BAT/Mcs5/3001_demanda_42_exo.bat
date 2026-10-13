@@ -16,7 +16,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_TOLERANCIA       1.e-08 ^
 --GE_VERIFICAR        1.e-05 ^
 --ALGE_TOL_ACEPTABLE  1.0e-05 ^
---PROB_COP_MEJOR      5.0e-04 ^
+--PROB_COP_MEJOR      7.0e-04 ^
 --ALGE_NPOB           20010 ^
 --ALGE_N_HILOS        30 ^
 --ALGE_MODO_POB_INI   0 ^
@@ -119,11 +119,11 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FI_CASO             "" ^
 --FI_SOL_LEE          "" ^
 --FI_SOL_SALVA        "" ^
---FI_SOL_TOT_SALVA    v_vars_solucion_3001.log ^
+--FI_SOL_TOT_SALVA    "" ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5 ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^
 --SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs5 ^
---SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5r.dll
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll
 
 timeout 60

@@ -47,9 +47,6 @@ int BLOQUE_FIJAR = 10000;
 double MIN_FIJAR = 0.1;
 double TOL_DISPERSION;
 #endif
-#ifdef USAR_PESO_YDP
-double PESO_YDP = 10.;
-#endif
 
 /*
 longitud de las variables y punteros a estas, en el vector solución
@@ -450,14 +447,26 @@ int NSEC4;
 #endif
 
 double** cotas = NULL;
-int* fijo = NULL;
 double** poblacion = NULL;
-double* merito_individuo = NULL;
-double* factible = NULL;
 double** descendiente = NULL;
+double* merito_individuo = NULL;
+int* fijo = NULL;
+bool* factible = NULL;
 int nvar_fijas;
 
-// el número máximo de variables en el vector solución lo establecemos en 1000, con nuestras MCS el máximo es 507, 696 si se incluye XP
+#ifdef PROLONGAR
+double* indi_prolongado = NULL;
+double* mejor_anterior = NULL;
+int prolongaciones;
+double F_PASO_PROLONGAR = 0.10;
+double mejor_merito_previo;
+double valor_mejora;
+double v_prolongado;
+double suma_prolongado;
+double var_min_prolongado = 1.0e-08;
+#endif
+
+// el número máximo de variables en el vector solución lo establecemos en 1000, con nuestras MCS el máximo es 507, 696 si se incluye XP, 699 si además AgH
 const int MAX_VEC = 1000;
 double vec_ini[MAX_VEC];
 
@@ -465,14 +474,16 @@ double vec_ini[MAX_VEC];
 double vec_opt_nuevo[MAX_VEC + 1];
 #endif
 
+int generacion;
+int res_Simulacion;
 bool CANCELAR;
 int ind_mejor_merito;
 double mejor_merito;
 double mejor_merito_anterior;
+#ifdef SELECCION_MAXIMA
 int ind_peor_merito;
 double peor_merito;
-int generacion;
-int res_Simulacion;
+#endif
 /*
 parametros para particularizar el algoritmo genético
 */
@@ -627,9 +638,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	}
 
 	/*
-			NO PARECE TENER NINGUN EFECTO
+	NO PARECE TENER NINGUN EFECTO
 	dar la máxima prioridad al proceso principal (base)
-		ABOVE_NORMAL_PRIORITY_CLASS es menos crítica y REALTIME_PRIORITY_CLASS la más crítica
+	ABOVE_NORMAL_PRIORITY_CLASS es menos crítica y REALTIME_PRIORITY_CLASS la más crítica
 	*/
 	if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS)) {
 		fprintf(salida, "*--* Error (%d) al establecer la priodidad base\n", GetLastError());
@@ -677,26 +688,12 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	MEMORY_BASIC_INFORMATION mbi;
 	static int dummy{};
 	TCHAR szFileName[MAX_PATH];
-	VirtualQuery(&dummy, &mbi, sizeof(mbi));	// inicializa mbi
-	if (&mbi != nullptr) {
+	VirtualQuery(&dummy, &mbi, sizeof(mbi));	// inicializa la estructura 'mbi'
+	if (&mbi != 0) {
 		HMODULE hMod = (HMODULE)mbi.AllocationBase;
 		GetModuleFileName(hMod, szFileName, MAX_PATH);
 		fprintf(salida, "Librería               : %ws\n", szFileName);
 	}
-
-	/*
-	// obtiene la senda de la aplicación que llama a la DLL
-
-	char buffer[256];
-	DWORD length = GetModuleFileNameA(NULL, buffer, 256);
-	if (length > 0) {
-		fprintf(salida, "Librería               : %s\n", buffer);
-	}
-	else {
-		fprintf(salida, "Error al obtener la ruta de la app que llama a la librería\n\n");
-	}
-	*/
-
 	fprintf(salida, "Caso                   : %s\n\n", nombre_caso);
 
 #ifdef RAND1
@@ -740,9 +737,13 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Modo población inicial : %12d\n", modo_poblacion_inicial);
 	fprintf(salida, "Factor dispersión unif.: %12.5e\n", factor_dispersion);
 	fprintf(salida, "Sigma dispersión normal: %12.5e\n", factor_sigma);
-	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", prob_cop_mejor);
 #ifdef AJUSTA_POB_INICIAL
 	fprintf(salida, "Población inicial ajustada\n");
+#endif
+	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", prob_cop_mejor);
+#ifdef PROLONGAR
+	fprintf(salida, "Factor prolongar       : %12.5f\n", F_PASO_PROLONGAR);
+	fprintf(salida, "Mínimo para prolongar  : %12.5e\n", var_min_prolongado);
 #endif
 	fprintf(salida, "-------------------------------------\n");
 	fprintf(salida, "Progreso mínimo        : %12.3f %%\n", 100. * min_progreso);
@@ -839,7 +840,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "\n");
 	fprintf(salida, "Fondos UE              : %12.5e\n\n", datos.Fue);
 #ifdef NUM_GENES_PROGENITOR_2
-	fprintf(salida, "n.gen.pro2 máximoxtramo:%13lld\n\n", (unsigned long long)((unsigned long long)(lsol - nvar_fijas)) * (unsigned long long)NPOB * (unsigned long long)histo_int);
+	unsigned long long max_tramo = (unsigned long long)((unsigned long long)(lsol - nvar_fijas)) * (unsigned long long)NPOB * (unsigned long long)histo_int;
+	long prob_tramo = (long)((double)max_tramo * (1.0 - cte_recombinacion));
+	fprintf(salida, "máximo 'n.gen.pro2' por tramo:%13lld | 'n.gen.pro2' probable por tramo:%13ld\n\n", max_tramo, prob_tramo);
 #endif
 	fflush(salida);
 
@@ -1374,6 +1377,9 @@ int parametros_alge(double* par) {
 #ifdef FIJAR_VARIABLES
 	TOL_DISPERSION = tolerancia;
 #endif
+#ifdef PROLONGAR
+	var_min_prolongado *= NVEC;
+#endif
 	return 0;
 }
 /*
@@ -1395,7 +1401,7 @@ bool inicia_cotas() {
 crea las variables dinámicas para la población, los descendientes, el mérito de cada individuo y si un vector de prueba es factible o no
 */
 bool inicia_poblacion(double factor_inicio) {
-	size_t const mem_primer_indice = sizeof(double*) * NPOB;
+	size_t const mem_primer_indice = NPOB * sizeof(double*);
 	poblacion = (double**)malloc(mem_primer_indice);
 	if (poblacion == NULL) return false;
 	descendiente = (double**)malloc(mem_primer_indice);
@@ -1407,11 +1413,16 @@ bool inicia_poblacion(double factor_inicio) {
 		descendiente[i] = (double*)malloc(memoria_fila);
 		if (descendiente[i] == NULL) return false;
 	}
-
-	size_t const mem_npob = sizeof(double) * NPOB;
+#ifdef PROLONGAR
+	indi_prolongado = (double*)malloc(memoria_fila);
+	if (indi_prolongado == NULL) return false;
+	mejor_anterior = (double*)malloc(memoria_fila);
+	if (mejor_anterior == NULL) return false;
+#endif
+	size_t const mem_npob = NPOB * sizeof(double);
 	merito_individuo = (double*)malloc(mem_npob);
 	if (merito_individuo == NULL) return false;
-	factible = (double*)malloc(mem_npob);
+	factible = (bool*)malloc(NPOB * sizeof(bool));
 	if (factible == NULL) return false;
 	return true;
 }
@@ -2285,8 +2296,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 	// seleccionar el mejor
 	mejor_merito = 1.0e+99;
 	ind_mejor_merito = NPOB + 1;
+#ifdef SELECCION_MAXIMA
 	peor_merito = -1;
 	ind_peor_merito = NPOB + 1;
+#endif
 	for (int i = 0; i < NPOB; i++) {
 
 #ifdef DESVIACONES_RELATIVAS
@@ -2302,16 +2315,13 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 #else
 		v = merito_s(poblacion[i]);
 #endif AJUSTA_POB_INICIAL
-
 #endif DESVIACONES_RELATIVAS
-
 		merito_individuo[i] = v;
 		factible[i] = true;
 		if (v < mejor_merito) {
 			mejor_merito = v;
 			ind_mejor_merito = i;
 		}
-
 #ifdef SELECCION_MAXIMA
 		if (v > peor_merito) {
 			peor_merito = v;
@@ -2319,7 +2329,11 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 		}
 #endif SELECCION_MAXIMA
 	}
-
+#ifdef PROLONGAR
+	for (int i = 0; i < NVEC; i++) {
+		mejor_anterior[i] = poblacion[ind_mejor_merito][i];
+	}
+#endif
 	return true;
 }
 /*
@@ -3526,6 +3540,9 @@ int comprobar_final() {
 #else
 		merito_sol(poblacion[ind_mejor_merito]);
 #endif
+#ifdef PROLONGAR
+		fprintf(salida, "%9d %12.5e\n", prolongaciones, valor_mejora);
+#endif
 		if (generacion == 0) {
 #ifdef ESTA_CRUCES
 			long long n_c_s = 0;
@@ -4239,6 +4256,9 @@ int ProcesoMP(int bloques) {
 
 	// Arranca el ciclo temporal con el semaforo 'iterar' cerrado. Lo abre el ultimo hilo en terminar
 
+#ifdef PROLONGAR
+	bool mejorado;
+#endif
 	DWORD espera;
 	while (!CANCELADO) {
 
@@ -4258,15 +4278,62 @@ int ProcesoMP(int bloques) {
 #ifdef SELECCION_MAXIMA
 			seleccion_maxima();
 #else
+#ifdef PROLONGAR
+			mejorado = false;
+#endif
 			for (int i = 0; i < NPOB; i++) {
 				if (merito_individuo[i] < mejor_merito) {
 					mejor_merito = merito_individuo[i];
 					ind_mejor_merito = i;
+#ifdef PROLONGAR
+					mejorado = true;
+#endif
 #ifdef NUM_MEJORAS
 					num_mejoras_mejor++;
 #endif
 				}
 			}
+#ifdef PROLONGAR
+			valor_mejora = 0.;
+			prolongaciones = 0;
+			if (mejorado) {
+				mejor_merito_previo = mejor_merito;
+				while (true) {
+					suma_prolongado = 0.;
+					for (int i = 0; i < NVEC; i++) {
+						v_prolongado = F_PASO_PROLONGAR * (poblacion[ind_mejor_merito][i] - mejor_anterior[i]);
+						indi_prolongado[i] = poblacion[ind_mejor_merito][i] + v_prolongado;
+						suma_prolongado += abs(v_prolongado);
+					}
+					if (suma_prolongado < var_min_prolongado) {
+						break;
+					}
+					v_prolongado = merito_s(indi_prolongado);
+					if (v_prolongado < mejor_merito) {
+						mejor_merito = v_prolongado;
+						prolongaciones++;
+						for (int i = 0; i < NVEC; i++) {
+							// el que era el mejor pasa a ser em mejor anterior
+							mejor_anterior[i] = poblacion[ind_mejor_merito][i];
+							// el prolongado es mejor y sustituye al anterior por lo que 'ind_mejor_merito' no cambia
+							poblacion[ind_mejor_merito][i] = indi_prolongado[i];
+						}
+					}
+					else {
+						break;
+					}
+					if (prolongaciones > 1000) {
+						fprintf(salida, "Error. Superado el máximo de 1000 prolongaciones sucesivas\n");
+						CANCELADO = true;
+						break;
+					}
+				}
+				for (int i = 0; i < NVEC; i++) {
+					mejor_anterior[i] = poblacion[ind_mejor_merito][i];
+				}
+				valor_mejora = mejor_merito_previo - mejor_merito;
+			}
+#endif
 #ifdef MEJ_MUT_EXTA
 			for (int i = 0; i < n_hilos; i++) {
 				while (num_extra[i] > 0) {
@@ -4699,25 +4766,6 @@ double merito_s(double* vec_opt) {
 	double suma_FF;
 	double sum_Xp;
 
-	/*
-	std::copy(vec_opt + pvec[1], vec_opt + pvec[1] + len_var[1], py);
-	std::copy(vec_opt + pvec[2], vec_opt + pvec[2] + len_var[2], pq);
-	std::copy(vec_opt + pvec[3], vec_opt + pvec[3] + len_var[3], pd);
-	epsilon = vec_opt[pvec[4]];
-	Apz = vec_opt[pvec[5]];
-	n = pvec[6];
-	for (int i = 0; i < NSEC; i++) {
-		for (int j = 0; j < NFAC; j++) {
-			Fi[i][j] = F[i][j] = vec_opt[n++];
-		}
-	}
-	std::copy(vec_opt + pvec[7], vec_opt + pvec[7] + len_var[7], E);
-	std::copy(vec_opt + pvec[8], vec_opt + pvec[8] + len_var[8], M);
-	std::copy(vec_opt + pvec[9], vec_opt + pvec[9] + len_var[9], Di);
-	std::copy(E, E + NSEC, Ei);
-	std::copy(M, M + NSEC, Mi);
-	*/
-
 	int n = pvec[1];
 	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
 	for (int i = 0; i < NSEC; i++) pq[i] = vec_opt[n++];
@@ -4857,11 +4905,7 @@ double merito_s(double* vec_opt) {
 		}
 	}
 	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, Di, parametros.eta);
-	//importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
-	//produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
 	importacion_local_maxima_utilidad_armington_MD(M, Da, parametros.gamma, parametros.deltam, parametros.deltad, pq, pm, pd, Q, parametros.eta, datos.taum);
-	//produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
-	//produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
 	produccion_para_exportacion_local_ED(E, Dt, parametros.teta, parametros.xie, parametros.xid, pz, pe, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
 	if (op.EQ_BAL_PAGOS) {
 		ebp = equilibrio_balance_pagos_moneda_extranjera(datos.pWe, E, datos.pWm, M, Sf);
@@ -4874,7 +4918,7 @@ double merito_s(double* vec_opt) {
 	// -----------------------
 	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
 #ifdef SIN_XR
-	// como no se calcula Xr, se calcula la suma de cada columna de X, para usarla en el cálculo de la desviación del cieere del mercado
+	// como no se calcula Xr, se calcula la suma de cada columna de X (sum_Xi), para usarla en el cálculo de la desviación del cierre del mercado
 	for (int i = 0; i < NSEC; i++) {
 		sum_Xi[i] = 0.;
 		for (int j = 0; j < NSEC; j++) {
@@ -4882,7 +4926,7 @@ double merito_s(double* vec_opt) {
 		}
 	}
 	// X será la diferencia entre pases
-	consumo_intermedio_Xr(X, Zr, parametros.ax);
+	consumo_intermedio_X_Xr(X, Zr, parametros.ax);
 #else
 	consumo_intermedio_X(Xr, Zr, parametros.ax);
 #endif
@@ -5097,11 +5141,7 @@ double merito_s(double* vec_opt) {
 		dist += dd * dd;
 		dd = Mr[i] - M[i];
 		dist += dd * dd;
-#ifdef USAR_PESO_YDP
-		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
-#else
 		dd = Ydr[i] - Ypr[i];
-#endif
 		dist += dd * dd;
 		dd = Dar[i] - Dtr[i];
 		dist += dd * dd;
@@ -5609,11 +5649,7 @@ double ajustar_vec_solucion(double* vec_opt) {
 		dist += dd * dd;
 		dd = Mr[i] - M[i];
 		dist += dd * dd;
-#ifdef USAR_PESO_YDP
-		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
-#else
 		dd = Ydr[i] - Ypr[i];
-#endif
 		dist += dd * dd;
 		dd = Dar[i] - Dtr[i];
 		dist += dd * dd;
@@ -5948,11 +5984,7 @@ double merito_d(double* vec_opt, double liston) {
 	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
-#ifdef USAR_PESO_YDP
-		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
-#else
 		dd = Ydr[i] - Ypr[i];
-#endif
 		dist += dd * dd;
 	}
 	if (dist > liston) return dist;
@@ -6290,7 +6322,16 @@ double* merito_sol(double* vec_opt) {
 	double Ypr[NSEC];
 	double Ydr[NSEC];
 	double Zr[NSEC];
+#ifdef SIN_XR
+	double sum_Xi[NSEC];
+#else
+	double sum_X;
+#ifdef CONSUMO_INTERMEDIO_INDESADO
 	double Xr[NSEC][NSEC]{};	// es necesario inicializar a cero cuando se usa CONSUMO_INTERMEDIO_INDESADO
+#else
+	double Xr[NSEC][NSEC];
+#endif
+#endif
 	double FFr[NDEM][NFAC];
 	double Alpr[NDEM][NFAC];
 	double Tdr[NDEM];
@@ -6325,7 +6366,6 @@ double* merito_sol(double* vec_opt) {
 	double suma_F;
 	double suma_FF;
 	double sum_Xp;
-	double sum_X;
 
 	int n = pvec[1];
 	for (int i = 0; i < NSEC; i++) py[i] = vec_opt[n++];
@@ -6380,7 +6420,6 @@ double* merito_sol(double* vec_opt) {
 	}
 	restriccion_produccion_bruta_Z(Z, parametros.teta, parametros.xie, parametros.xid, E, Di, parametros.phi);
 	consumo_intermedio_X(X, Z, parametros.ax);
-
 	// la mayor desviación se produce casi siempre entre Yp y Yd
 	produccion_factor_compuesto_Y(Yp, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Yd, Z, parametros.ay);
@@ -6466,12 +6505,7 @@ double* merito_sol(double* vec_opt) {
 		}
 	}
 	produccion_armington_Q(Q, parametros.gamma, parametros.deltam, parametros.deltad, M, Di, parametros.eta);
-
-	//importacion_maxima_utilidad_armington_M(M, parametros.gamma, parametros.deltam, pq, pm, Q, parametros.eta, datos.taum);
-	//produccion_maxima_utilidad_armington_D(Da, parametros.gamma, parametros.deltad, pq, pd, Q, parametros.eta);
 	importacion_local_maxima_utilidad_armington_MD(M, Da, parametros.gamma, parametros.deltam, parametros.deltad, pq, pm, pd, Q, parametros.eta, datos.taum);
-	//produccion_para_exportacion_E(E, parametros.teta, parametros.xie, pz, pe, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
-	//produccion_para_local_D(Dt, parametros.teta, parametros.xid, pz, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
 	produccion_para_exportacion_local_ED(E, Dt, parametros.teta, parametros.xie, parametros.xid, pz, pe, pd, Z, parametros.phi, datos.tauz, CssE, AgE, Apz, parametros.ctzssez, parametros.ctzagez, op.MODO_PSEUDOIMPTOS);
 
 	if (op.EQ_BAL_PAGOS) {
@@ -6484,8 +6518,19 @@ double* merito_sol(double* vec_opt) {
 	// segundo pase
 	// -----------------------
 	restriccion_produccion_bruta_Z(Zr, parametros.teta, parametros.xie, parametros.xid, E, Dt, parametros.phi);
+#ifdef SIN_XR
+	// como no se calcula Xr, se calcula la suma de cada columna de X (sum_Xi), para usarla en el cálculo de la desviación del cierre del mercado
+	for (int i = 0; i < NSEC; i++) {
+		sum_Xi[i] = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			sum_Xi[i] += X[j][i];
+		}
+	}
+	// X será la diferencia entre pases
+	consumo_intermedio_X_Xr(X, Zr, parametros.ax);
+#else
 	consumo_intermedio_X(Xr, Zr, parametros.ax);
-
+#endif
 	produccion_factor_compuesto_Y(Ypr, F, parametros.beta, parametros.b);
 	utilizacion_factor_compuesto_Y(Ydr, Zr, parametros.ay);
 	for (int i = 0; i < NSEC; i++) {
@@ -6634,11 +6679,15 @@ double* merito_sol(double* vec_opt) {
 		for (int j = 0; j < NDEM; j++) {
 			sum_Xp += Xpr[j][i];
 		}
+#ifdef SIN_XR
+		dd = Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_Xi[i]);
+#else
 		sum_X = 0.;
 		for (int j = 0; j < NSEC; j++) {
 			sum_X += Xr[j][i];
 		}
-		dd = abs(Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_X));
+		dd = Qr[i] - (datos.Aji0[i] + sum_Xp + Xgr[i] + Xvr[i] + sum_X);
+#endif
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -6906,11 +6955,7 @@ double* merito_sol(double* vec_opt) {
 	desvios_bloque[ndv++] = dist;
 	// Ydp
 	for (int i = 0; i < NSEC; i++) {
-#ifdef USAR_PESO_YDP
-		dd = abs(Ydr[i] - Ypr[i]) * PESO_YDP;
-#else
 		dd = abs(Ydr[i] - Ypr[i]);
-#endif
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -7071,7 +7116,12 @@ double* merito_sol(double* vec_opt) {
 	// X
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NSEC; j++) {
+
+#ifdef SIN_XR
+			dd = abs(X[i][j]);
+#else
 			dd = abs(Xr[i][j] - X[i][j]);
+#endif
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -7352,7 +7402,11 @@ double* merito_sol(double* vec_opt) {
 	}
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NSEC; j++) {
+#ifdef SIN_XR
+			me_sol[nsol++] = X[i][j];
+#else
 			me_sol[nsol++] = Xr[i][j];
+#endif
 		}
 	}
 	me_sol[nsol++] = Tir;
@@ -7862,11 +7916,7 @@ double merito_s_relativa(double* vec_opt) {
 		dd = Mr[i] - M[i];
 		dd = dd / (abs(Mr[i]) + 0.000001);
 		dist += dd * dd;
-#ifdef USAR_PESO_YDP
-		dd = (Ydr[i] - Ypr[i]) * PESO_YDP;
-#else
 		dd = Ydr[i] - Ypr[i];
-#endif
 		dd = dd / (abs(Ydr[i]) + 0.000001);
 		dist += dd * dd;
 		dd = Dar[i] - Dtr[i];
@@ -8571,11 +8621,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	desvios[ndv++] = dist;
 	// Ydp
 	for (int i = 0; i < NSEC; i++) {
-#ifdef USAR_PESO_YDP
-		dd = abs(Ydr[i] - Ypr[i]) * PESO_YDP;
-#else
 		dd = abs(Ydr[i] - Ypr[i]);
-#endif
 		dd = dd / (abs(Ypr[i]) + 0.000001);
 		if (dd > dist_max) {
 			dist_max = dd;
@@ -9073,7 +9119,7 @@ void consumo_intermedio_X(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]
 	}
 }
 #ifdef SIN_XR
-void consumo_intermedio_Xr(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
+void consumo_intermedio_X_Xr(double X[NSEC][NSEC], double* Z, double ax[NSEC][NSEC]) {
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NSEC; j++) {
 			X[i][j] -= ax[i][j] * Z[i];

@@ -37,7 +37,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FIX_LON             1 ^
 --FIX_LIMITES         0 1.0 1.0 ^
 --DEM_AD_LON          0 ^
---DEM_AD_HO_PRO       1 4 1000. ^
+--DEM_AD_HO_PRO       0 4 1000. ^
 --DEM_ADICIONAL_TIPO  0 ^
 --RENTA_FICTICIA      False ^
 --AYD_AD_LON          1 ^
@@ -119,7 +119,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FI_CASO             "" ^
 --FI_SOL_LEE          "" ^
 --FI_SOL_SALVA        "" ^
---FI_SOL_TOT_SALVA    v_vars_solucion_311.log ^
+--FI_SOL_TOT_SALVA    "" ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5/Phillips ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^

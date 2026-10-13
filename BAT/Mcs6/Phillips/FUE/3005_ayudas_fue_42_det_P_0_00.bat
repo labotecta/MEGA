@@ -17,7 +17,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_VERIFICAR        1.e-06 ^
 --ALGE_TOL_ACEPTABLE  1.0e-05 ^
 --PROB_COP_MEJOR      3.0e-03 ^
---ALGE_NPOB           5400 ^
+--ALGE_NPOB           6000 ^
 --ALGE_N_HILOS        30 ^
 --ALGE_MODO_POB_INI   0 ^
 --ALGE_EST_POB_INI    0 ^

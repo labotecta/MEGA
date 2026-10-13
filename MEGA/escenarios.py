@@ -98,24 +98,6 @@ def escenarios(imprimir, datos, parametros, DECIMALES, ind, dem, h,
             imprime('Ayudas adicionales')
             mfun.i_tabla(''  , [] , dem             , AYD_ADICIONAL, False     , DECIMALES)
             imprime('')
-    
-    # si hay ayudas o demandas adicionales, como conducirán a demandas adicionales de determinados productos, se incrementan las 
-    # variables F0 y D0 que forman parte del vector solución
-    if abs(DEM_ADICIONAL).sum() != 0 or abs(AYD_ADICIONAL).sum() != 0:
-        factor = np.ones((nsec,2), dtype=np.float64)
-        if abs(DEM_ADICIONAL).sum() != 0:
-            for i in range(nsec):
-                a = DEM_ADICIONAL[:,i].sum()
-                if abs(a) != 0:
-                    factor[i,0] = factor[i,1] = 1. + a / datos.Z0[i]
-        if abs(AYD_ADICIONAL).sum() != 0:
-            for i in range(nsec):
-                a = AYD_ADICIONAL[:,i].sum()
-                if abs(a) != 0:
-                    factor[i,0] = factor[i,1] = 1. + a / datos.Z0[i]
-        datos.F0 = factor * datos.F0
-        datos.D0 = factor[:,0] * datos.D0
-    
     for nc in NCASO:
         if nc > 0:
             if imprimir:

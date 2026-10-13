@@ -82,7 +82,7 @@ import restricciones as restri
 global datos
 global parametros
 
-VERSION = '1.9.1'
+VERSION = '1.9.2'
 
 # 9 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
@@ -2187,16 +2187,6 @@ datos.Tid0[1]      = datos.Tid0[0]
 datos.Td0[1]       = datos.Td0[0]
 '''
 if __name__ == '__main__':
-    if abs(DEM_ADICIONAL).sum() != 0 or abs(AYD_ADICIONAL).sum() != 0:
-        mfun.i_tabla('F0', h, ind, datos_ini.F0, False, DECIMALES)
-        imprime('')
-        mfun.i_tabla('/' , ind, ['D0',], datos_ini.D0, False, DECIMALES)
-        imprime('')
-        mfun.i_tabla('F0', h, ind, datos.F0, False, DECIMALES)
-        imprime('')
-        mfun.i_tabla('/' , ind, ['D0',], datos.D0, False, DECIMALES)
-        imprime('')
-
     if nAJC != 0:
         mfun.i_tabla('/' , ind, ['Ajc0',], datos_ini.Ajc0, False, DECIMALES)
         mfun.i_tabla('/' , ind, ['Ajc0',], datos.Ajc0    , False, DECIMALES)
@@ -2239,13 +2229,33 @@ if USAR_DLL:
         libc.merito_sol_relativa.argtypes = [ct.POINTER(ct.c_double)]
         libc.merito_sol_relativa.restype = ct.POINTER(ct.c_double)
     '''
-    'merido_sol' es la función de la DLL que calcula el valor de la función objetivo y el vector de desviaciones de todas las variables
+    'merido_sol' es la función de la DLL que calcula el valor de la función objetivo y el vector de valores de las variables o de las desviaciones de todas las variables
+    solo tiene utilidad para hacer comprobaciones en la fase de depuración
     hay que definir el tipo de los argumentos y el de su resultado:
-          Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá
-          El tipo de su resultado 'ct.POINTER(ct.c_double)', que es un puntero a double, es un vector donde están concatenadas todos los valores que devuelve esta función:
-              el valor de la función objetivo
-              el vector de desviaciones
-              el vector solución, o el de los valores de todas la variables, dependiendo del parámetro 'extendida' que se haya pasado a la función 'soluciona' de la DLL
+        Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá
+        El tipo de su resultado 'ct.POINTER(ct.c_double)', que es un puntero a double, es un vector donde están concatenadas todos los valores que devuelve esta función:
+        Si extensa = 1, devuelve:
+		    resultado
+		    número de datos
+		    intentos
+		    generaciones
+		    mérito
+		    máxima desviación
+		    indice variable con la máxima desviación
+            vector solución
+            valores de las variables en el primer pase
+            valores de las variables en el segundo pase
+        Si extensa = 0, devuelve:
+		    resultado
+		    número de datos
+		    intentos
+		    generaciones
+		    mérito
+		    máxima desviación
+		    indice variable con la máxima desviación
+            vector solución
+            desviaciones por bloque
+            evolución del mérito y de la desviación máxima
     '''
     libc.merito_sol.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_sol.restype = ct.POINTER(ct.c_double)
@@ -2438,10 +2448,11 @@ if __name__ == '__main__':
             sys.exit()
         '''
         # si ECT_ECM == 1, hay que llamar a 'merito_sol' antes que  a 'merito_s' para que calcule el número de desvios
+        imprime('si se usa una DLL "...r" puede que no coincidan con Python, pero no importa')
         dist_dll = dll.merito_sol(libc, vec_opt)
         imprime('{:>9} {:12.5e}'.format('DLL sol', dist_dll))
         dist_dll = fo(vec_opt)
-        imprime('{:>9} {:12.5e} si se usa una DLL "...r" no coincidirá, pero no importa'.format('DLL    ', dist_dll))
+        imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
         '''
         res = libc.cierra_salida()
         if res == False:

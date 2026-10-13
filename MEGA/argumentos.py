@@ -972,7 +972,7 @@ def valores_opciones3():
     args = parser.parse_args()
     return args
 
-def valores_opciones4():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=4      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1199,7 +1199,7 @@ def valores_opciones4():
 
     return args
 
-def valores_opciones():
+def valores_opciones5():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=5      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1476,7 +1476,7 @@ def valores_opciones6():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=1030_Salarios_1_5' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=1002_Salarios_1_5' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
 
     parser.add_argument('--NSAM'               , type=int  , default=6      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1599,7 +1599,7 @@ def valores_opciones6():
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False  , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False  , help="salida de los valores iniciales de las variables y sus límites")
-    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=True   , help="informe de los valores iniciales de las variables")
+    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=False  , help="informe de los valores iniciales de las variables")
     parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False  , help="calcular una primera valoración de modelo")
     parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False  , help="salida con el detalla de las desviaciones")
     parser.add_argument('--SAL_AUXILIARES'     , type=sab  , default=False  , help="imprimir los valores del historial y la evolución de la solución")

@@ -1,4 +1,4 @@
-inicio: Sun Oct 11 15:36:42 2026
+inicio: Tue Oct 13 13:03:05 2026
 
 Librería               : C:\MEGA\MEGA_DLL\x64\Ultimas\MEGA2.dll
 Caso                   : 192_Mcs2_42_det_P
@@ -53,7 +53,7 @@ Variables con valores fijos
 
 Fondos UE              :  0.00000e+00
 
-n.gen.pro2 máximoxtramo:      1700000
+máximo 'n.gen.pro2' por tramo:      1700000 | 'n.gen.pro2' probable por tramo:         1700
 
 generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
 --------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
@@ -67,5 +67,5 @@ número de mutaciones extra =          2  media por generación =       inf   % 
 
 número de variables extra  =          0  media sobre mutaciones extra=    0.0000
 
-fin   : Sun Oct 11 15:36:43 2026
+fin   : Tue Oct 13 13:03:06 2026
 

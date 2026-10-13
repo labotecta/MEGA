@@ -18,21 +18,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Fuente.cpp",
-              "DocumentMoniker": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Fuente.cpp",
-              "RelativeDocumentMoniker": "MEGA_DLL\\Fuente.cpp",
-              "ToolTip": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Fuente.cpp",
-              "RelativeToolTip": "MEGA_DLL\\Fuente.cpp",
-              "ViewState": "AgIAAHUDAAAAAAAAAADgv7EDAAAjAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2026-10-10T08:06:51.593Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -41,9 +28,22 @@
               "RelativeDocumentMoniker": "MEGA_DLL\\Mega.h",
               "ToolTip": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Mega.h*",
               "RelativeToolTip": "MEGA_DLL\\Mega.h*",
-              "ViewState": "AgIAABAAAAAAAAAAAAAAADgAAAACAAAAAAAAAA==",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAABYAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2026-09-28T07:34:57.896Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Fuente.cpp",
+              "DocumentMoniker": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Fuente.cpp",
+              "RelativeDocumentMoniker": "MEGA_DLL\\Fuente.cpp",
+              "ToolTip": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Fuente.cpp",
+              "RelativeToolTip": "MEGA_DLL\\Fuente.cpp",
+              "ViewState": "AgIAABwUAAAAAAAAAADgvzIUAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-10-10T08:06:51.593Z",
               "EditorCaption": ""
             }
           ]

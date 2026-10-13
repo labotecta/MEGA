@@ -7,7 +7,7 @@
             "outputs": [
                 "x64\\Release\\Mega.h.obj.dt.module.json",
                 "x64\\Release\\Mega.h.obj.dt.d.json",
-                "x64\\Release\\MEGA4.pch"
+                "x64\\Release\\MEGA8r.pch"
             ],
             "requires": []
         }

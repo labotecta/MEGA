@@ -1,5 +1,5 @@
 @echo off
-TITLE 31106_ayudas_recalibra_alfa_42_det_P_0_00
+TITLE 31106_ayudas_recalibra_alfa_42_det_P_0_00_PCM_036
 mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
