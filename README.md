@@ -21,4 +21,4 @@ El objetivo de los Modelos de Equilibrio General Aplicado es obtener cual será 
 
 ## Contacto: alberto@interajedrez.com
 
-## El material de este repositorio es como es, sin ningún tipo de garantía ni responsabilidad relacionados con él.Acualización
+## El material de este repositorio es como es, sin ningún tipo de garantía ni responsabilidad relacionados con él.
