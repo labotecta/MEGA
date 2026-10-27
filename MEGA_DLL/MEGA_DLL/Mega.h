@@ -5,6 +5,14 @@
 
 using namespace std;
 
+//#define signo(x) ((x) < 0.0 ? -1. : 1.)
+
+// si la aplicación distinge +0 de -0 (lo cual no es raro) copysign dará resultados distintos que la macro 'signo(x) ((x) < 0.0 ? -1. : 1.)'
+// copysign no incrementa el tiempo de cálculo
+#define signo(x) copysign(1.0, (x))
+
+const double MILLONESIMA = 0.000001;
+
 /*
 Sobre la reproducibilidad de los resultados.
 Solo se ha conseguido en mono proceso.
@@ -55,7 +63,7 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 */
 // no define la matriz Xr em merito_s para ahorrar memoria, es incompatible con CONSUMO_INTERMEDIO_AX y CONSUMO_INTERMEDIO_INDESADO
 // tiene el inconveniente de que al perderse el valor individual de Xr, el cuadre de mercado se hace con X y no con Xr 
-#define SIN_XR
+//#define SIN_XR
 
 // RAND1: Mejor + F * (I2 - I1)
 // en el libro esta es la que se usa y denomina best1bin
@@ -232,11 +240,12 @@ extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
-extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso);
+extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso, const char* caso_para_leer);
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
+extern "C" MEGA_DLL_API int lee_caso(const char* fichero, double* vec, double* par);
 
 // estas dos funciones fueron útiles durante el desarrollo  pero se podrían eliminar
-extern "C" MEGA_DLL_API bool abre_salida(const char* senda);
+extern "C" MEGA_DLL_API bool abre_salida(const char* senda, const char* caso);
 extern "C" MEGA_DLL_API bool cierra_salida();
 
 #ifdef DESVIACONES_RELATIVAS
@@ -287,8 +296,8 @@ double precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, double alfa, d
 #pragma endregion
 
 #pragma region Genetico
-bool abre_salida(const char* senda, const char* caso);
-bool cierra_salida();
+
+bool compara_caso(double* vec, double* par);
 void cancelar(int sig);
 int parametros_alge(double* par);
 bool inicia_cotas();

@@ -1,0 +1,10 @@
+MCS 5 53_ayudas_recalibra_alfa_P_0_00_PCM_050
+C:\MEGA\MEGA_GPU\Casos\Fuentes\53_ayudas_recalibra_alfa_P_0_00_PCM_050.txt
+C:\MEGA\MEGA_GPU\Casos\Salidas5\53_ayudas_recalibra_alfa_P_0_00_PCM_050_sal.log
+C:\MEGA\MEGA_GPU\Casos\Soluciones5\53_ayudas_recalibra_alfa_P_0_00_PCM_050_vector.txt
+C:\MEGA\MEGA_GPU\Casos\Soluciones5\53_ayudas_recalibra_alfa_P_0_00_PCM_050_modelo.txt
+128	hilos
+19968	poblacion
+156	bloques
+1	individuos bloque
+-1	k memoria compartida

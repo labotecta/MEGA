@@ -18,21 +18,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Mega.h",
-              "DocumentMoniker": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Mega.h",
-              "RelativeDocumentMoniker": "MEGA_DLL\\Mega.h",
-              "ToolTip": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Mega.h",
-              "RelativeToolTip": "MEGA_DLL\\Mega.h",
-              "ViewState": "AgIAAA8AAAAAAAAAAAAAABYAAAAMAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2026-09-28T07:34:57.896Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
@@ -41,9 +28,22 @@
               "RelativeDocumentMoniker": "MEGA_DLL\\Fuente.cpp",
               "ToolTip": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Fuente.cpp",
               "RelativeToolTip": "MEGA_DLL\\Fuente.cpp",
-              "ViewState": "AgIAABwUAAAAAAAAAADgvzIUAAANAAAAAAAAAA==",
+              "ViewState": "AgIAAP8EAAAAAAAAAAAiwMwFAAACAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2026-10-10T08:06:51.593Z",
+              "WhenOpened": "2026-10-24T07:45:15.683Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Mega.h",
+              "DocumentMoniker": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Mega.h",
+              "RelativeDocumentMoniker": "MEGA_DLL\\Mega.h",
+              "ToolTip": "C:\\MEGA\\MEGA_DLL\\MEGA_DLL\\Mega.h",
+              "RelativeToolTip": "MEGA_DLL\\Mega.h",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAABsAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-09-28T07:34:57.896Z",
               "EditorCaption": ""
             }
           ]

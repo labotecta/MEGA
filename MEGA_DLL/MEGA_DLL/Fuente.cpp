@@ -35,6 +35,7 @@ a través de las funciones correspondientes para no tener que enviarlas a cada l
 OPCIONES   op;
 DATOS      datos;
 PARAMETROS parametros;
+double AYD_ADI_DEM[NDEM]{};
 
 #ifdef CONSUMO_INTERMEDIO_INDESADO
 // no parece que ahorre tiempo, más bien al contrario
@@ -344,7 +345,7 @@ const char* rot_desvios[MAX_ROT_DESVIOS_BLOQUE] = {
 int puntero_bloque_desviacion = 0;
 int desplazamiento_desviacion = 0;
 #ifdef COMPROBAR_MAX_DESVIACION
-int ind_bloque_desviacion[MAX_BLOQUES_DESVIOS];
+int ind_bloque_desviacion[MAX_ROT_DESVIOS_BLOQUE];
 #endif
 
 #pragma region Genetico
@@ -526,6 +527,7 @@ char nombre_caso[256];
 int desviaciones_relativas;
 double umbral_regularizacion;
 double fraccion_regularizacion;
+double prob_cop_mejor_ini;
 double prob_cop_mejor;
 // El mejor modo es el 0, el resto han sido pruebas nada concluyentes
 const int N_MODOS_INICIO = 15;
@@ -545,6 +547,716 @@ mt19937 gen;
 uniform_real_distribution<double> dis_double(0.0, 1.0);
 uniform_int_distribution<int> dis_entero{};
 
+OPCIONES hop{};
+DATOS hdatos{};
+PARAMETROS hparametros{};
+double hpar[64]{};
+double* cotasInf_h;
+double* cotasSup_h;
+double* hvec;
+double hAYD_ADI_DEM[NDEM]{};
+int lee_caso(const char* fichero, double* vec, double* par) {
+
+	FILE* fop;
+	fopen_s(&fop, fichero, "r");
+	if (fop == nullptr) {
+		printf("\nNo se pudo abrir el fichero:%s\n", fichero);
+		return -1;
+	}
+	char c[32];
+
+	fprintf(salida, "OPCIONES\n--------------\n");
+	fgets(c, 32, fop);
+	hop.OR_PRE_EXCLUIDO = atoi(c);
+	if (hop.OR_PRE_EXCLUIDO != op.OR_PRE_EXCLUIDO) fprintf(salida, "error OR_PRE_EXCLUIDO\n");
+	fgets(c, 32, fop);
+	hop.PRECIO_F_EXCLUIDO = atof(c);
+	if (hop.PRECIO_F_EXCLUIDO != op.PRECIO_F_EXCLUIDO) fprintf(salida, "error PRECIO_F_EXCLUIDO\n");
+	fgets(c, 32, fop);
+	hop.VALOR_F_TRA = atof(c);
+	if (hop.VALOR_F_TRA != op.VALOR_F_TRA) fprintf(salida, "error VALOR_F_TRA\n");
+	fgets(c, 32, fop);
+	hop.ALFA_PHILLIPS = atof(c);
+	if (hop.ALFA_PHILLIPS != op.ALFA_PHILLIPS) fprintf(salida, "error ALFA_PHILLIPS\n");
+	fgets(c, 32, fop);
+	hop.GE_INCLUYE_XP = atoi(c) == 0 ? false : true;
+	if (hop.GE_INCLUYE_XP != op.GE_INCLUYE_XP) fprintf(salida, "error GE_INCLUYE_XP\n");
+	fgets(c, 32, fop);
+	hop.GE_INCLUYE_AgH = atoi(c) == 0 ? false : true;
+	if (hop.GE_INCLUYE_AgH != op.GE_INCLUYE_AgH) fprintf(salida, "error GE_INCLUYE_AgH\n");
+	fgets(c, 32, fop);
+	hop.GE_IMPUESTOS_AgH = atoi(c) == 0 ? false : true;
+	if (hop.GE_IMPUESTOS_AgH != op.GE_IMPUESTOS_AgH) fprintf(salida, "error GE_IMPUESTOS_AgH\n");
+	fgets(c, 32, fop);
+	hop.FF_ENDOGENA = atoi(c) == 0 ? false : true;
+	if (hop.FF_ENDOGENA != op.FF_ENDOGENA) fprintf(salida, "error FF_ENDOGENA\n");
+	fgets(c, 32, fop);
+	hop.ALP_FACTOR = atof(c);
+	if (hop.ALP_FACTOR != op.ALP_FACTOR) fprintf(salida, "error ALP_FACTOR\n");
+	fgets(c, 32, fop);
+	hop.INDICE_F_TRA = atoi(c);
+	if (hop.INDICE_F_TRA != op.INDICE_F_TRA) fprintf(salida, "error INDICE_F_TRA\n");
+	fgets(c, 32, fop);
+	hop.UTILIDAD_DEMANDA = atoi(c);
+	if (hop.UTILIDAD_DEMANDA != op.UTILIDAD_DEMANDA) fprintf(salida, "error UTILIDAD_DEMANDA\n");
+	fgets(c, 32, fop);
+	hop.DEM_ESENCIALES = atoi(c) == 0 ? false : true;
+	if (hop.DEM_ESENCIALES != op.DEM_ESENCIALES) fprintf(salida, "error DEM_ESENCIALES\n");
+	fgets(c, 32, fop);
+	hop.DEM_ADICIONAL_TIPO = atoi(c);
+	if (hop.DEM_ADICIONAL_TIPO != op.DEM_ADICIONAL_TIPO) fprintf(salida, "error DEM_ADICIONAL_TIPO\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hop.DEM_ADICIONAL[i][j] = atof(c);
+			if (hop.DEM_ADICIONAL[i][j] != op.DEM_ADICIONAL[i][j]) fprintf(salida, "error DEM_ADICIONAL[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hop.AYD_ADICIONAL[i][j] = atof(c);
+			if (hop.AYD_ADICIONAL[i][j] != op.AYD_ADICIONAL[i][j]) fprintf(salida, "error AYD_ADICIONAL[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hop.CON_ESENCIALES[i][j] = atof(c);
+			if (hop.CON_ESENCIALES[i][j] != op.CON_ESENCIALES[i][j]) fprintf(salida, "error CON_ESENCIALES[i][j] %d %d\n", i, j);
+		}
+	}
+	fgets(c, 32, fop);
+	hop.RENTA_FICTICIA = atoi(c) == 0 ? false : true;
+	if (hop.RENTA_FICTICIA != op.RENTA_FICTICIA) fprintf(salida, "error RENTA_FICTICIA\n");
+	fgets(c, 32, fop);
+	hop.MODO_PSEUDOIMPTOS = atoi(c);
+	if (hop.MODO_PSEUDOIMPTOS != op.MODO_PSEUDOIMPTOS) fprintf(salida, "error MODO_PSEUDOIMPTOS\n");
+	fgets(c, 32, fop);
+	hop.OPT_DESVIOS = atoi(c);
+	if (hop.OPT_DESVIOS != op.OPT_DESVIOS) fprintf(salida, "error OPT_DESVIOS\n");
+	fgets(c, 32, fop);
+	hop.EQ_BAL_PAGOS = atoi(c) == 0 ? false : true;
+	if (hop.EQ_BAL_PAGOS != op.EQ_BAL_PAGOS) fprintf(salida, "error EQ_BAL_PAGOS\n");
+
+	fprintf(salida, "\nDATOS\n--------------\n");
+	fgets(c, 32, fop);
+	hdatos.pF0[0] = atof(c);
+	if (hdatos.pF0[0] != datos.pF0[0]) fprintf(salida, "error hdatos.pF0[0]\n");
+	fgets(c, 32, fop);
+	hdatos.pF0[1] = atof(c);
+	if (hdatos.pF0[1] != datos.pF0[1]) fprintf(salida, "error hdatos.pF0[1]\n");
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.pY0[i] = atof(c);
+		if (hdatos.pY0[i] != datos.pY0[i]) fprintf(salida, "error hdatos.pY0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.pQ0[i] = atof(c);
+		if (hdatos.pQ0[i] != datos.pQ0[i]) fprintf(salida, "error hdatos.pQ0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.pD0[i] = atof(c);
+		if (hdatos.pD0[i] != datos.pD0[i]) fprintf(salida, "error hdatos.pD0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.pWm[i] = atof(c);
+		if (hdatos.pWm[i] != datos.pWm[i]) fprintf(salida, "error hdatos.pWm[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.pWe[i] = atof(c);
+		if (hdatos.pWe[i] != datos.pWe[i]) fprintf(salida, "error hdatos.pWe[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.E0[i] = atof(c);
+		if (hdatos.E0[i] != datos.E0[i]) fprintf(salida, "error hdatos.E0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.M0[i] = atof(c);
+		if (hdatos.M0[i] != datos.M0[i]) fprintf(salida, "error hdatos.M0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.D0[i] = atof(c);
+		if (hdatos.D0[i] != datos.D0[i]) fprintf(salida, "error hdatos.D0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.tauz[i] = atof(c);
+		if (hdatos.tauz[i] != datos.tauz[i]) fprintf(salida, "error hdatos.tauz[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.taum[i] = atof(c);
+		if (hdatos.taum[i] != datos.taum[i]) fprintf(salida, "error hdatos.taum[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fgets(c, 32, fop);
+			hdatos.F0[i][j] = atof(c);
+			if (hdatos.F0[i][j] != datos.F0[i][j]) fprintf(salida, "error hdatos.F0[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		fgets(c, 32, fop);
+		hdatos.PssH0[i] = atof(c);
+		if (hdatos.PssH0[i] != datos.PssH0[i]) fprintf(salida, "error hdatos.PssH0[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fgets(c, 32, fop);
+			hdatos.FF0[i][j] = atof(c);
+			if (hdatos.FF0[i][j] != datos.FF0[i][j]) fprintf(salida, "error hdatos.FF0[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fgets(c, 32, fop);
+			hdatos.Alp0[i][j] = atof(c);
+			if (hdatos.Alp0[i][j] != datos.Alp0[i][j]) fprintf(salida, "error hdatos.Alp0[i][j] %d %d\n", i, j);
+		}
+	}
+	fgets(c, 32, fop);
+	hdatos.epsilon0 = atof(c);
+	if (hdatos.epsilon0 != datos.epsilon0) fprintf(salida, "error hdatos.epsilon0\n");
+	fgets(c, 32, fop);
+	hdatos.Tg0 = atof(c);
+	if (hdatos.Tg0 != datos.Tg0) fprintf(salida, "error hdatos.Tg0\n");
+	fgets(c, 32, fop);
+	hdatos.Ti0 = atof(c);
+	if (hdatos.Ti0 != datos.Ti0) fprintf(salida, "error hdatos.Ti0\n");
+	fgets(c, 32, fop);
+	hdatos.Te0 = atof(c);
+	if (hdatos.Te0 != datos.Te0) fprintf(salida, "error hdatos.Te0\n");
+	fgets(c, 32, fop);
+	hdatos.Sf0 = atof(c);
+	if (hdatos.Sf0 != datos.Sf0) fprintf(salida, "error hdatos.Sf0\n");
+	fgets(c, 32, fop);
+	hdatos.Fue = atof(c);
+	if (hdatos.Fue != datos.Fue) fprintf(salida, "error hdatos.Fue\n");
+	fgets(c, 32, fop);
+	hdatos.PobAct = atof(c);
+	if (hdatos.PobAct != datos.PobAct) fprintf(salida, "error hdatos.PobAct\n");
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.Z0[i] = atof(c);
+		if (hdatos.Z0[i] != datos.Z0[i]) fprintf(salida, "error hdatos.Z0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.Ajc0[i] = atof(c);
+		if (hdatos.Ajc0[i] != datos.Ajc0[i]) fprintf(salida, "error hdatos.Ajc0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hdatos.Aji0[i] = atof(c);
+		if (hdatos.Aji0[i] != datos.Aji0[i]) fprintf(salida, "error hdatos.Aji0[i] %d\n", i);
+	}
+
+	fprintf(salida, "\nPARAMETROS\n--------------\n");
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hparametros.ax[i][j] = atof(c);
+			if (hparametros.ax[i][j] != hparametros.ax[i][j]) fprintf(salida, "error hparametros.ax[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.ay[i] = atof(c);
+		if (hparametros.ay[i] != hparametros.ay[i]) fprintf(salida, "error hparametros.ay[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			fgets(c, 32, fop);
+			hparametros.beta[i][j] = atof(c);
+			if (hparametros.ax[i][j] != hparametros.ax[i][j]) fprintf(salida, "error hparametros.ax[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.b[i] = atof(c);
+		if (hparametros.b[i] != hparametros.b[i]) fprintf(salida, "error hparametros.b[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.teta[i] = atof(c);
+		if (hparametros.teta[i] != hparametros.teta[i]) fprintf(salida, "error hparametros.teta[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.xie[i] = atof(c);
+		if (hparametros.xie[i] != hparametros.xie[i]) fprintf(salida, "error hparametros.xie[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.xid[i] = atof(c);
+		if (hparametros.xid[i] != hparametros.xid[i]) fprintf(salida, "error hparametros.xid[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.phi[i] = atof(c);
+		if (hparametros.phi[i] != hparametros.phi[i]) fprintf(salida, "error hparametros.phi[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.cage[i] = atof(c);
+		if (hparametros.cage[i] != hparametros.cage[i]) fprintf(salida, "error hparametros.cage[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.ctzsse[i] = atof(c);
+		if (hparametros.ctzsse[i] != hparametros.ctzsse[i]) fprintf(salida, "error hparametros.ctzsse[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.mu[i] = atof(c);
+		if (hparametros.mu[i] != hparametros.mu[i]) fprintf(salida, "error hparametros.mu[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.landa[i] = atof(c);
+		if (hparametros.landa[i] != hparametros.landa[i]) fprintf(salida, "error hparametros.landa[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.gamma[i] = atof(c);
+		if (hparametros.gamma[i] != hparametros.gamma[i]) fprintf(salida, "error hparametros.gamma[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.deltam[i] = atof(c);
+		if (hparametros.deltam[i] != hparametros.deltam[i]) fprintf(salida, "error hparametros.deltam[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.deltad[i] = atof(c);
+		if (hparametros.deltad[i] != hparametros.deltad[i]) fprintf(salida, "error hparametros.deltad[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		fgets(c, 32, fop);
+		hparametros.eta[i] = atof(c);
+		if (hparametros.eta[i] != hparametros.eta[i]) fprintf(salida, "error hparametros.eta[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		fgets(c, 32, fop);
+		hparametros.taud[i] = atof(c);
+		if (hparametros.taud[i] != hparametros.taud[i]) fprintf(salida, "error hparametros.taud[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		fgets(c, 32, fop);
+		hparametros.cagh[i] = atof(c);
+		if (hparametros.cagh[i] != hparametros.cagh[i]) fprintf(salida, "error hparametros.cagh[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		fgets(c, 32, fop);
+		hparametros.ssp[i] = atof(c);
+		if (hparametros.ssp[i] != hparametros.ssp[i]) fprintf(salida, "error hparametros.ssp[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		fgets(c, 32, fop);
+		hparametros.ctzssh[i] = atof(c);
+		if (hparametros.ctzssh[i] != hparametros.ctzssh[i]) fprintf(salida, "error hparametros.ctzssh[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		fgets(c, 32, fop);
+		hparametros.eta_ces[i] = atof(c);
+		if (hparametros.eta_ces[i] != hparametros.eta_ces[i]) fprintf(salida, "error hparametros.eta_ces[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hparametros.alfa_ces[i][j] = atof(c);
+			if (hparametros.alfa_ces[i][j] != hparametros.alfa_ces[i][j]) fprintf(salida, "error hparametros.alfa_ces[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hparametros.alfa[i][j] = atof(c);
+			if (hparametros.alfa[i][j] != hparametros.alfa[i][j]) fprintf(salida, "error hparametros.alfa[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			fgets(c, 32, fop);
+			hparametros.alfa_esen[i][j] = atof(c);
+			if (hparametros.alfa_esen[i][j] != hparametros.alfa_esen[i][j]) fprintf(salida, "error hparametros.alfa_esen[i][j] %d %d\n", i, j);
+		}
+	}
+	fgets(c, 32, fop);
+	hparametros.ssg = atof(c);
+	if (hparametros.ssg != hparametros.ssg) fprintf(salida, "error hparametros.ssg\n");
+	fgets(c, 32, fop);
+	hparametros.tai = atof(c);
+	if (hparametros.tai != hparametros.tai) fprintf(salida, "error hparametros.tai\n");
+
+	fprintf(salida, "\nARGUMENTOS\n--------------\n");
+	int hipar = 0;
+	fgets(c, 32, fop);
+	hpar[hipar++] = max_intentos = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = n_hilos;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = max_generaciones;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = tolerancia = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = tol_aceptable = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = generaciones_control_progreso = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = min_progreso = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = umbral_regularizacion = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = fraccion_regularizacion = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = histo_int = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = histo_sol = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = modo_poblacion_inicial = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = modo_reinicio_poblacion = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = factor_dispersion = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = factor_sigma = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = variacion_dispersion = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = num_tramos_lhs = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = NPOB;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = par_mutacion[0] = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = par_mutacion[1] = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = cte_recombinacion = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = cte_recombinacion_extra = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = control_factibilidad = atoi(c) == 0 ? false : true;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = semilla;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = poner_el_mejor_primero = atoi(c) == 0 ? false : true;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = incluir_x0 = atoi(c) == 0 ? false : true;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	int nvec = atoi(c);
+	hpar[hipar++] = NVEC = nvec;
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = estadistica_pob_ini = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = desviaciones_relativas = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+	fgets(c, 32, fop);
+	hpar[hipar++] = prob_cop_mejor = prob_cop_mejor_ini = atof(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
+
+	fprintf(salida, "\nCOTAS\n--------------\n");
+	cotasInf_h = (double*)malloc(nvec * sizeof(double));
+	cotasSup_h = (double*)malloc(nvec * sizeof(double));
+	hvec = (double*)malloc(nvec * sizeof(double));
+	for (int i = 0; i < nvec; i++) {
+		fgets(c, 32, fop);
+		cotasInf_h[i] = atof(c);
+		if (cotasInf_h[i] != cotas[0][i]) fprintf(salida, "error cotasInf_h %d\n", i);
+		fgets(c, 32, fop);
+		hvec[i] = atof(c);
+		if (hvec[i] != vec[i]) fprintf(salida, "error vec %d\n", i);
+		fgets(c, 32, fop);
+		cotasSup_h[i] = atof(c);
+		if (cotasSup_h[i] != cotas[1][i]) fprintf(salida, "error cotasSup_h %d\n", i);
+	}
+	fclose(fop);
+	fprintf(salida, "\nAYUDAS\n--------------\n");
+	for (int i = 0; i < NDEM; i++) {
+		hAYD_ADI_DEM[i] = 0.;
+		for (int j = 0; j < NSEC; j++) {
+			hAYD_ADI_DEM[i] += hop.AYD_ADICIONAL[i][j];
+		}
+		if (hAYD_ADI_DEM[i] != AYD_ADI_DEM[i]) fprintf(salida, "error AYD_ADI_DEM[i] %d\n", i);
+	}
+	fprintf(salida, "\nFIN \n\n");
+	return 0;
+}
+
+bool compara_caso(double* vec, double* par) {
+	fprintf(salida, "OPCIONES\n--------------\n");
+
+	if (hop.OR_PRE_EXCLUIDO != op.OR_PRE_EXCLUIDO) fprintf(salida, "error OR_PRE_EXCLUIDO\n");
+	if (hop.PRECIO_F_EXCLUIDO != op.PRECIO_F_EXCLUIDO) fprintf(salida, "error PRECIO_F_EXCLUIDO\n");
+	if (hop.VALOR_F_TRA != op.VALOR_F_TRA) fprintf(salida, "error VALOR_F_TRA\n");
+	if (hop.ALFA_PHILLIPS != op.ALFA_PHILLIPS) fprintf(salida, "error ALFA_PHILLIPS\n");
+	if (hop.GE_INCLUYE_XP != op.GE_INCLUYE_XP) fprintf(salida, "error GE_INCLUYE_XP\n");
+	if (hop.GE_INCLUYE_AgH != op.GE_INCLUYE_AgH) fprintf(salida, "error GE_INCLUYE_AgH\n");
+	if (hop.GE_IMPUESTOS_AgH != op.GE_IMPUESTOS_AgH) fprintf(salida, "error GE_IMPUESTOS_AgH\n");
+	if (hop.FF_ENDOGENA != op.FF_ENDOGENA) fprintf(salida, "error FF_ENDOGENA\n");
+	if (hop.ALP_FACTOR != op.ALP_FACTOR) fprintf(salida, "error ALP_FACTOR\n");
+	if (hop.INDICE_F_TRA != op.INDICE_F_TRA) fprintf(salida, "error INDICE_F_TRA\n");
+	if (hop.UTILIDAD_DEMANDA != op.UTILIDAD_DEMANDA) fprintf(salida, "error UTILIDAD_DEMANDA\n");
+	if (hop.DEM_ESENCIALES != op.DEM_ESENCIALES) fprintf(salida, "error DEM_ESENCIALES\n");
+	if (hop.DEM_ADICIONAL_TIPO != op.DEM_ADICIONAL_TIPO) fprintf(salida, "error DEM_ADICIONAL_TIPO\n");
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hop.DEM_ADICIONAL[i][j] != op.DEM_ADICIONAL[i][j]) fprintf(salida, "error DEM_ADICIONAL[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hop.AYD_ADICIONAL[i][j] != op.AYD_ADICIONAL[i][j]) fprintf(salida, "error AYD_ADICIONAL[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hop.CON_ESENCIALES[i][j] != op.CON_ESENCIALES[i][j]) fprintf(salida, "error CON_ESENCIALES[i][j] %d %d\n", i, j);
+		}
+	}
+	if (hop.RENTA_FICTICIA != op.RENTA_FICTICIA) fprintf(salida, "error RENTA_FICTICIA\n");
+	if (hop.MODO_PSEUDOIMPTOS != op.MODO_PSEUDOIMPTOS) fprintf(salida, "error MODO_PSEUDOIMPTOS\n");
+	if (hop.OPT_DESVIOS != op.OPT_DESVIOS) fprintf(salida, "error OPT_DESVIOS\n");
+	if (hop.EQ_BAL_PAGOS != op.EQ_BAL_PAGOS) fprintf(salida, "error EQ_BAL_PAGOS\n");
+
+	fprintf(salida, "\nDATOS\n--------------\n");
+
+	if (hdatos.pF0[0] != datos.pF0[0]) fprintf(salida, "error hdatos.pF0[0]\n");
+	if (hdatos.pF0[1] != datos.pF0[1]) fprintf(salida, "error hdatos.pF0[1]\n");
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.pY0[i] != datos.pY0[i]) fprintf(salida, "error hdatos.pY0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.pQ0[i] != datos.pQ0[i]) fprintf(salida, "error hdatos.pQ0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.pD0[i] != datos.pD0[i]) fprintf(salida, "error hdatos.pD0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.pWm[i] != datos.pWm[i]) fprintf(salida, "error hdatos.pWm[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.pWe[i] != datos.pWe[i]) fprintf(salida, "error hdatos.pWe[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.E0[i] != datos.E0[i]) fprintf(salida, "error hdatos.E0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.M0[i] != datos.M0[i]) fprintf(salida, "error hdatos.M0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.D0[i] != datos.D0[i]) fprintf(salida, "error hdatos.D0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.tauz[i] != datos.tauz[i]) fprintf(salida, "error hdatos.tauz[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.taum[i] != datos.taum[i]) fprintf(salida, "error hdatos.taum[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			if (hdatos.F0[i][j] != datos.F0[i][j]) fprintf(salida, "error hdatos.F0[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		if (hdatos.PssH0[i] != datos.PssH0[i]) fprintf(salida, "error hdatos.PssH0[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			if (hdatos.FF0[i][j] != datos.FF0[i][j]) fprintf(salida, "error hdatos.FF0[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			if (hdatos.Alp0[i][j] != datos.Alp0[i][j]) fprintf(salida, "error hdatos.Alp0[i][j] %d %d\n", i, j);
+		}
+	}
+	if (hdatos.epsilon0 != datos.epsilon0) fprintf(salida, "error hdatos.epsilon0\n");
+	if (hdatos.Tg0 != datos.Tg0) fprintf(salida, "error hdatos.Tg0\n");
+	if (hdatos.Ti0 != datos.Ti0) fprintf(salida, "error hdatos.Ti0\n");
+	if (hdatos.Te0 != datos.Te0) fprintf(salida, "error hdatos.Te0\n");
+	if (hdatos.Sf0 != datos.Sf0) fprintf(salida, "error hdatos.Sf0\n");
+	if (hdatos.Fue != datos.Fue) fprintf(salida, "error hdatos.Fue\n");
+	if (hdatos.PobAct != datos.PobAct) fprintf(salida, "error hdatos.PobAct\n");
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.Z0[i] != datos.Z0[i]) fprintf(salida, "error hdatos.Z0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.Ajc0[i] != datos.Ajc0[i]) fprintf(salida, "error hdatos.Ajc0[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hdatos.Aji0[i] != datos.Aji0[i]) fprintf(salida, "error hdatos.Aji0[i] %d\n", i);
+	}
+
+	fprintf(salida, "\nPARAMETROS\n--------------\n");
+
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hparametros.ax[i][j] != hparametros.ax[i][j]) fprintf(salida, "error hparametros.ax[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.ay[i] != hparametros.ay[i]) fprintf(salida, "error hparametros.ay[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		for (int j = 0; j < NFAC; j++) {
+			if (hparametros.ax[i][j] != hparametros.ax[i][j]) fprintf(salida, "error hparametros.ax[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.b[i] != hparametros.b[i]) fprintf(salida, "error hparametros.b[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.teta[i] != hparametros.teta[i]) fprintf(salida, "error hparametros.teta[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.xie[i] != hparametros.xie[i]) fprintf(salida, "error hparametros.xie[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.xid[i] != hparametros.xid[i]) fprintf(salida, "error hparametros.xid[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.phi[i] != hparametros.phi[i]) fprintf(salida, "error hparametros.phi[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.cage[i] != hparametros.cage[i]) fprintf(salida, "error hparametros.cage[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.ctzsse[i] != hparametros.ctzsse[i]) fprintf(salida, "error hparametros.ctzsse[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.mu[i] != hparametros.mu[i]) fprintf(salida, "error hparametros.mu[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.landa[i] != hparametros.landa[i]) fprintf(salida, "error hparametros.landa[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.gamma[i] != hparametros.gamma[i]) fprintf(salida, "error hparametros.gamma[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.deltam[i] != hparametros.deltam[i]) fprintf(salida, "error hparametros.deltam[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.deltad[i] != hparametros.deltad[i]) fprintf(salida, "error hparametros.deltad[i] %d\n", i);
+	}
+	for (int i = 0; i < NSEC; i++) {
+		if (hparametros.eta[i] != hparametros.eta[i]) fprintf(salida, "error hparametros.eta[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		if (hparametros.taud[i] != hparametros.taud[i]) fprintf(salida, "error hparametros.taud[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		if (hparametros.cagh[i] != hparametros.cagh[i]) fprintf(salida, "error hparametros.cagh[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		if (hparametros.ssp[i] != hparametros.ssp[i]) fprintf(salida, "error hparametros.ssp[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		if (hparametros.ctzssh[i] != hparametros.ctzssh[i]) fprintf(salida, "error hparametros.ctzssh[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		if (hparametros.eta_ces[i] != hparametros.eta_ces[i]) fprintf(salida, "error hparametros.eta_ces[i] %d\n", i);
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hparametros.alfa_ces[i][j] != hparametros.alfa_ces[i][j]) fprintf(salida, "error hparametros.alfa_ces[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hparametros.alfa[i][j] != hparametros.alfa[i][j]) fprintf(salida, "error hparametros.alfa[i][j] %d %d\n", i, j);
+		}
+	}
+	for (int i = 0; i < NDEM; i++) {
+		for (int j = 0; j < NSEC; j++) {
+			if (hparametros.alfa_esen[i][j] != hparametros.alfa_esen[i][j]) fprintf(salida, "error hparametros.alfa_esen[i][j] %d %d\n", i, j);
+		}
+	}
+	if (hparametros.ssg != hparametros.ssg) fprintf(salida, "error hparametros.ssg\n");
+	if (hparametros.tai != hparametros.tai) fprintf(salida, "error hparametros.tai\n");
+
+	fprintf(salida, "\nARGUMENTOS\n--------------\n");
+	int hipar = 0;
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+	if (hpar[hipar] != par[hipar++]) fprintf(salida, "error hipar %d\n", hipar - 1);
+
+	fprintf(salida, "\nCOTAS\n--------------\n");
+	for (int i = 0; i < NVEC; i++) {
+		if (cotasInf_h[i] != cotas[0][i]) fprintf(salida, "error cotasInf_h %d\n", i);
+		if (hvec[i] != vec[i]) fprintf(salida, "error vec %d\n", i);
+		if (cotasSup_h[i] != cotas[1][i]) fprintf(salida, "error cotasSup_h %d\n", i);
+	}
+	fprintf(salida, "\nAYUDAS\n--------------\n");
+	for (int i = 0; i < NDEM; i++) {
+		if (hAYD_ADI_DEM[i] != AYD_ADI_DEM[i]) fprintf(salida, "error AYD_ADI_DEM[i] %d\n", i);
+	}
+	fprintf(salida, "\nFIN \n\n");
+	return true;
+}
 /*
 Permite que la aplicación que llama a la DLL abra el archivo de salida y
 así poder escribir en este fichero información util para depurar errores, por ejemplo, en las
@@ -592,7 +1304,7 @@ si 'extendida' es igual a 0, 'soluciona' devuelve el vector solución, si es igu
 variables del modelo, esto último carece de utilidad, es preferible que quien llama a la DLL calcule
 las variables a partir del vector solución aplicando las ecuaciones del modelo.
 */
-double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso) {
+double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso, const char* caso_para_leer) {
 	sprintf_s(senda_salidas, 127, "%s", senda);
 	sprintf_s(nombre_caso, 256, "%s", caso);
 	CANCELAR = false;
@@ -636,15 +1348,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 			return VEC_OPT_E;
 		}
 	}
-
-	/*
-	NO PARECE TENER NINGUN EFECTO
-	dar la máxima prioridad al proceso principal (base)
-	ABOVE_NORMAL_PRIORITY_CLASS es menos crítica y REALTIME_PRIORITY_CLASS la más crítica
-	*/
-	if (!SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS)) {
-		fprintf(salida, "*--* Error (%d) al establecer la priodidad base\n", GetLastError());
-	}
 	auto t_inicio = chrono::system_clock::now();
 	auto inicio = chrono::system_clock::to_time_t(t_inicio);
 	char tmBuff[30];
@@ -685,6 +1388,27 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 
+	if (strlen(caso_para_leer) > 0) {
+		fprintf(salida, "Lee caso\n");
+		if (lee_caso(caso_para_leer, vec, par) == -1) {
+			if (extendida == 1) {
+				me_sol[0] = -8;
+				me_sol[2] = intentos;
+				me_sol[3] = generacion;
+				return me_sol;
+			}
+			else {
+				VEC_OPT_E[0] = -8;
+				VEC_OPT_E[2] = intentos;
+				VEC_OPT_E[3] = generacion;
+				return VEC_OPT_E;
+			}
+		}
+		fflush(salida);
+		fprintf(salida, "Compara caso\n");
+		compara_caso(vec, par);
+		fflush(salida);
+	}
 	MEMORY_BASIC_INFORMATION mbi;
 	static int dummy{};
 	TCHAR szFileName[MAX_PATH];
@@ -707,8 +1431,8 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #endif
 	fprintf(salida, "Número factores        : %12d\n", NFAC);
 	fprintf(salida, "Número hogares         : %12d\n", NDEM);
-	fprintf(salida, "Número sectores        : %12d\n\n", NSEC);
-	fprintf(salida, "Número procesos        : %12d\n", n_hilos);
+	fprintf(salida, "Número sectores        : %12d\n", NSEC);
+	fprintf(salida, "-------------------------------------\n");
 #ifdef AZAR_HILOS_LOCAL
 	fprintf(salida, "Modo azar hilos        : local\n");
 #else
@@ -732,7 +1456,6 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Valor mínimo variable  : %12.5e\n", MIN_FIJAR);
 	fprintf(salida, "Tolerancia para fijar  : %12.5e\n", TOL_DISPERSION);
 #endif
-	fprintf(salida, "Intentos (reinicios)   : %12d\n", max_intentos);
 	fprintf(salida, "Población              : %12d\n", NPOB);
 	fprintf(salida, "Modo población inicial : %12d\n", modo_poblacion_inicial);
 	fprintf(salida, "Factor dispersión unif.: %12.5e\n", factor_dispersion);
@@ -740,12 +1463,16 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #ifdef AJUSTA_POB_INICIAL
 	fprintf(salida, "Población inicial ajustada\n");
 #endif
-	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", prob_cop_mejor);
 #ifdef PROLONGAR
 	fprintf(salida, "Factor prolongar       : %12.5f\n", F_PASO_PROLONGAR);
 	fprintf(salida, "Mínimo para prolongar  : %12.5e\n", var_min_prolongado);
 #endif
 	fprintf(salida, "-------------------------------------\n");
+	fprintf(salida, "Número procesos        : %12d\n", n_hilos);
+	fprintf(salida, "Tolerancia en el merito: %12.5e\n", tolerancia);
+	fprintf(salida, "Intentos (reinicios)   : %12d\n", max_intentos);
+	fprintf(salida, "-------------------------------------\n");
+	fprintf(salida, "Control progreso cada  : %12d generaciones\n", generaciones_control_progreso);
 	fprintf(salida, "Progreso mínimo        : %12.3f %%\n", 100. * min_progreso);
 	fprintf(salida, "Umbral regularización  : %12.5e veces el progreso mínimo\n", umbral_regularizacion);
 	fprintf(salida, "Regularización         : %12.3f %% = %d individuos\n", 100. * fraccion_regularizacion, (int)(fraccion_regularizacion * NPOB));
@@ -760,12 +1487,15 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Factor mutación (F)    : %12.5e %12.5e\n", par_mutacion[0], par_mutacion[1]);
 	fprintf(salida, "Recombinación (CR)     : %12.5e\n", cte_recombinacion);
 	fprintf(salida, "Recombinación extra    : %12.5e\n", cte_recombinacion_extra);
+	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", prob_cop_mejor_ini);
 #ifdef RECOMBINACION_NORMAL
 	fprintf(salida, "Recombinación normal\n");
 #else
 	fprintf(salida, "Recombinación con el mejor individuo\n");
 #endif
+	fprintf(salida, "-------------------------------------\n");
 	fprintf(salida, "Factor Alp             : %12.5e\n", op.ALP_FACTOR);
+	fprintf(salida, "Fondos UE              : %12.5e\n", datos.Fue);
 	if (op.RENTA_FICTICIA == true) {
 		fprintf(salida, "Inc.demanda              CON renta ficticia\n");
 	}
@@ -795,7 +1525,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	else {
 		fprintf(salida, "AgH incluido en la solución: NO\n");
 	}
-	fprintf(salida, "Variables cabecera     : %12d\n", LCAB);
+	fprintf(salida, "Datos de cabecera      : %12d\n", LCAB);
 	int lsol = LSOL - 1;
 	// no restamos 1 a LVAR porque en la solución no se incluye el precio de uno de los factores, por
 	// eso se lo sumamos a LVARS_PP para obtener el total de variables del modelo
@@ -819,6 +1549,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Desviaciones relativas : %12d\n", desviaciones_relativas);
 #endif
 	if (nvar_fijas > 0) {
+		fprintf(salida, "----------------------------------------\n");
 		fprintf(salida, "Variables con valores fijos\n");
 		int p;
 		int d;
@@ -833,17 +1564,18 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 						break;
 					}
 				}
-				fprintf(salida, "%5d %-8s %5d  %15.8e\n", i, rot_blo_vec[p], d, cotasInf[i]);
+				fprintf(salida, "%5d %-8s %5d  %18.10e\n", i, rot_blo_vec[p], d, cotasInf[i]);
 			}
 		}
+		fprintf(salida, "----------------------------------------\n");
 	}
 	fprintf(salida, "\n");
-	fprintf(salida, "Fondos UE              : %12.5e\n\n", datos.Fue);
 #ifdef NUM_GENES_PROGENITOR_2
 	unsigned long long max_tramo = (unsigned long long)((unsigned long long)(lsol - nvar_fijas)) * (unsigned long long)NPOB * (unsigned long long)histo_int;
 	long prob_tramo = (long)((double)max_tramo * (1.0 - cte_recombinacion));
 	fprintf(salida, "máximo 'n.gen.pro2' por tramo:%13lld | 'n.gen.pro2' probable por tramo:%13ld\n\n", max_tramo, prob_tramo);
 #endif
+	fprintf(salida, "\nMerito vec            : %23.15e\n", merito_s(vec));
 	fflush(salida);
 
 #ifdef SORTEOS
@@ -857,7 +1589,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #ifdef COMPROBAR_MAX_DESVIACION
 	// 'indice_desviaciones' es totalmente prescindible, solo se usa para comprobar la variable con la máxima desviación
 	indice_desviaciones();
-	for (int i = 0; i < MAX_BLOQUES_DESVIOS; i++) {
+	for (int i = 0; i < MAX_ROT_DESVIOS_BLOQUE; i++) {
 		fprintf(salida, "Bloque %3d :  %-8s %6d\n", i, rot_desvios[i], ind_bloque_desviacion[i]);
 	}
 	fprintf(salida, "\n");
@@ -878,14 +1610,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  var.fijas\n");
 #endif
 #else
-#ifdef ECM
-	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
-#else
-	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
-#endif
-#endif
-	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------\n");
-#endif
+
 	if (inicia_poblacion(factor_dispersion) == false) {
 		// Error al reservar memoria para la poblacion
 		fin_soluciona();
@@ -1003,6 +1728,24 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		free(desest);
 	}
 
+	fprintf(salida, "Merito     pb1        : %23.15e\n", merito_s(poblacion[0]));
+	merito_sol(poblacion[0]);
+	fprintf(salida, "Merito sol pb1        : %23.15e\n", me_sol[4]);
+	fprintf(salida, "VAB                   : %23.15e\n", VAB);
+	fprintf(salida, "Impuestos             : %23.15e\n", impuestos);
+	fprintf(salida, "Cotizacion SS         : %23.15e\n", cotizacionesSS);
+	fprintf(salida, "Z                     : %23.15e\n", sZ);
+	fprintf(salida, "Q                     : %23.15e\n\n", sQ);
+
+#ifdef ECM
+	fprintf(salida, "generacio d.est.poblac      ECM     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
+#else
+	fprintf(salida, "generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej\n");
+#endif
+#endif
+	fprintf(salida, "--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------\n");
+#endif
+	fflush(salida);
 	if (max_generaciones == 0) {
 		// para una valoración inicial del modelo
 		fin_soluciona();
@@ -1170,7 +1913,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 		}
 	}
 	else if (res_Simulacion == -5) {
-		if (mejor_merito > 0.0001) {
+		if (mejor_merito > tol_aceptable) {
 			// Superado el maximo de generaciones, solucion no aceptable
 			fin_soluciona();
 			if (extendida == 1) {
@@ -1253,6 +1996,13 @@ void fin_soluciona() {
 #else
 	fprintf(salida, "%9d %12.5e %12.5e %12.5e %-8s %5d %13.6e %13.6e %13.6e %13.6e %13.6e %8.1f %8.1f  %10d\n", generacion, dist, mejor_merito, VEC_OPT_E[5], rot_desvios[puntero_bloque_desviacion], desplazamiento_desviacion, VAB, impuestos, cotizacionesSS, sZ, sQ, dif_tpo_par, dif_tpo_tot, ind_mejor_merito);
 #endif
+	fprintf(salida, "\n");
+	fprintf(salida, "Merito                : %23.15e\n", mejor_merito);
+	fprintf(salida, "VAB                   : %23.15e\n", VAB);
+	fprintf(salida, "Impuestos             : %23.15e\n", impuestos);
+	fprintf(salida, "Cotizacion SS         : %23.15e\n", cotizacionesSS);
+	fprintf(salida, "Z                     : %23.15e\n", sZ);
+	fprintf(salida, "Q                     : %23.15e\n\n", sQ);
 #ifdef SORTEOS
 	fprintf(salida, "\n");
 	fprintf(salida, " nh   media i1     media i2     media i3       desv. i1     desv. i2     desv. i3\n");
@@ -1349,7 +2099,7 @@ int parametros_alge(double* par) {
 	NVEC = (int)par[ipar++];
 	estadistica_pob_ini = (int)par[ipar++];
 	desviaciones_relativas = (int)par[ipar++];
-	prob_cop_mejor = par[ipar++];
+	prob_cop_mejor = prob_cop_mejor_ini = par[ipar++];
 	if (fraccion_regularizacion > 0.9) fraccion_regularizacion = 0.9;
 	if (NVEC >= MAX_VEC) {
 		return -1;
@@ -1434,7 +2184,7 @@ bool fija_cotas(double* cotasInf, double* cotasSup) {
 	for (int i = 0; i < NVEC; i++) {
 		cotas[0][i] = cotasInf[i];
 		cotas[1][i] = cotasSup[i];
-		if (abs(cotas[1][i] - cotas[0][i]) < 0.000001) {
+		if (abs(cotas[1][i] - cotas[0][i]) < MILLONESIMA) {
 			fijo[i] = 1;
 			nvar_fijas++;
 		}
@@ -1489,10 +2239,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 						v = vec_central[j] + desplazamiento;
 					}
 					if (v < cotas[0][j]) {
-						v = cotas[0][j] + 0.000001;
+						v = cotas[0][j] + MILLONESIMA;
 					}
 					else if (v > cotas[1][j]) {
-						v = cotas[1][j] - 0.000001;
+						v = cotas[1][j] - MILLONESIMA;
 					}
 					poblacion[i][j] = v;
 				}
@@ -1519,10 +2269,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 						v = cotas[0][j] + semi_intervalo + desplazamiento;
 					}
 					if (v < cotas[0][j]) {
-						v = cotas[0][j] + 0.000001;
+						v = cotas[0][j] + MILLONESIMA;
 					}
 					else if (v > cotas[1][j]) {
-						v = cotas[1][j] - 0.000001;
+						v = cotas[1][j] - MILLONESIMA;
 					}
 					poblacion[i][j] = v;
 				}
@@ -1557,10 +2307,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 						v = vec_central[j] + desplazamiento;
 					}
 					if (v < cotas[0][j]) {
-						v = cotas[0][j] + 0.000001;
+						v = cotas[0][j] + MILLONESIMA;
 					}
 					else if (v > cotas[1][j]) {
-						v = cotas[1][j] - 0.000001;
+						v = cotas[1][j] - MILLONESIMA;
 					}
 					poblacion[i][j] = v;
 				}
@@ -1588,10 +2338,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 						v = cotas[0][j] + semi_intervalo + desplazamiento;
 					}
 					if (v < cotas[0][j]) {
-						v = cotas[0][j] + 0.000001;
+						v = cotas[0][j] + MILLONESIMA;
 					}
 					else if (v > cotas[1][j]) {
-						v = cotas[1][j] - 0.000001;
+						v = cotas[1][j] - MILLONESIMA;
 					}
 					poblacion[i][j] = v;
 				}
@@ -1644,10 +2394,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 							v = cota_desde + semi_intervalo + desplazamiento;
 						}
 						if (v < cotas[0][j]) {
-							v = cotas[0][j] + 0.000001;
+							v = cotas[0][j] + MILLONESIMA;
 						}
 						else if (v > cotas[1][j]) {
-							v = cotas[1][j] - 0.000001;
+							v = cotas[1][j] - MILLONESIMA;
 						}
 						descendiente[i][j] = v;
 					}
@@ -1738,10 +2488,10 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 							v = cota_desde + semi_intervalo + desplazamiento;
 						}
 						if (v < cotas[0][j]) {
-							v = cotas[0][j] + 0.000001;
+							v = cotas[0][j] + MILLONESIMA;
 						}
 						else if (v > cotas[1][j]) {
-							v = cotas[1][j] - 0.000001;
+							v = cotas[1][j] - MILLONESIMA;
 						}
 						descendiente[i][j] = v;
 					}
@@ -1757,18 +2507,6 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 				}
 			}
 		}
-
-		/*
-		for (int j = 0; j < NVEC; j++) {
-			fprintf(salida, "%10.3f <", cotas[0][j]);
-			for (int i = 0; i < NPOB; i++) {
-				fprintf(salida, " %10.3f", descendiente[i][j]);
-			}
-			fprintf(salida, "> %10.3f\n", cotas[1][j]);
-		}
-		fflush(salida);
-		*/
-
 		// ponemos en 'p' la secuencia [0, NPOB)
 		int* p;
 		size_t const mem_p = sizeof(int) * NPOB;
@@ -2090,14 +2828,14 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 					if (a < factor_sigma) {
 						v = cotas[0][j];
 						ci++;
-						if (v <= 0.000001) cic++;
+						if (v <= MILLONESIMA) cic++;
 					}
 					else {
 						intervalo = cotas[1][j] - cotas[0][j];
 						a = dis_double(gen);
 						desplazamiento = modulacion * factor_dispersion * intervalo * a;
 						v = cotas[0][j] + desplazamiento;
-						if (v <= 0.000001) ceros++;
+						if (v <= MILLONESIMA) ceros++;
 					}
 					descendiente[i][j] = v;
 				}
@@ -2150,14 +2888,14 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 					if (a < factor_sigma) {
 						v = cotas[0][j];
 						ci++;
-						if (v <= 0.000001) cic++;
+						if (v <= MILLONESIMA) cic++;
 					}
 					else {
 						intervalo = cotas[1][j] - cotas[0][j];
 						a = dis_double(gen);
 						desplazamiento = factor_dispersion * intervalo * a;
 						v = cotas[0][j] + desplazamiento;
-						if (v <= 0.000001) ceros++;
+						if (v <= MILLONESIMA) ceros++;
 					}
 					poblacion[i][j] = v;
 				}
@@ -2241,13 +2979,13 @@ bool genera_poblacion(double* vec_central, int modo, double modulacion) {
 					if (a < factor_sigma) {
 						v = cotas[0][j];
 						ci++;
-						if (v <= 0.000001) cic++;
+						if (v <= MILLONESIMA) cic++;
 					}
 					else {
 						a = dis_double(gen);
 						desplazamiento = factor_dispersion * a;
 						v = cotas[0][j] + desplazamiento;
-						if (v <= 0.000001) ceros++;
+						if (v <= MILLONESIMA) ceros++;
 					}
 					descendiente[i][j] = v;
 				}
@@ -2373,12 +3111,12 @@ int avanza() {
 			}
 		}
 #endif
+		generacion++;
 		res_Simulacion = comprobar_final();
 		if (res_Simulacion < 0) {
 			return res_Simulacion;
 		}
 		factor_mutacion = par_mutacion[0] + dis_double(gen) * (par_mutacion[1] - par_mutacion[0]);
-		generacion++;
 	}
 	if (generacion == max_generaciones) {
 		return -5;
@@ -2402,7 +3140,7 @@ void mutacion_cruze(int desde, int hasta) {
 		i2 = hdis_entero(hgen[0]);
 		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
 		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
-		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[0]) < prob_cop_mejor)) {
+		if (i1 == i2 || (prob_cop_mejor > MILLONESIMA && hdis_double(hgen[0]) < prob_cop_mejor)) {
 			if (prob_cop_mejor < 0) {
 				// solo puede haber llegado aquí si i1 == i2
 				// descartar el descendiente
@@ -2491,7 +3229,7 @@ void mutacion_cruze(int desde, int hasta) {
 		i2 = hdis_entero(hgen[0]);
 		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
 		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
-		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[0]) < prob_cop_mejor)) {
+		if (i1 == i2 || (prob_cop_mejor > millonesima && hdis_double(hgen[0]) < prob_cop_mejor)) {
 			if (prob_cop_mejor < 0) {
 				// solo puede haber llegado aquí si i1 == i2
 				// descartar el descendiente
@@ -2575,7 +3313,7 @@ void mutacion_cruze(int desde, int hasta) {
 		i1 = hdis_entero(hgen[0]);
 		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
 		i3 = hdis_entero_ivec(hgen[0]);
-		if (prob_cop_mejor > 0.0000001 && hdis_double(hgen[0]) < prob_cop_mejor) {
+		if (prob_cop_mejor > millonesima && hdis_double(hgen[0]) < prob_cop_mejor) {
 			if (prob_cop_mejor < 0) {
 				// descartar el descendiente
 				factible[i] = false;
@@ -2655,7 +3393,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 		i2 = hdis_entero(hgen[hilo]);
 		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
 		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
-		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[hilo]) < prob_cop_mejor)) {
+		if (i1 == i2 || (prob_cop_mejor > MILLONESIMA && hdis_double(hgen[hilo]) < prob_cop_mejor)) {
 			if (prob_cop_mejor < 0) {
 				// solo puede haber llegado aquí si i1 == i2
 				// descartar el descendiente
@@ -2773,7 +3511,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 		i2 = hdis_entero(hgen[hilo]);
 		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
 		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
-		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hdis_double(hgen[hilo]) < prob_cop_mejor)) {
+		if (i1 == i2 || (prob_cop_mejor > millonesima && hdis_double(hgen[hilo]) < prob_cop_mejor)) {
 			if (prob_cop_mejor < 0) {
 				// solo puede haber llegado aquí si i1 == i2
 				// descartar el descendiente
@@ -2886,7 +3624,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 		i1 = hdis_entero(hgen[hilo]);
 		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
 		i3 = hdis_entero_ivec(hgen[hilo]);
-		if (prob_cop_mejor > 0.0000001 && hdis_double(hgen[hilo]) < prob_cop_mejor) {
+		if (prob_cop_mejor > millonesima && hdis_double(hgen[hilo]) < prob_cop_mejor) {
 			if (prob_cop_mejor < 0) {
 				// descartar el descendiente
 				factible[i] = false;
@@ -2986,6 +3724,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo) {
 
 void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_distribution<int>& he, uniform_int_distribution<int>& hi, uniform_real_distribution<double>& hd) {
 	double v;
+	double vazar;
 	bool es_factible;
 	int i1;
 	int i3;
@@ -2999,7 +3738,8 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 		i2 = he(gh);
 		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
 		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
-		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hd(gh) < prob_cop_mejor)) {
+		vazar = hd(gh);
+		if (i1 == i2 || (prob_cop_mejor > MILLONESIMA && vazar < prob_cop_mejor)) {
 			if (prob_cop_mejor < 0) {
 				// solo puede haber llegado aquí si i1 == i2
 				// descartar el descendiente
@@ -3058,7 +3798,8 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 		i3 = hi(gh);
 		es_factible = true;
 		for (int j = 0; j < NVEC; j++) {
-			if (fijo[j] == 0 && (hd(gh) <= cte_recombinacion || j == i3)) {
+			vazar = hd(gh);
+			if (fijo[j] == 0 && (j == i3 || vazar <= cte_recombinacion)) {
 				// la variable 'j' del 'descendiente' toma el valor mutante 'v' si la variable 'j' no es fija (fijo[j] == 0) y se cumple la condición de
 				//  recombinación, o si se trata de la variable (i3) que se debe cruzar obligatoriamente
 
@@ -3117,7 +3858,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 		i2 = he(gh);
 		// 'prob_cop_mejor' determina el número de individuos cuasi copia del mejor
 		// 'cte_recombinacion_extra' determina cuántas variables se toman del mejor individuo
-		if (i1 == i2 || (prob_cop_mejor > 0.0000001 && hd(gh) < prob_cop_mejor)) {
+		if (i1 == i2 || (prob_cop_mejor > millonesima && hd(gh) < prob_cop_mejor)) {
 			if (prob_cop_mejor < 0) {
 				// solo puede haber llegado aquí si i1 == i2
 				// descartar el descendiente
@@ -3231,7 +3972,7 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 		i1 = he(gh);
 		// 'i3' es el índice de la variable que se va a cruzar obligatoriamente, para asegurar que el descendiente no sea igual al individuo de la población
 		i3 = hi(gh);
-		if (prob_cop_mejor > 0.0000001 && hd(gh) < prob_cop_mejor) {
+		if (prob_cop_mejor > millonesima && hd(gh) < prob_cop_mejor) {
 			if (prob_cop_mejor < 0) {
 				factible[i] = false;
 				continue;
@@ -3527,13 +4268,13 @@ int comprobar_final() {
 		}
 	}
 #endif
-	if (histo_sol > 0 && (generacion % histo_sol) == 0) {
+	if (histo_sol > 0 && (generacion == 1 || generacion % histo_sol == 0)) {
 		char fichero[384];
 		int n_sol = (int)(generacion / histo_sol);
 		sprintf_s(fichero, 382, "%s/%s_dll_sol_%03d.sol", senda_salidas, nombre_caso, n_sol);
 		salida_solucion(fichero);
 	}
-	if (histo_int > 0 && (generacion % histo_int) == 0) {
+	if (histo_int > 0 && (generacion == 1 || generacion % histo_int == 0)) {
 		double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
 		merito_sol_relativa(poblacion[ind_mejor_merito]);
@@ -3543,7 +4284,7 @@ int comprobar_final() {
 #ifdef PROLONGAR
 		fprintf(salida, "%9d %12.5e\n", prolongaciones, valor_mejora);
 #endif
-		if (generacion == 0) {
+		if (generacion == 1) {
 #ifdef ESTA_CRUCES
 			long long n_c_s = 0;
 			long long n_c_o = 0;
@@ -3628,7 +4369,7 @@ int comprobar_final() {
 		histograma[histo_n] = mejor_merito;
 		return -2;
 	}
-	if (generacion > 0 && (generacion % generaciones_control_progreso == 0)) {
+	if (generacion > 1 && (generacion % generaciones_control_progreso == 0)) {
 		if ((mejor_merito_anterior - mejor_merito) < mejor_merito_anterior * min_progreso) {
 			// el mérito no ha progresado el valor mínimo establecido
 			if (mejor_merito < tol_aceptable) {
@@ -3658,12 +4399,19 @@ int comprobar_final() {
 				}
 				if (modo_reinicio_poblacion == 0) {
 					genera_poblacion(vec_ini, modo_poblacion_inicial, 1.0);
-					fprintf(salida, "Reinicio. Factor dispersión : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+					fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
 				}
 				else {
 					factor_dispersion_actualizado *= variacion_dispersion;
 					genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
-					fprintf(salida, "Reinicio. Factor dispersión : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+					fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
+				}
+				if (prob_cop_mejor > 0) {
+					prob_cop_mejor = prob_cop_mejor_ini * (1. - (double)intentos / (double)max_intentos);
+					fprintf(salida, "  Probabilidad copiar mejor %11.5e\n", prob_cop_mejor);
+				}
+				else {
+					fprintf(salida, "\n");
 				}
 				double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
@@ -3712,7 +4460,7 @@ int comprobar_final() {
 				return -3;
 			}
 		}
-		else if (umbral_regularizacion > 0.001 && (int)(fraccion_regularizacion * NPOB) > 0 && ((mejor_merito_anterior - mejor_merito) < umbral_regularizacion * mejor_merito_anterior * min_progreso)) {
+		else if (umbral_regularizacion > MILLONESIMA && (int)(fraccion_regularizacion * NPOB) > 0 && ((mejor_merito_anterior - mejor_merito) < umbral_regularizacion * mejor_merito_anterior * min_progreso)) {
 			// "regularización", sustituir un porcentaje de individuos (seleccionados al azar) por otros con valores generados aleatoriamente (modo 0)
 			if (regularizaciones == max_intentos) {
 				// agotadas las regularizaciones, reiniciar la población si procede
@@ -3733,12 +4481,19 @@ int comprobar_final() {
 					}
 					if (modo_reinicio_poblacion == 0) {
 						genera_poblacion(vec_ini, modo_poblacion_inicial, 1.0);
-						fprintf(salida, "Reinicio. Factor dispersión : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+						fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
 					}
 					else {
 						factor_dispersion_actualizado *= variacion_dispersion;
 						genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
-						fprintf(salida, "Reinicio. Factor dispersión : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+						fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
+					}
+					if (prob_cop_mejor > 0) {
+						prob_cop_mejor = prob_cop_mejor_ini * (1. - (double)intentos / (double)max_intentos);
+						fprintf(salida, "  Probabilidad copiar mejor %11.5e\n", prob_cop_mejor);
+					}
+					else {
+						fprintf(salida, "\n");
 					}
 					double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
@@ -3822,10 +4577,10 @@ int comprobar_final() {
 							v = vec_ini[j] + desplazamiento;
 						}
 						if (v < cotas[0][j]) {
-							v = cotas[0][j] + 0.000001;
+							v = cotas[0][j] + MILLONESIMA;
 						}
 						else if (v > cotas[1][j]) {
-							v = cotas[1][j] - 0.000001;
+							v = cotas[1][j] - MILLONESIMA;
 						}
 						poblacion[i][j] = v;
 					}
@@ -3857,10 +4612,10 @@ int comprobar_final() {
 									v = vec_ini[j] + desplazamiento;
 								}
 								if (v < cotas[0][j]) {
-									v = cotas[0][j] + 0.000001;
+									v = cotas[0][j] + MILLONESIMA;
 								}
 								else if (v > cotas[1][j]) {
-									v = cotas[1][j] - 0.000001;
+									v = cotas[1][j] - MILLONESIMA;
 								}
 								poblacion[i][j] = v;
 							}
@@ -3918,12 +4673,19 @@ int comprobar_final() {
 						}
 						if (modo_reinicio_poblacion == 0) {
 							genera_poblacion(vec_ini, modo_poblacion_inicial, 1.0);
-							fprintf(salida, "Reinicio. Factor dispersión : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+							fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
 						}
 						else {
 							factor_dispersion_actualizado *= variacion_dispersion;
 							genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
-							fprintf(salida, "Reinicio. Factor dispersión : %12.5e\n", factor_dispersion_actualizado * factor_dispersion);
+							fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
+						}
+						if (prob_cop_mejor > 0) {
+							prob_cop_mejor = prob_cop_mejor_ini * (1. - (double)intentos / (double)max_intentos);
+							fprintf(salida, "  Probabilidad copiar mejor %11.5e\n", prob_cop_mejor);
+						}
+						else {
+							fprintf(salida, "\n");
 						}
 						double dist = distancia_clonacion();
 #ifdef DESVIACONES_RELATIVAS
@@ -3999,149 +4761,149 @@ void salida_solucion(char* fichero) {
 
 		// mérito
 
-		fprintf(sal_sol, "%10d;%-8s;;%17.9e\n", generacion, "Error", me_sol[4]);
+		fprintf(sal_sol, "%10d;%-8s;;%23.15e\n", generacion, "Error", me_sol[4]);
 
 		// vector solución ampliado por el precio del factor que no forma parte del vector solución
 		// pero si de 'me_sol'
 
 		int n = 0;
 		int nsol = LCAB;
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pF", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pF", 1, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pY", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pQ", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pD", i, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "epsilon", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Apz", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pF", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pF", 1, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pY", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pQ", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pD", i, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "epsilon", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Apz", 0, me_sol[nsol++]);
 		for (int i = 0; i < NSEC; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Fi", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Fi", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Ei", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Mi", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Di", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Ei", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Mi", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Di", i, me_sol[nsol++]);
 		if (op.GE_INCLUYE_XP) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NSEC; j++) {
-					fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xpi", i * NSEC + j, me_sol[nsol++]);
+					fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xpi", i * NSEC + j, me_sol[nsol++]);
 				}
 			}
 		}
 		if (op.GE_INCLUYE_AgH) {
 			for (int i = 0; i < NDEM; i++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "AgHi", i, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "AgHi", i, me_sol[nsol++]);
 			}
 		}
 
 		// variables que se calculan una sola vez
 
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pz", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pe", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "pm", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pz", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pe", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pm", i, me_sol[nsol++]);
 
 		// variables calculadas en el primer pase
 
 		for (int i = 0; i < NSEC; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "F", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "F", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "E", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "M", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Yp", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Yd", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Da", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Dt", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Z", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xg", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xv", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Q", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Td", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Tz", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Tm", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Sp", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "AgE", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "AgH", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "CssE", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "CssH", i, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Sg", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Sc", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Sf", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "ebp", 0, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "E", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "M", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Yp", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Yd", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Da", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Dt", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Z", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xg", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xv", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Q", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Td", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Tz", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Tm", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Sp", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "AgE", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "AgH", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "CssE", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "CssH", i, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Sg", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Sc", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Sf", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "ebp", 0, me_sol[nsol++]);
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xp", i * NSEC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xp", i * NSEC + j, me_sol[nsol++]);
 			}
 		}
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "FF", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "FF", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Alp", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Alp", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
 		for (int i = 0; i < NSEC; i++) {
 			for (int j = 0; j < NSEC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "X", i * NSEC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "X", i * NSEC + j, me_sol[nsol++]);
 			}
 		}
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Ti", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Ti", 0, me_sol[nsol++]);
 
 		// recálculos de las variables, saltamos los valores del primer paso 'LVARS_PP' (incluidas las que se calculan una sola vez)
 
 		// nsol = LCAB + NVEC + 1 + LVARS_PP;	// innecesario, 'nsol' es continuación de lo anterior
 		for (int i = 0; i < NSEC; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Fr", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Fr", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Er", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Mr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Ypr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Ydr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Dar", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Dtr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Zr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xgr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xvr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Qr", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Tdr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Tzr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Tmr", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Spr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "AgEr", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "AgHr", i, me_sol[nsol++]);
-		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "CssEr", i, me_sol[nsol++]);
-		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "CssHr", i, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Sgr", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Scr", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Sfr", 0, me_sol[nsol++]);
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "ebpr", 0, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Er", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Mr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Ypr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Ydr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Dar", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Dtr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Zr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xgr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xvr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Qr", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Tdr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Tzr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Tmr", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Spr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "AgEr", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "AgHr", i, me_sol[nsol++]);
+		for (int i = 0; i < NSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "CssEr", i, me_sol[nsol++]);
+		for (int i = 0; i < NDEM; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "CssHr", i, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Sgr", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Scr", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Sfr", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "ebpr", 0, me_sol[nsol++]);
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xpr", i * NSEC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xpr", i * NSEC + j, me_sol[nsol++]);
 			}
 		}
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "FFr", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "FFr", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NFAC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Alpr", i * NFAC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Alpr", i * NFAC + j, me_sol[nsol++]);
 			}
 		}
 		for (int i = 0; i < NSEC; i++) {
 			for (int j = 0; j < NSEC; j++) {
-				fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Xr", i * NSEC + j, me_sol[nsol++]);
+				fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Xr", i * NSEC + j, me_sol[nsol++]);
 			}
 		}
-		fprintf(sal_sol, "%5d;%-8s;%5d;%17.9e\n", n++, "Tir", 0, me_sol[nsol++]);
+		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "Tir", 0, me_sol[nsol++]);
 
 		fclose(sal_sol);
 	}
@@ -4349,12 +5111,12 @@ int ProcesoMP(int bloques) {
 			if (poner_el_mejor_primero && ind_mejor_merito != 0) {
 				recolocar_al_mejor(ind_mejor_merito);
 			}
+			generacion++;
 			res_Simulacion = comprobar_final();
 			if (res_Simulacion < 0) {
 				CANCELADO = true;
 				break;
 			}
-			generacion++;
 			if (generacion == max_generaciones) {
 				histogenera[histo_n] = generacion;
 				histograma[histo_n++] = mejor_merito;
@@ -4402,17 +5164,6 @@ unsigned int WINAPI HiloTramos(LPVOID param)
 	int desde = parametros[1];
 	int hasta = parametros[2];
 
-	/*
-			NO PARECE TENER NINGUN EFECTO
-	establece la prioridad del hilo respecto a la prioridad base (clase)
-		THREAD_PRIORITY_ABOVE_NORMAL es menos crítica
-	*/
-	/*
-	if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST))
-	{
-		fprintf(salida, "*--* Error (%d) al establecer la priodidad del hilo %d\n", GetLastError(), hilo);
-	}
-	*/
 #ifdef AZAR_HILOS_LOCAL
 	// variables locales para cada hilo, para que no se solapen los números aleatorios generados por los hilos
 	thread_local mt19937 gh;
@@ -4611,8 +5362,6 @@ void inicia_azar(mt19937& g, unsigned int semilla)
 la parte de la DLL relacionada con el modelo: ecuaciones, parámetros, datos iniciales y opciones de cálculo del 'merito'
 */
 
-double AYD_ADI_DEM[NDEM]{};
-
 OPCIONES recibe_opciones(OPCIONES vopt) {
 	try {
 		op = vopt;
@@ -4646,7 +5395,7 @@ PARAMETROS recibe_parametros(PARAMETROS vpar) {
 	ndc_ax = 0;
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NSEC; j++) {
-			if (vpar.ax[i][j] > 0.0000001) {
+			if (vpar.ax[i][j] > millonesima) {
 				dc_ax[ndc_ax][0] = i;
 				dc_ax[ndc_ax][1] = j;
 				ndc_ax++;
@@ -4874,7 +5623,7 @@ double merito_s(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
 	}
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < MILLONESIMA) {
 		Sc = 0.;
 	}
 	else {
@@ -4978,7 +5727,7 @@ double merito_s(double* vec_opt) {
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr, datos.Fue);
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < MILLONESIMA) {
 		Scr = 0.;
 	}
 	else {
@@ -5399,7 +6148,7 @@ double ajustar_vec_solucion(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
 	}
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Sc = 0.;
 	}
 	else {
@@ -5492,7 +6241,7 @@ double ajustar_vec_solucion(double* vec_opt) {
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr, datos.Fue);
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Scr = 0.;
 	}
 	else {
@@ -5929,7 +6678,7 @@ double merito_d(double* vec_opt, double liston) {
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
 	}
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Sc = 0.;
 	}
 	else {
@@ -6142,7 +6891,7 @@ double merito_d(double* vec_opt, double liston) {
 	dd = Sgr - Sg;
 	dist += dd * dd;
 	if (dist > liston) return dist;
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Scr = 0.;
 	}
 	else {
@@ -6474,7 +7223,7 @@ double* merito_sol(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
 	}
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < MILLONESIMA) {
 		Sc = 0.;
 	}
 	else {
@@ -6579,7 +7328,7 @@ double* merito_sol(double* vec_opt) {
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr, datos.Fue);
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < MILLONESIMA) {
 		Scr = 0.;
 	}
 	else {
@@ -7242,7 +7991,7 @@ double* merito_sol(double* vec_opt) {
 	// buscar el rótulo del bloque de máxima desviación
 	puntero_bloque_desviacion = -1;
 	desplazamiento_desviacion = -1;
-	for (int i = 0; i < MAX_BLOQUES_DESVIOS - 1; i++) {
+	for (int i = 0; i < MAX_ROT_DESVIOS_BLOQUE - 1; i++) {
 		if (idm >= ind_bloque_desviacion[i] && idm < ind_bloque_desviacion[i + 1]) {
 			puntero_bloque_desviacion = i;
 			desplazamiento_desviacion = idm - ind_bloque_desviacion[i];
@@ -7677,7 +8426,7 @@ double merito_s_relativa(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
 	}
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Sc = 0.;
 	}
 	else {
@@ -7770,7 +8519,7 @@ double merito_s_relativa(double* vec_opt) {
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr, datos.Fue);
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Scr = 0.;
 	}
 	else {
@@ -7816,11 +8565,11 @@ double merito_s_relativa(double* vec_opt) {
 	if (op.EQ_BAL_PAGOS) {
 		// trata de que 'ebpr' sea igual a 'ebp' y a cero
 		dd = abs(ebp) + abs(ebpr);
-		dd = dd / (abs(ebp) + 0.000001);
+		dd = dd / (abs(ebp) + millonesima);
 	}
 	else {
 		dd = Sfr - Sf;
-		dd = dd / (abs(Sfr) + 0.000001);
+		dd = dd / (abs(Sfr) + millonesima);
 	}
 	dist += dd * dd;
 
@@ -7834,7 +8583,7 @@ double merito_s_relativa(double* vec_opt) {
 			sum_Xr += Xr[j][i];
 		}
 		dd = Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr);
-		dd = dd / (abs(Qr[i]) + 0.000001);
+		dd = dd / (abs(Qr[i]) + millonesima);
 		dist += dd * dd;
 	}
 	if (op.FF_ENDOGENA) {
@@ -7842,7 +8591,7 @@ double merito_s_relativa(double* vec_opt) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
 					dd = Alpr[i][j] - Alp[i][j];
-					dd = dd / (abs(Alp[i][j]) + 0.000001);
+					dd = dd / (abs(Alp[i][j]) + millonesima);
 					dist += dd * dd;
 				}
 			}
@@ -7859,109 +8608,109 @@ double merito_s_relativa(double* vec_opt) {
 				suma_FF += abs(FFr[j][i]);
 			}
 			dd = suma_F - suma_FF;
-			dd = dd / (abs(suma_F) + 0.000001);
+			dd = dd / (abs(suma_F) + millonesima);
 			dist += dd * dd;
 		}
 	}
 	dd = Sgr - Sg;
-	dd = dd / (abs(Sgr) + 0.000001);
+	dd = dd / (abs(Sgr) + millonesima);
 	dist += dd * dd;
 	for (int i = 0; i < NDEM; i++) {
 		dd = Spr[i] - Sp[i];
-		dd = dd / (abs(Spr[i]) + 0.000001);
+		dd = dd / (abs(Spr[i]) + millonesima);
 		dist += dd * dd;
 		if (op.GE_INCLUYE_AgH) {
 			dd = AgHr[i] - AgHi[i];
-			dd = dd / (abs(AgH[i]) + 0.000001);
+			dd = dd / (abs(AgH[i]) + millonesima);
 			dist += dd * dd;
 		}
 		dd = AgHr[i] - AgH[i];
-		dd = dd / (abs(AgHr[i]) + 0.000001);
+		dd = dd / (abs(AgHr[i]) + millonesima);
 		dist += dd * dd;
 		dd = CssHr[i] - CssH[i];
-		dd = dd / (abs(CssHr[i]) + 0.000001);
+		dd = dd / (abs(CssHr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Tdr[i] - Td[i];
-		dd = dd / (abs(Tdr[i]) + 0.000001);
+		dd = dd / (abs(Tdr[i]) + millonesima);
 		dist += dd * dd;
 		for (int j = 0; j < NFAC; j++) {
 			dd = FFr[i][j] - FF[i][j];
-			dd = dd / (abs(FF[i][j]) + 0.000001);
+			dd = dd / (abs(FF[i][j]) + millonesima);
 			dist += dd * dd;
 		}
 		for (int j = 0; j < NSEC; j++) {
 			if (op.GE_INCLUYE_XP) {
 				dd = Xp[i][j] - Xpi[i][j];
-				dd = dd / (abs(Xp[i][j]) + 0.000001);
+				dd = dd / (abs(Xp[i][j]) + millonesima);
 				dist += dd * dd;
 			}
 			dd = Xpr[i][j] - Xp[i][j];
-			dd = dd / (abs(Xp[i][j]) + 0.000001);
+			dd = dd / (abs(Xp[i][j]) + millonesima);
 			dist += dd * dd;
 		}
 	}
 	for (int i = 0; i < NSEC; i++) {
 		dd = Er[i] - Ei[i];
-		dd = dd / (abs(Er[i]) + 0.000001);
+		dd = dd / (abs(Er[i]) + millonesima);
 		dist += dd * dd;
 		dd = Mr[i] - Mi[i];
-		dd = dd / (abs(Mr[i]) + 0.000001);
+		dd = dd / (abs(Mr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Dar[i] - Di[i];
-		dd = dd / (abs(Dar[i]) + 0.000001);
+		dd = dd / (abs(Dar[i]) + millonesima);
 		dist += dd * dd;
 		dd = Er[i] - E[i];
-		dd = dd / (abs(Er[i]) + 0.000001);
+		dd = dd / (abs(Er[i]) + millonesima);
 		dist += dd * dd;
 		dd = Mr[i] - M[i];
-		dd = dd / (abs(Mr[i]) + 0.000001);
+		dd = dd / (abs(Mr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Ydr[i] - Ypr[i];
-		dd = dd / (abs(Ydr[i]) + 0.000001);
+		dd = dd / (abs(Ydr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Dar[i] - Dtr[i];
-		dd = dd / (abs(Dar[i]) + 0.000001);
+		dd = dd / (abs(Dar[i]) + millonesima);
 		dist += dd * dd;
 		dd = Zr[i] - Z[i];
-		dd = dd / (abs(Zr[i]) + 0.000001);
+		dd = dd / (abs(Zr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Xgr[i] - Xg[i];
-		dd = dd / (abs(Xgr[i]) + 0.000001);
+		dd = dd / (abs(Xgr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Xvr[i] - Xv[i];
-		dd = dd / (abs(Xvr[i]) + 0.000001);
+		dd = dd / (abs(Xvr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Qr[i] - Q[i];
-		dd = dd / (abs(Qr[i]) + 0.000001);
+		dd = dd / (abs(Qr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Tzr[i] - Tz[i];
-		dd = dd / (abs(Tzr[i]) + 0.000001);
+		dd = dd / (abs(Tzr[i]) + millonesima);
 		dist += dd * dd;
 		dd = Tmr[i] - Tm[i];
-		dd = dd / (abs(Tmr[i]) + 0.000001);
+		dd = dd / (abs(Tmr[i]) + millonesima);
 		dist += dd * dd;
 		dd = AgEr[i] - AgE[i];
-		dd = dd / (abs(AgEr[i]) + 0.000001);
+		dd = dd / (abs(AgEr[i]) + millonesima);
 		dist += dd * dd;
 		dd = CssEr[i] - CssE[i];
-		dd = dd / (abs(CssEr[i]) + 0.000001);
+		dd = dd / (abs(CssEr[i]) + millonesima);
 		dist += dd * dd;
 		for (int j = 0; j < NFAC; j++) {
 			dd = Fr[i][j] - Fi[i][j];
-			dd = dd / (abs(Fr[i][j]) + 0.000001);
+			dd = dd / (abs(Fr[i][j]) + millonesima);
 			dist += dd * dd;
 			dd = Fr[i][j] - F[i][j];
-			dd = dd / (abs(Fr[i][j]) + 0.000001);
+			dd = dd / (abs(Fr[i][j]) + millonesima);
 			dist += dd * dd;
 		}
 		for (int j = 0; j < NSEC; j++) {
 			dd = Xr[i][j] - X[i][j];
-			dd = dd / (abs(Xr[i][j]) + 0.000001);
+			dd = dd / (abs(Xr[i][j]) + millonesima);
 			dist += dd * dd;
 		}
 	}
 	dd = Tir - Ti;
-	dd = dd / (abs(Tir) + 0.000001);
+	dd = dd / (abs(Tir) + millonesima);
 	dist += dd * dd;
 	if (op.OPT_DESVIOS == 0) {
 		for (int i = 0; i < NSEC; i++) {
@@ -8173,7 +8922,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		PssH0_sum += datos.PssH0[i];
 	}
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Sc = 0.;
 	}
 	else {
@@ -8266,7 +9015,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	seguridad_social_empresas_CssE(CssEr, parametros.ctzsse, pf, Fr, op.INDICE_F_TRA);
 	seguridad_social_hogares_CssH(CssHr, parametros.ctzssh, pf, FFr, Alpr, op.INDICE_F_TRA);
 	Sgr = gobierno_Sg_Xg(Xgr, parametros.ssg, parametros.mu, pq, Tdr, Tzr, Tmr, datos.Tg0, Tir, datos.Te0, AgEr, AgHr, datos.PssH0, CssHr, CssEr, datos.Fue);
-	if (abs(PssH0_sum) < 0.000001) {
+	if (abs(PssH0_sum) < millonesima) {
 		Scr = 0.;
 	}
 	else {
@@ -8322,11 +9071,11 @@ double* merito_sol_relativa(double* vec_opt) {
 	if (op.EQ_BAL_PAGOS) {
 		// trata de que 'ebpr' sea igual a 'ebp' y a cero
 		dd = abs(ebp) + abs(ebpr);
-		dd = dd / (abs(ebp) + 0.000001);
+		dd = dd / (abs(ebp) + millonesima);
 	}
 	else {
 		dd = abs(Sfr - Sf);
-		dd = dd / (abs(Sfr) + 0.000001);
+		dd = dd / (abs(Sfr) + millonesima);
 	}
 	if (dd > dist_max) {
 		dist_max = dd;
@@ -8348,7 +9097,7 @@ double* merito_sol_relativa(double* vec_opt) {
 			sum_Xr += Xr[j][i];
 		}
 		dd = abs(Qr[i] - (sum_Xpr + Xgr[i] + Xvr[i] + sum_Xr));
-		dd = dd / (abs(Qr[i]) + 0.000001);
+		dd = dd / (abs(Qr[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8369,7 +9118,7 @@ double* merito_sol_relativa(double* vec_opt) {
 			for (int i = 0; i < NDEM; i++) {
 				for (int j = 0; j < NFAC; j++) {
 					dd = abs(Alpr[i][j] - Alp[i][j]);
-					dd = dd / (abs(Alp[i][j]) + 0.000001);
+					dd = dd / (abs(Alp[i][j]) + millonesima);
 					if (dd > dist_max) {
 						dist_max = dd;
 						idm = ndm;
@@ -8398,7 +9147,7 @@ double* merito_sol_relativa(double* vec_opt) {
 				suma_FF += abs(FFr[j][i]);
 			}
 			dd = abs(suma_F - suma_FF);
-			dd = dd / (abs(suma_F) + 0.000001);
+			dd = dd / (abs(suma_F) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -8416,7 +9165,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	}
 	// Sg
 	dd = abs(Sgr - Sg);
-	dd = dd / (abs(Sg) + 0.000001);
+	dd = dd / (abs(Sg) + millonesima);
 	if (dd > dist_max) {
 		dist_max = dd;
 		idm = ndm;
@@ -8429,7 +9178,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Sp
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(Spr[i] - Sp[i]);
-		dd = dd / (abs(Sp[i]) + 0.000001);
+		dd = dd / (abs(Sp[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8447,7 +9196,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		if (op.GE_INCLUYE_AgH) {
 			dd = abs(AgHr[i] - AgHi[i]);
-			dd = dd / (abs(AgH[i]) + 0.000001);
+			dd = dd / (abs(AgH[i]) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -8457,7 +9206,7 @@ double* merito_sol_relativa(double* vec_opt) {
 			dist += dd * dd;
 		}
 		dd = abs(AgHr[i] - AgH[i]);
-		dd = dd / (abs(AgH[i]) + 0.000001);
+		dd = dd / (abs(AgH[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8471,7 +9220,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// CssH
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(CssHr[i] - CssH[i]);
-		dd = dd / (abs(CssH[i]) + 0.000001);
+		dd = dd / (abs(CssH[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8485,7 +9234,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Td
 	for (int i = 0; i < NDEM; i++) {
 		dd = abs(Tdr[i] - Td[i]);
-		dd = dd / (abs(Td[i]) + 0.000001);
+		dd = dd / (abs(Td[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8500,7 +9249,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			dd = abs(FFr[i][j] - FF[i][j]);
-			dd = dd / (abs(FF[i][j]) + 0.000001);
+			dd = dd / (abs(FF[i][j]) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -8517,7 +9266,7 @@ double* merito_sol_relativa(double* vec_opt) {
 		for (int i = 0; i < NDEM; i++) {
 			for (int j = 0; j < NSEC; j++) {
 				dd = abs(Xpr[i][j] - Xpi[i][j]);
-				dd = dd / (abs(Xpi[i][j]) + 0.000001);
+				dd = dd / (abs(Xpi[i][j]) + millonesima);
 				if (dd > dist_max) {
 					dist_max = dd;
 					idm = ndm;
@@ -8537,7 +9286,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NDEM; i++) {
 		for (int j = 0; j < NSEC; j++) {
 			dd = abs(Xpr[i][j] - Xp[i][j]);
-			dd = dd / (abs(Xp[i][j]) + 0.000001);
+			dd = dd / (abs(Xp[i][j]) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -8552,7 +9301,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Ei
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Er[i] - Ei[i]);
-		dd = dd / (abs(Ei[i]) + 0.000001);
+		dd = dd / (abs(Ei[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8566,7 +9315,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Mi
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Mr[i] - Mi[i]);
-		dd = dd / (abs(Mi[i]) + 0.000001);
+		dd = dd / (abs(Mi[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8580,7 +9329,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Dai
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Dar[i] - Di[i]);
-		dd = dd / (abs(Di[i]) + 0.000001);
+		dd = dd / (abs(Di[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8594,7 +9343,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// E
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Er[i] - E[i]);
-		dd = dd / (abs(E[i]) + 0.000001);
+		dd = dd / (abs(E[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8608,7 +9357,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// M
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Mr[i] - M[i]);
-		dd = dd / (abs(M[i]) + 0.000001);
+		dd = dd / (abs(M[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8622,7 +9371,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Ydp
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Ydr[i] - Ypr[i]);
-		dd = dd / (abs(Ypr[i]) + 0.000001);
+		dd = dd / (abs(Ypr[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8636,7 +9385,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Dat
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Dar[i] - Dtr[i]);
-		dd = dd / (abs(Dtr[i]) + 0.000001);
+		dd = dd / (abs(Dtr[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8650,7 +9399,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Z
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Zr[i] - Z[i]);
-		dd = dd / (abs(Z[i]) + 0.000001);
+		dd = dd / (abs(Z[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8664,7 +9413,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Xg
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Xgr[i] - Xg[i]);
-		dd = dd / (abs(Xg[i]) + 0.000001);
+		dd = dd / (abs(Xg[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8678,7 +9427,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Xv
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Xvr[i] - Xv[i]);
-		dd = dd / (abs(Xv[i]) + 0.000001);
+		dd = dd / (abs(Xv[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8692,7 +9441,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Q
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Qr[i] - Q[i]);
-		dd = dd / (abs(Q[i]) + 0.000001);
+		dd = dd / (abs(Q[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8706,7 +9455,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Tz
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Tzr[i] - Tz[i]);
-		dd = dd / (abs(Tz[i]) + 0.000001);
+		dd = dd / (abs(Tz[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8720,7 +9469,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Tm
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(Tmr[i] - Tm[i]);
-		dd = dd / (abs(Tm[i]) + 0.000001);
+		dd = dd / (abs(Tm[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8734,7 +9483,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// Age
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(AgEr[i] - AgE[i]);
-		dd = dd / (abs(AgE[i]) + 0.000001);
+		dd = dd / (abs(AgE[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8748,7 +9497,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	// CssE
 	for (int i = 0; i < NSEC; i++) {
 		dd = abs(CssEr[i] - CssE[i]);
-		dd = dd / (abs(CssE[i]) + 0.000001);
+		dd = dd / (abs(CssE[i]) + millonesima);
 		if (dd > dist_max) {
 			dist_max = dd;
 			idm = ndm;
@@ -8763,7 +9512,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			dd = abs(Fr[i][j] - Fi[i][j]);
-			dd = dd / (abs(Fi[i][j]) + 0.000001);
+			dd = dd / (abs(Fi[i][j]) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -8779,7 +9528,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NFAC; j++) {
 			dd = abs(Fr[i][j] - F[i][j]);
-			dd = dd / (abs(F[i][j]) + 0.000001);
+			dd = dd / (abs(F[i][j]) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -8795,7 +9544,7 @@ double* merito_sol_relativa(double* vec_opt) {
 	for (int i = 0; i < NSEC; i++) {
 		for (int j = 0; j < NSEC; j++) {
 			dd = abs(Xr[i][j] - X[i][j]);
-			dd = dd / (abs(X[i][j]) + 0.000001);
+			dd = dd / (abs(X[i][j]) + millonesima);
 			if (dd > dist_max) {
 				dist_max = dd;
 				idm = ndm;
@@ -9060,15 +9809,15 @@ void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[
 		Y[i] = b[i];
 		for (int j = 0; j < NFAC; j++) {
 			// cero elevado a cero es 1, por eso no hay problema si F[i][j] es cero porque beta[i][j] tambien es cero
-			Y[i] *= copysign(1.0, F[i][j]) * pow(abs(F[i][j]), beta[i][j]);
+			Y[i] *= signo(F[i][j]) * pow(abs(F[i][j]), beta[i][j]);
 		}
 	}
 }
 void restriccion_produccion_bruta_Z(double* Z, double* teta, double* xie, double* xid, double* E, double* D, double* phi) {
 	double base;
 	for (int i = 0; i < NSEC; i++) {
-		base = xie[i] * copysign(1.0, E[i]) * pow(abs(E[i]), phi[i]) + xid[i] * copysign(1.0, D[i]) * pow(abs(D[i]), phi[i]);
-		Z[i] = teta[i] * copysign(1.0, base) * pow(abs(base), (1. / phi[i]));
+		base = xie[i] * signo(E[i]) * pow(abs(E[i]), phi[i]) + xid[i] * signo(D[i]) * pow(abs(D[i]), phi[i]);
+		Z[i] = teta[i] * signo(base) * pow(abs(base), (1. / phi[i]));
 	}
 }
 #ifdef CONSUMO_INTERMEDIO_AX
@@ -9241,7 +9990,7 @@ double gobierno_Sg_Xg(double* Xg, double ssg, double* mu, double* pq, double* Td
 		sPssH += PssH0[i];
 	}
 	double Css = 0.;
-	if (abs(sPssH) < 0.000001) {
+	if (abs(sPssH) < MILLONESIMA) {
 		for (int i = 0; i < NDEM; i++) {
 			Css += CssH[i];
 		}
@@ -9387,7 +10136,7 @@ void demanda_maxima_utilidad_CES_Xp(double Xp[NDEM][NSEC], double* eta_ces, doub
 }
 void produccion_armington_Q(double* Q, double* gamma, double* deltam, double* deltad, double* M, double* D, double* eta) {
 	for (int i = 0; i < NSEC; i++) {
-		Q[i] = gamma[i] * pow(deltam[i] * copysign(1.0, M[i]) * pow(abs(M[i]), eta[i]) + deltad[i] * copysign(1.0, D[i]) * pow(abs(D[i]), eta[i]), 1. / eta[i]);
+		Q[i] = gamma[i] * pow(deltam[i] * signo(M[i]) * pow(abs(M[i]), eta[i]) + deltad[i] * signo(D[i]) * pow(abs(D[i]), eta[i]), 1. / eta[i]);
 	}
 }
 void importacion_maxima_utilidad_armington_M(double* M, double* gamma, double* deltam, double* pq, double* pm, double* Q, double* eta, double* taum) {
@@ -9417,11 +10166,11 @@ void produccion_para_exportacion_E(double* E, double* teta, double* xie, double*
 	double tasa_c;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
-		if (xie[i] > 0.000001) {
-			signo_teta = copysign(1.0, teta[i]);
+		if (xie[i] > MILLONESIMA) {
+			signo_teta = signo(teta[i]);
 			abs_teta = abs(teta[i]);
 			if (MODO_PSEUDOIMPTOS == 0) {
-				if (Z[i] > 0.000001) {
+				if (Z[i] > MILLONESIMA) {
 					tasa_c = (CssE[i] - AgE[i]) / Z[i];
 				}
 				else {
@@ -9432,12 +10181,12 @@ void produccion_para_exportacion_E(double* E, double* teta, double* xie, double*
 				tasa_c = ctzssez[i] - ctzagez[i];
 			}
 			base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xie[i] / pe[i];
-			if (base < 0.000001) {
+			if (base < MILLONESIMA) {
 				E[i] = 0.;
 			}
 			else {
 				expo = 1. / (1. - phi[i]);
-				E[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+				E[i] = Z[i] * signo(base) * pow(abs(base), expo);
 			}
 		}
 		else {
@@ -9452,11 +10201,11 @@ void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, 
 	double tasa_c;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
-		if (xid[i] > 0.000001) {
-			signo_teta = copysign(1.0, teta[i]);
+		if (xid[i] > MILLONESIMA) {
+			signo_teta = signo(teta[i]);
 			abs_teta = abs(teta[i]);
 			if (MODO_PSEUDOIMPTOS == 0) {
-				if (Z[i] > 0.000001) {
+				if (Z[i] > MILLONESIMA) {
 					tasa_c = (CssE[i] - AgE[i]) / Z[i];
 				}
 				else {
@@ -9467,12 +10216,12 @@ void produccion_para_local_D(double* Dt, double* teta, double* xid, double* pz, 
 				tasa_c = ctzssez[i] - ctzagez[i];
 			}
 			base = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i] * xid[i] / pd[i];
-			if (base < 0.000001) {
+			if (base < MILLONESIMA) {
 				Dt[i] = 0.;
 			}
 			else {
 				expo = 1. / (1. - phi[i]);
-				Dt[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+				Dt[i] = Z[i] * signo(base) * pow(abs(base), expo);
 			}
 		}
 		else {
@@ -9488,16 +10237,16 @@ void produccion_para_exportacion_local_ED(double* E, double* Dt, double* teta, d
 	double tasa_c;
 	double expo;
 	for (int i = 0; i < NSEC; i++) {
-		if (xie[i] < 0.000001 && xid[i] < 0.000001) {
+		if (xie[i] < MILLONESIMA && xid[i] < MILLONESIMA) {
 			E[i] = 0.;
 			Dt[i] = 0.;
 			continue;
 		}
-		signo_teta = copysign(1.0, teta[i]);
+		signo_teta = signo(teta[i]);
 		abs_teta = abs(teta[i]);
 		expo = 1. / (1. - phi[i]);
 		if (MODO_PSEUDOIMPTOS == 0) {
-			if (Z[i] > 0.000001) {
+			if (Z[i] > MILLONESIMA) {
 				tasa_c = (CssE[i] - AgE[i]) / Z[i];
 			}
 			else {
@@ -9508,25 +10257,25 @@ void produccion_para_exportacion_local_ED(double* E, double* Dt, double* teta, d
 			tasa_c = ctzssez[i] - ctzagez[i];
 		}
 		basec = signo_teta * pow(abs_teta, phi[i]) * (1. + tauz[i] + tasa_c + Apz) * pz[i];
-		if (xie[i] > 0.000001) {
+		if (xie[i] > MILLONESIMA) {
 			base = basec * xie[i] / pe[i];
-			if (base < 0.000001) {
+			if (base < MILLONESIMA) {
 				E[i] = 0.;
 			}
 			else {
-				E[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+				E[i] = Z[i] * signo(base) * pow(abs(base), expo);
 			}
 		}
 		else {
 			E[i] = 0.;
 		}
-		if (xid[i] > 0.000001) {
+		if (xid[i] > MILLONESIMA) {
 			base = basec * xid[i] / pd[i];
-			if (base < 0.000001) {
+			if (base < MILLONESIMA) {
 				Dt[i] = 0.;
 			}
 			else {
-				Dt[i] = Z[i] * copysign(1.0, base) * pow(abs(base), expo);
+				Dt[i] = Z[i] * signo(base) * pow(abs(base), expo);
 			}
 		}
 		else {
@@ -9539,6 +10288,12 @@ double equilibrio_balance_pagos_moneda_extranjera(double* pWe, double* E, double
 	double ebp = Sf;
 	for (int i = 0; i < NSEC; i++) {
 		ebp += pWe[i] * E[i] - pWm[i] * M[i];
+	}
+	double sE = 0;
+	double sM = 0;
+	for (int i = 0; i < NSEC; i++) {
+		sE += E[i];
+		sM += M[i];
 	}
 	return ebp;
 }
