@@ -16,6 +16,7 @@ def imprime(texto, rc=True):
 
 ancho = 22
 
+add = []
 nbs = []
 dts = []
 FI_SOL_LEE = 'parametros.txt'
@@ -26,6 +27,11 @@ with open(FI_SOL_LEE, "r", encoding="utf-8") as log:
             break
         if len(s) == 0 or s == '\n':
             continue
+        if s[0] == '+':
+            add.append(1)
+            s = s[1:]
+        else:
+            add.append(0)
         i = s.index(' ')
         nb = s[:i]
         nbs.append(nb)
@@ -72,16 +78,22 @@ for fi in ficheros:
     imprime('faltan:')
     # se repasa el patrón
     # los que no están en el patrón se omiten
-    for nb , dt in zip(nbs, dts):
-        try:
-            # se copia el original
-            i = e_nbs.index(nb)
-            sal.write(e_dts[i])
-        except Exception as err:
-            # se copia el que falta
+    for ad, nb , dt in zip(add, nbs, dts):
+        if ad == 1:
+            # copia forzosa del patrón
             sf = nb.ljust(ancho, ' ') + dt + ' ^\n'
             sal.write(sf)
-            imprime('{}'.format(sf), rc=False)
+            imprime('+{}'.format(sf), False)
+        else:
+            try:
+                # se copia el original
+                i = e_nbs.index(nb)
+                sal.write(e_dts[i])
+            except Exception as err:
+                # se copia el que falta
+                sf = nb.ljust(ancho, ' ') + dt + ' ^\n'
+                sal.write(sf)
+                imprime('{}'.format(sf), False)
     # por si la última línea añadida terminaba en '^'
     sal.write('\n')
     # la línea final del original

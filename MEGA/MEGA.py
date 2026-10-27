@@ -153,9 +153,10 @@ if args.NSAM_OP    != args.NSAM:
 DECIMALES           = args.DECIMALES
 ECT_ECM             = args.ECT_ECM
 SOLO_CASO           = args.SOLO_CASO
-FI_CASO             = args.FI_CASO
-if SOLO_CASO and len(FI_CASO) == 0:
-    errores_diferidos.append.append('Se ha seleccionado SOLO_CASO pero no se ha especificado FI_CASO')
+FI_CASO_SALVA       = args.FI_CASO_SALVA
+if SOLO_CASO and len(FI_CASO_SALVA) == 0:
+    errores_diferidos.append('Se ha seleccionado SOLO_CASO pero no se ha especificado FI_CASO_SALVA')
+FI_LEE_CASO         = args.FI_LEE_CASO
 FI_SOL_LEE          = args.FI_SOL_LEE
 FI_SOL_SALVA        = args.FI_SOL_SALVA
 FI_SOL_TOT_SALVA    = args.FI_SOL_TOT_SALVA
@@ -502,6 +503,14 @@ if len(errores_diferidos) == 0:
 os.makedirs(SENDA_SALIDAS   , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_GRAFICOS  , exist_ok=True)  # crear el directorio si no existe
 os.makedirs(SENDA_SOLUCIONES, exist_ok=True)  # crear el directorio si no existe
+if len(FI_CASO_SALVA) > 0:
+    i1 = FI_CASO_SALVA.rfind("/")
+    i2 = FI_CASO_SALVA.rfind("\\")
+    i3 = FI_CASO_SALVA.rfind("//")
+    i4 = FI_CASO_SALVA.rfind("\\\\")
+    i = max(i1, i2, i3, i4)
+    if i > 0:
+        os.makedirs(FI_CASO_SALVA[0:i], exist_ok=True)  # crear el directorio si no existe
 
 # para el algoritmo genético de la DLL
 
@@ -776,7 +785,8 @@ else:
     CASO += '_Ay_' if abs(AYD_ADICIONAL).sum() != 0 else ''
     CASO += ('_Rst_' + str(GE_TIPO_RE) if GE_RESTRICCIONES else '') + ('_Fix_{:03}'.format(len(FIX)) if len(FIX) > 0 else '')
     CASO += '_{:05}'.format(GE_SEMILLA)
-
+if len(FI_CASO_SALVA) > 0 and FI_CASO_SALVA[-1] == '=':
+    FI_CASO_SALVA = FI_CASO_SALVA[0:-1] + CASO + ".txt"
 FICHERO_IMG     = CASO
 SENDA_FI_SALIDA = '{}/{}'.format(SENDA_SALIDAS, CASO)
 FICHERO_LOG     = SENDA_FI_SALIDA + '.log'
@@ -896,7 +906,7 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
     for i in range(nvec_opt):
         bnds.append((0.,0.))
 
-    # limites con criterio general para todas las variables en el vector solución
+    # límites con criterio general para todas las variables en el vector solución
     #----------------------------------------------------------------------------
     # en el vector solución sólo se incluye el precio de un factor y sus cotas están en la posición 0 de 'bnds'
     # con indepemdencia de que sea el del capital, o el del trabajo
@@ -1025,9 +1035,9 @@ def cotas(ndem, nsec, vec_opt, nvec_opt, npre_sol, ind_pvec_desde):
                 with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
                 imprime(texto)
                 imprime('')
-    #-------------------------------------------------------------------------------------------------------------------------------------    
+    #-------------------------------------------------------------------------------------------------------------------------------------
     # resulta increible el papel de Apz, si no se deja libre en un intervalo grande (-GE_VAR_CERO, +GE_VAR_CERO), no se encuentra solución
-    #-------------------------------------------------------------------------------------------------------------------------------------    
+    #-------------------------------------------------------------------------------------------------------------------------------------
     return (bnds, n_Efijas, n_Mfijas)
 
 def completa_pf(pf, F):
@@ -1590,14 +1600,14 @@ def imprime_opciones(nvec_opt):
         imprime('MEGA mediante algoritmo genético. Resolución sin restricciones')
     for nc in NCASO:
         imprime('Código de caso                         {:10}'.format(nc))
-    if len(FI_CASO) > 0:
-        imprime('Fichero del caso                       {}'.format(SENDA_SOLUCIONES + '/' + FI_CASO))
+    if len(FI_CASO_SALVA) > 0:
+        imprime('Fichero del caso guardado en           {}'.format(FI_CASO_SALVA))
     if len(FI_SOL_LEE) > 0:
-        imprime('Solución inicial leida de              {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_LEE))
+        imprime('Solución inicial leida de              {}'.format(FI_SOL_LEE))
     if len(FI_SOL_SALVA) > 0:
-        imprime('Vector solución final guardado en      {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_SALVA))
+        imprime('Vector solución final guardado en      {}'.format(FI_SOL_SALVA))
     if len(FI_SOL_TOT_SALVA) > 0:
-        imprime('Solución total final guardada en       {}'.format(SENDA_SOLUCIONES + '/' + FI_SOL_TOT_SALVA))
+        imprime('Solución total final guardada en       {}'.format(FI_SOL_TOT_SALVA))
     imprime('Desviaciones relativas en tanto por 1  {}'.format('Si' if DESV_RELATIVA == 1 else 'No'))
     imprime('Semilla números aleatorios             {:10}'.format(GE_SEMILLA))
     imprime('Número máximo de generaciones          {:10,}'.format(GE_MAX_ITER))
@@ -1806,29 +1816,6 @@ for k in range(nsec):
 for k in range(nsec):
     etq_precios.append('pM_' + ind[k])
 
-if __name__ == '__main__':
-    '''
-    necesitamos este control porque el uso de workers en Windows reinicia el programa desde el
-    principio para cada worker y así evitamos que se impriman estos textos tantas veces como workers, ya que el
-    '__name__' de los reinicios no es igual a '__main__' (es igual a __mp_main__), la asignación de variables hay que
-    repetirla en todos los workers por eso deben quedar fuera de este contol. Esto también ocurre en modo depurar del IDE
-    encontraremos este control en númerosos puntos de la aplicación
-    '''
-    imprime('python           {}'.format(sys.version))
-    imprime('numpy            {}'.format(np.__version__))
-    imprime('scipy            {}'.format(scipy.__version__))
-    imprime('pandas           {}'.format(pandas.__version__))
-    imprime('matplotlib       {}'.format(matplotlib.__version__))
-    imprime('')
-    imprime('#################################################################')
-    imprime('MEGA ampliado. versión {:6} ---------------'.format(VERSION))
-    imprime('#################################################################')
-    imprime('-------------------------------------------------------------------------------------------------')
-    imprime(CASO)
-    imprime('-------------------------------------------------------------------------------------------------')
-    imprime('')
-    imprime('Fichero Matriz Contabilidad Social (MCS) {}'.format(FICHERO_SAM))
-
 # leemos la Matriz de Contabilidad Social (MCS o SAM) de esta economía
 xls = pandas.ExcelFile(FICHERO_SAM)
 if   NSAM == 5:
@@ -1866,219 +1853,409 @@ el fichero calibrado.py contiene dos clases que, como cualquier clase, ejecutan 
 '''
 datos = calibrado.datos(sam, h, ind, dem, idt, gov, trf, ayd, inv, ext, css, alp, ajci, INDICE_F_TRA, PARO_INICIAL)
 parametros = calibrado.parametros(datos, ndem, nsec, INDICE_F_TRA, DEM_ESENCIALES, CON_ESENCIALES, SIGMA_CES_DEMANDA)
-
+# punteros para extraer variables del vector solución
+(etq_vec_opt,ind_pvec_desde,ind_pvec_hasta) = punteros()
 if SAL_VARIACIONES:
     # guardamos los valores iniciales para el cálculo de las diferencias con la solución final
     datos_ini = copy.deepcopy(datos)
     parametros_ini = copy.deepcopy(parametros)
-
 if __name__ == '__main__':
-    # realizamos algunas comprobaciones sobre los datos y parámetros
-    linea_blanca = True
-    if np.any(datos.F0    < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Factor de producción (F0) negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Z0    < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Producción bruta (Z0) negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.D0    < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Demanda local (D0) negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)  
-    if np.any(datos.M0    < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Importaciones (M0) negativas'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.E0    < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Exportaciones (E0) negativas'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.X0    < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Consumo intermedio (X) negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Xp0   < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Consumo hogar (Xp) negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Xg0   < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Consumo gobierno (Xg) negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Xv0   < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Inversión (Xv) negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.CssH0 < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Cotización seguridad social (CssH) hogares negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.CssE0 < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Cotización seguridad social (CssE) empresas negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.AgH0  < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Ayuda del gobierno a hogares (AgH) negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.AgE0  < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Ayuda del gobierno a empresas (AgE) negativa'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Td0   < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Impuesto a la hogares (Td0) negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Tz0   < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Impuesto a la producción (Tz0) negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(datos.Tm0   < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Aviso. Aranceles (Tm0) negativos'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if datos.Te0 != 0:
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. El modelo no está preparado para el pago (positivo o negativo) de impuestos por la exportación (Te0)'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if abs(parametros.landa.sum() - 1.) > 0.000001:
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Los coeficientes de reparto de la inversión (landa) no suman 1.'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(parametros.deltam < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Al menos un coeficiente deltam (importación) de reparto en la CESes negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(parametros.deltad < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Al menos un coeficiente deltdm (demanda local) de reparto en la CESes negativo'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(abs(parametros.deltam + parametros.deltad - 1.) > 0.000001):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Los coeficientes de reparto en la CES, deltam (importación) y deltad (demanda local) no suman 1.'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(parametros.xid < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Al menos un coeficiente de reparto xid (demanda local) en la CET, es negativo.'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(parametros.xie < 0.):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Al menos un coeficiente de reparto xie (exportación) en la CET, es negativo.'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)      
-    if np.any(abs(parametros.xid + parametros.xie - 1.) > 0.000001):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Los coeficientes de reparto en la CET, xie (exportación) y xid (demanda local) no suman 1.'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    if np.any(abs(parametros.beta.sum(axis=1) - 1.) > 0.000001):
-        if linea_blanca:
-            imprime('')
-            linea_blanca = False
-        texto = '*--* Error. Los coeficientes de uso de los factores (beta) no suman 1., para algún sector'
-        with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-        imprime(texto)
-    for i in range(nsec):
-        for j in range(nfac):
-            if datos.F0[i,j] == 0 and parametros.beta[i,j] != 0:
-                if linea_blanca:
-                    imprime('')
-                    linea_blanca = False
-                texto = '*--* Error. El factor de producción (F0) {}, del sector {}, es cero pero la beta correspondiente {} no es cero'.format(j, i, parametros.beta[i,j])
-                with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
-                imprime(texto)
-    if linea_blanca == False:
-        imprime('')
-
-# punteros para extraer variables del vector solución
-(etq_vec_opt,ind_pvec_desde,ind_pvec_hasta) = punteros()
-if __name__ == '__main__':
+    '''
+    necesitamos este control porque el uso de workers en Windows reinicia el programa desde el
+    principio para cada worker y así evitamos que se impriman estos textos tantas veces como workers, ya que el
+    '__name__' de los reinicios no es igual a '__main__' (es igual a __mp_main__), la asignación de variables hay que
+    repetirla en todos los workers por eso deben quedar fuera de este contol. Esto también ocurre en modo depurar del IDE
+    encontraremos este control en númerosos puntos de la aplicación
+    '''
+    imprime('python           {}'.format(sys.version))
+    imprime('numpy            {}'.format(np.__version__))
+    imprime('scipy            {}'.format(scipy.__version__))
+    imprime('pandas           {}'.format(pandas.__version__))
+    imprime('matplotlib       {}'.format(matplotlib.__version__))
     imprime('')
-    if SAL_CALIBRADO:
-        infor.salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES, MODO_PSEUDOIMPTOS)
-    if SAL_GRAFICO_CES_DM:
-        infor.grafico_CES_local_importacion(SENDA_GRAFICOS, datos, parametros, ind, dem, h)
-    if SAL_ISOCUANTA:
-        infor.isocuanta(SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h, datos.D0, datos.M0, 0, 50000, 0, 100, -0.20, 0.5)
+    imprime('#################################################################')
+    imprime('MEGA ampliado. versión {:6} ---------------'.format(VERSION))
+    imprime('#################################################################')
+    imprime('-------------------------------------------------------------------------------------------------')
+    imprime(CASO)
+    imprime('-------------------------------------------------------------------------------------------------')
+    imprime('')
+    imprime('Fichero Matriz Contabilidad Social (MCS) {}'.format(FICHERO_SAM))
+if len(FI_LEE_CASO) > 0:
+    with open(FI_LEE_CASO, "r", encoding="utf-8") as sal_caso:
+        # opciones
+        OR_PRE_EXCLUIDO = np.int(sal_caso.readline())
+        PRECIO_F_EXCLUIDO = np.float64(sal_caso.readline())
+        VALOR_F_TRA = np.float64(sal_caso.readline())
+        ALFA_PHILLIPS = np.float64(sal_caso.readline())
+        GE_INCLUYE_XP = np.int(sal_caso.readline()) == 1
+        GE_INCLUYE_AgH = np.int(sal_caso.readline()) == 1
+        GE_IMPUESTOS_AgH = np.int(sal_caso.readline()) == 1
+        FF_ENDOGENA = np.int(sal_caso.readline()) == 1
+        ALP_FACTOR = np.float64(sal_caso.readline())
+        INDICE_F_TRA = np.int(sal_caso.readline())
+        UTILIDAD_DEMANDA = np.int(sal_caso.readline())
+        DEM_ESENCIALES = np.int(sal_caso.readline()) == 1
+        DEM_ADICIONAL_TIPO = np.int(sal_caso.readline())
+        for i in range(ndem):
+            for j in range (nsec):
+                DEM_ADICIONAL[i][j] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range (nsec):
+                AYD_ADICIONAL[i][j] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range (nsec):
+                CON_ESENCIALES[i][j] = np.float64(sal_caso.readline())
+        RENTA_FICTICIA = np.int(sal_caso.readline())
+        MODO_PSEUDOIMPTOS = np.int(sal_caso.readline())
+        OPT_DESVIOS = np.int(sal_caso.readline())
+        EQ_BAL_PAGOS = np.int(sal_caso.readline())
+
+        # datos
+        datos.pF0[0] = np.float64(sal_caso.readline())
+        datos.pF0[1] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.pY0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.pQ0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.pD0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.pWm[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.pWe[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.E0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.M0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.D0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.tauz[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.taum[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            for j in range(nfac):
+                datos.F0[i][j] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            datos.PssH0[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range(nfac):
+                datos.FF0[i][j] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range(nfac):
+                datos.Alp0[i][j] = np.float64(sal_caso.readline())
+        datos.epsilon0 = np.float64(sal_caso.readline())
+        datos.Tg0 = np.float64(sal_caso.readline())
+        datos.Ti0 = np.float64(sal_caso.readline())
+        datos.Te0 = np.float64(sal_caso.readline())
+        datos.Sf0 = np.float64(sal_caso.readline())
+        FDO_UE = np.float64(sal_caso.readline())
+        datos.PobAct = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.Z0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.Ajc0[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            datos.Aji0[i] = np.float64(sal_caso.readline())
+        # parámetros
+        for i in range(nsec):
+            for j in range(nsec):
+                parametros.ax[i][j] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.ay[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            for j in range(nfac):
+                parametros.beta[i][j] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.b[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.teta[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.xie[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.xid[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.phi[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.cage[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.ctzsse[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.mu[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.landa[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.gamma[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.deltam[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.deltad[i] = np.float64(sal_caso.readline())
+        for i in range(nsec):
+            parametros.eta[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            parametros.taud[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            parametros.cagh[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            parametros.ssp[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            parametros.ctzssh[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            parametros.eta_ces[i] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range(nsec):
+                parametros.alfa_ces[i][j] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range(nsec):
+                parametros.alfa[i][j] = np.float64(sal_caso.readline())
+        for i in range(ndem):
+            for j in range(nsec):
+                parametros.alfa_esen[i][j] = np.float64(sal_caso.readline())
+        parametros.ssg = np.float64(sal_caso.readline())
+        parametros.tai = np.float64(sal_caso.readline())
+
+        # argumentos
+        ALGE_MAX_INTENTOS = np.float64(sal_caso.readline())
+        ALGE_N_HILOS = np.int(sal_caso.readline())
+        GE_MAX_ITER = np.int(sal_caso.readline())
+        GE_TOLERANCIA = np.float64(sal_caso.readline())
+        ALGE_TOL_ACEPTABLE = np.float64(sal_caso.readline())
+        GE_PROGRESO = np.float64(sal_caso.readline())
+        GE_MIN_PROGRESO = np.float64(sal_caso.readline()) * 100.
+        ALGE_UMBRAL_REGUL = np.float64(sal_caso.readline())
+        ALGE_FRAC_REGUL = np.float64(sal_caso.readline())
+        GE_HISTORIAL = np.int(sal_caso.readline())
+        GE_SOLUCIONES = np.int(sal_caso.readline())
+        ALGE_MODO_POB_INI = np.int(sal_caso.readline())
+        ALGE_MODO_REINI_POB = np.int(sal_caso.readline())
+        ALGE_F_INICIO_POB = np.float64(sal_caso.readline())
+        ALGE_SIGMA_POB_INI = np.float64(sal_caso.readline())
+        ALGE_VAR_DISPERSION = np.float64(sal_caso.readline())
+        ALGE_TRAMOS_LHS = np.int(sal_caso.readline())
+        ALGE_NPOB = np.int(sal_caso.readline())
+        ALGE_F_MUTACION[0] = np.float64(sal_caso.readline())
+        ALGE_F_MUTACION[1] = np.float64(sal_caso.readline())
+        ALGE_RECOMBINACION = np.float64(sal_caso.readline())
+        RECOMBINACION_EXTRA = np.float64(sal_caso.readline())
+        ALGE_CTRL_FACTIBLE = np.float64(sal_caso.readline())
+        GE_SEMILLA = np.int(sal_caso.readline())
+        EL_MEJOR_PRIMERO = np.int(sal_caso.readline())
+        ALGE_INCLUIR_X0 = np.int(sal_caso.readline())
+        nvec_opt = np.int(sal_caso.readline())
+        ALGE_EST_POB_INI = np.int(sal_caso.readline())
+        DESV_RELATIVA = np.int(sal_caso.readline())
+        PROB_COP_MEJOR = np.float64(sal_caso.readline())
+        for i in range(nvec_opt):
+            bnds[i][0] = np.float64(sal_caso.readline())
+            vec_opt[i] = np.float64(sal_caso.readline())
+            bnds[i][1] = np.float64(sal_caso.readline())
+    imprime('Leido fichero del caso:\n{}\n'.format(FI_LEE_CASO))
+else:
+    if __name__ == '__main__':
+        # realizamos algunas comprobaciones sobre los datos y parámetros
+        linea_blanca = True
+        if np.any(datos.F0    < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Factor de producción (F0) negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Z0    < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Producción bruta (Z0) negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.D0    < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Demanda local (D0) negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)  
+        if np.any(datos.M0    < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Importaciones (M0) negativas'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.E0    < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Exportaciones (E0) negativas'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.X0    < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Consumo intermedio (X) negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Xp0   < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Consumo hogar (Xp) negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Xg0   < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Consumo gobierno (Xg) negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Xv0   < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Inversión (Xv) negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.CssH0 < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Cotización seguridad social (CssH) hogares negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.CssE0 < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Cotización seguridad social (CssE) empresas negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.AgH0  < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Ayuda del gobierno a hogares (AgH) negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.AgE0  < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Ayuda del gobierno a empresas (AgE) negativa'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Td0   < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Impuesto a la hogares (Td0) negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Tz0   < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Impuesto a la producción (Tz0) negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(datos.Tm0   < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Aviso. Aranceles (Tm0) negativos'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if datos.Te0 != 0:
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. El modelo no está preparado para el pago (positivo o negativo) de impuestos por la exportación (Te0)'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if abs(parametros.landa.sum() - 1.) > 0.000001:
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Los coeficientes de reparto de la inversión (landa) no suman 1.'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(parametros.deltam < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Al menos un coeficiente deltam (importación) de reparto en la CESes negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(parametros.deltad < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Al menos un coeficiente deltdm (demanda local) de reparto en la CESes negativo'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(abs(parametros.deltam + parametros.deltad - 1.) > 0.000001):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Los coeficientes de reparto en la CES, deltam (importación) y deltad (demanda local) no suman 1.'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(parametros.xid < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Al menos un coeficiente de reparto xid (demanda local) en la CET, es negativo.'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(parametros.xie < 0.):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Al menos un coeficiente de reparto xie (exportación) en la CET, es negativo.'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)      
+        if np.any(abs(parametros.xid + parametros.xie - 1.) > 0.000001):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Los coeficientes de reparto en la CET, xie (exportación) y xid (demanda local) no suman 1.'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        if np.any(abs(parametros.beta.sum(axis=1) - 1.) > 0.000001):
+            if linea_blanca:
+                imprime('')
+                linea_blanca = False
+            texto = '*--* Error. Los coeficientes de uso de los factores (beta) no suman 1., para algún sector'
+            with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+            imprime(texto)
+        for i in range(nsec):
+            for j in range(nfac):
+                if datos.F0[i,j] == 0 and parametros.beta[i,j] != 0:
+                    if linea_blanca:
+                        imprime('')
+                        linea_blanca = False
+                    texto = '*--* Error. El factor de producción (F0) {}, del sector {}, es cero pero la beta correspondiente {} no es cero'.format(j, i, parametros.beta[i,j])
+                    with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
+                    imprime(texto)
+        if linea_blanca == False:
+            imprime('')
+
+        imprime('')
+        if SAL_CALIBRADO:
+            infor.salida_calibrado(datos, parametros, ind, dem, h, DEM_ESENCIALES, MODO_PSEUDOIMPTOS)
+        if SAL_GRAFICO_CES_DM:
+            infor.grafico_CES_local_importacion(SENDA_GRAFICOS, datos, parametros, ind, dem, h)
+        if SAL_ISOCUANTA:
+            infor.isocuanta(SENDA_GRAFICOS, PREFIJO, datos, parametros, ind, dem, h, datos.D0, datos.M0, 0, 50000, 0, 100, -0.20, 0.5)
 
 # equilibrio del balace de pagos inicial
 ebp_ini = exte.equilibrio_balance_pagos_moneda_extranjera(datos.pWe, datos.E0, datos.pWm, datos.M0, datos.Sf0)     # 6.16
 
-# ---------------------------------------------------------------------
+#---------------------------------------------------------------------------------
 # Solucíonar el MEGA
-# ---------------------------------------------------------------------
+#---------------------------------------------------------------------------------
 if __name__ == '__main__':
     # realizamos los informes antes de adaptar valores de acuerdo al escenario seleccionado
     if SAL_MCS:
@@ -2091,7 +2268,7 @@ if __name__ == '__main__':
                                             datos.E0,datos.Sf0,
                                             TOLERA_MCS,'MCS base. Cantidades = Importes', True,
                                             0
-                                           )
+                                            )
         infor.imprime_MCS(rot, mcs0, DECIMALES, TOLERA_MCS, 'MCS base. Cantidades = Importes', True)
         imprime('')
     if SALIDA_VAL_INI:
@@ -2171,7 +2348,6 @@ if n_precios_importacion > 0:
         i = pre_m[0]
         v = pre_m[1]
         datos.pWm[i] = v
-
 if nAJC != 0:
     for i in range(nsec):
         datos.Ajc0[i] = AJC[i]
@@ -2216,8 +2392,8 @@ if USAR_DLL:
     # dejarlo porque permite comprobar que el valor de la función objetivo calculado por las dos funciones de la  DLL es el mismo e igual al calculado por Python.
     '''
     'merido_s' es la función que la DLL llamará para calcular el valor de la función objetivo, por lo que hay que definir:
-          Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá para calcular el valor de la función objetivo
-          El tipo de su resultado, que es un double, el valor de la función objetivo calculado a partir del vector de prueba que se le ha pasado a esta función
+            Su tipo de argumentos '[ct.POINTER(ct.c_double)]' un solo parámetro que es un puntero a double (a un vector), que es el vector de prueba que la función recibirá para calcular el valor de la función objetivo
+            El tipo de su resultado, que es un double, el valor de la función objetivo calculado a partir del vector de prueba que se le ha pasado a esta función
     '''
     libc.merito_s.argtypes = [ct.POINTER(ct.c_double)]
     libc.merito_s.restype = ct.c_double
@@ -2287,7 +2463,7 @@ if __name__ == '__main__':
     if len(FI_SOL_LEE) > 0:
         # sustituir el vector de prueba inicial por el contenido en el fichero
         vec_opt = []
-        with open(SENDA_SOLUCIONES + '/' + FI_SOL_LEE, "r", encoding="utf-8") as log:
+        with open(FI_SOL_LEE, "r", encoding="utf-8") as log:
             for i in range(nvec_opt):
                 v = np.float64(log.readline())
                 vec_opt.append(v)
@@ -2396,7 +2572,7 @@ if __name__ == '__main__':
                                                 E,Sf,TOLERA_MCS,
                                                 'MCS primera valoración. Importes', True,
                                                 FDO_UE
-                                              )
+                                                )
             infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS primera valoración. Importes', True)
             (rot, mcs) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp, ajci, INDICE_F_TRA,
                                                 datos.pF0,datos.pY0,datos.pQ0,datos.pD0,datos.pZ0,datos.epsilon0,datos.pWe,datos.pWm,
@@ -2406,7 +2582,7 @@ if __name__ == '__main__':
                                                 E,Sf,TOLERA_MCS,
                                                 'MCS primera valoración. Cantidades', False,
                                                 FDO_UE
-                                              )
+                                                )
             infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS primera valoración. Cantidades', True)
 
     if SALIDA_VEC_OPT:
@@ -2426,7 +2602,7 @@ if __name__ == '__main__':
     dist = calcula_desvios(res_ecuaciones, False)
     imprime('Número de desvios {}'.format(N_DESVIACIONES))
     imprime('')
-    imprime('{:>9} {:12.5e}'.format('Python ', dist))
+    imprime('{:>9} {:23.15e}'.format('Python ', dist))
     imprime('')
     
     if USAR_DLL:
@@ -2434,11 +2610,13 @@ if __name__ == '__main__':
         las función 'abre_salida' y 'cierra_salida' de la DLL se llaman explícitamente para abrir y cerrar el fichero de salida donde la DLL escribe, lo
         que ha sido útil durante la depuración cunado no se llama a la función 'soluciona' que es quien abre y cierra este fichero, cuando ya se ha llamado a 'soluciona'
         no es necesario llamar a estas funciones explícitamente, las dejamos por si acaso.
-
-        libc.abre_salida.argtypes = [ct.c_char_p]
+        '''
+        '''
+        libc.abre_salida.argtypes = (ct.c_char_p, ct.c_char_p)
         libc.abre_salida.restype = ct.c_bool
         v5 = ct.c_char_p(SENDA_SALIDAS.encode('utf-8'))
-        res = libc.abre_salida(v5)
+        v6 = ct.c_char_p(CASO.encode('utf-8'))
+        res = libc.abre_salida(v5, v6)
         if res == False:
             texto = '*--* Error al abrir la salida en la DLL'
             with open(FICHERO_ERR, "a", encoding="utf-8") as log: log.write(texto + '\n')
@@ -2448,11 +2626,10 @@ if __name__ == '__main__':
             sys.exit()
         '''
         # si ECT_ECM == 1, hay que llamar a 'merito_sol' antes que  a 'merito_s' para que calcule el número de desvios
-        imprime('si se usa una DLL "...r" puede que no coincidan con Python, pero no importa')
         dist_dll = dll.merito_sol(libc, vec_opt)
-        imprime('{:>9} {:12.5e}'.format('DLL sol', dist_dll))
+        imprime('{:>9} {:23.15e}'.format('DLL sol', dist_dll))
         dist_dll = fo(vec_opt)
-        imprime('{:>9} {:12.5e}'.format('DLL    ', dist_dll))
+        imprime('{:>9} {:23.15e}'.format('DLL    ', dist_dll))
         '''
         res = libc.cierra_salida()
         if res == False:
@@ -2462,11 +2639,10 @@ if __name__ == '__main__':
             imprime('aplicación terminada')
             imprime('')
             sys.exit()
-        sys.exit()
         '''
     imprime('')
-    if len(FI_CASO) > 0:
-        with open(SENDA_SOLUCIONES + '/' + FI_CASO, "w", encoding="utf-8") as sal_caso:
+    if len(FI_CASO_SALVA) > 0:
+        with open(FI_CASO_SALVA, "w", encoding="utf-8") as sal_caso:
 
             # opciones
             sal_caso.write('{}\n'.format(OR_PRE_EXCLUIDO))
@@ -2537,7 +2713,12 @@ if __name__ == '__main__':
             sal_caso.write('{}\n'.format(datos.Sf0))
             sal_caso.write('{}\n'.format(FDO_UE))
             sal_caso.write('{}\n'.format(datos.PobAct))
-
+            for i in range(nsec):
+                sal_caso.write('{}\n'.format(datos.Z0[i]))
+            for i in range(nsec):
+                sal_caso.write('{}\n'.format(datos.Ajc0[i]))
+            for i in range(nsec):
+                sal_caso.write('{}\n'.format(datos.Aji0[i]))
             # parámetros
             for i in range(nsec):
                 for j in range(nsec):
@@ -2631,7 +2812,7 @@ if __name__ == '__main__':
                 sal_caso.write('{}\n'.format(vec_opt[i]))
                 sal_caso.write('{}\n'.format(np.float64(bnds[i][1])))
 
-        imprime('Fichero del caso guardado: {}\n'.format(FI_CASO))
+        imprime('Fichero del caso guardado: {}\n'.format(FI_CASO_SALVA))
 
     if SOLO_CASO:
         imprime('\naplicación terminada\n')
@@ -2689,7 +2870,7 @@ if __name__ == '__main__':
         for i in range(nvec_opt):
             cotas_inf.append(np.float64(bnds[i][0]))
             cotas_sup.append(np.float64(bnds[i][1]))
-        r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA, SENDA_SALIDAS, CASO)
+        r_sol = dll.soluciona(libc, par, cotas_inf, cotas_sup, vec_opt, ALGE_RES_EXTENSA, SENDA_SALIDAS, CASO, FI_LEE_CASO)
         '''
         'dll.soluciona' devuelve un vector double donde los primeros 7 datos del vector son:
             0. el código de terminación (si es menor que 0 es finalización con error)
@@ -3144,7 +3325,7 @@ if __name__ == '__main__':
 
     sol = rmin.x
     if len(FI_SOL_SALVA) > 0:
-        with open(SENDA_SOLUCIONES + '/' + FI_SOL_SALVA, "w", encoding="utf-8") as log:
+        with open(FI_SOL_SALVA, "w", encoding="utf-8") as log:
             for i in range(len(sol)):
                 log.write('{}\n'.format(sol[i]))
 
@@ -3169,7 +3350,7 @@ if __name__ == '__main__':
     imprime('-----------------------------------------------------------')
     imprime('')
     if len(FI_SOL_TOT_SALVA) > 0:
-        with open(SENDA_SOLUCIONES + '/' + FI_SOL_TOT_SALVA, "w", encoding="utf-8") as log:
+        with open(FI_SOL_TOT_SALVA, "w", encoding="utf-8") as log:
             pf = extrae_var(sol,'pF', 0, nfac - 1)
             pf = completa_pf(pf, F)
             py = extrae_var(sol,'pY', 0, nsec)
@@ -3245,7 +3426,7 @@ if __name__ == '__main__':
                                             E,Sf,
                                             TOLERA_MCS,'MCS final. Importes',True,
                                             FDO_UE
-                                          )
+                                            )
         infor.imprime_MCS(rot, mcs, DECIMALES, TOLERA_MCS, 'MCS final. Importes',True)
         # se supone que los valores de todas las variables son cantidades, por eso usamos los valores iniciales de los precios, que srán 1.
         (rot_t, mcs_t) = infor.reconstruye_MCS(datos, parametros, ind, dem, h, inv,css, idt, gov, trf, ext, ayd, alp, ajci, INDICE_F_TRA,
@@ -3256,7 +3437,7 @@ if __name__ == '__main__':
                                             E,Sf,
                                             TOLERA_MCS,'MCS final. Cantidades',False,
                                             FDO_UE
-                                          )
+                                            )
         infor.imprime_MCS(rot_t, mcs_t, DECIMALES, TOLERA_MCS, 'MCS final. Cantidades', True)
         if SAL_VAR_MCS:
             infor.imprime_MCS(rot, mcs-mcs0, DECIMALES, 2.0 * TOLERA_MCS, 'Diferencias entre los valores finales y los iniciales de la MCS', True)

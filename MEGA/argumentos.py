@@ -47,7 +47,7 @@ def valores_opciones0():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=P1', help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=P0', help="un literal que se añade al principio del nombre de los archivos de salida")
     
     parser.add_argument('--NSAM'               , type=int  , default=0      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=4      , help="número de decimales en las cantidades e importes")
@@ -65,11 +65,11 @@ def valores_opciones0():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.01   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=False  , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=False  , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -90,7 +90,7 @@ def valores_opciones0():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -130,13 +130,13 @@ def valores_opciones0():
     parser.add_argument('--FDO_UE'             , type=float, default=0.0     , help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_AD_LON'         , type=int  , default=6       , help="número de demandas adicionales exógenas de productos para los hogares")
-    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[1,14,16.,1,19,882.,1,21,4342.,1,29,6199.,1,25,1995.,1,30,78.,], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
+    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,1,10.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0       , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=True   , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_AD_LON'         , type=int  , default=1    , help="número de ayudas exógenas de productos para los hogares")
-    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,0,10.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
+    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,10.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_AD_LON'         , type=int  , default=0      , help="número de consumos esenciales exógenos de productos para los hogares")
@@ -240,7 +240,8 @@ def valores_opciones0():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA0.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='C:/MEGA/MEGA_GPU/Casos/Fuentes/=', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs0.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -314,11 +315,11 @@ def valores_opciones1():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -339,7 +340,7 @@ def valores_opciones1():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -489,7 +490,8 @@ def valores_opciones1():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA1.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs1.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs1.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -541,11 +543,11 @@ def valores_opciones2():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -566,7 +568,7 @@ def valores_opciones2():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -716,7 +718,8 @@ def valores_opciones2():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA2.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs2.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs2.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -789,11 +792,11 @@ def valores_opciones3():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -814,7 +817,7 @@ def valores_opciones3():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -964,7 +967,8 @@ def valores_opciones3():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA3.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs3.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs3.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -972,7 +976,7 @@ def valores_opciones3():
     args = parser.parse_args()
     return args
 
-def valores_opciones():
+def valores_opciones4():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=4      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1016,11 +1020,11 @@ def valores_opciones():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -1041,7 +1045,7 @@ def valores_opciones():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False , help="incluir AgH en el vector solución")
@@ -1081,13 +1085,13 @@ def valores_opciones():
     parser.add_argument('--FDO_UE'             , type=float, default=0.0     , help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_AD_LON'         , type=int  , default=0       , help="número de demandas adicionales exógenas de productos para los hogares")
-    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[1,2,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
+    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0       , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False   , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_AD_LON'         , type=int  , default=0    , help="número de ayudas exógenas de productos para los hogares")
-    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[1.,0.,1000.,1.,1.,10000.,1.,2.,4000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
+    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_AD_LON'         , type=int  , default=0       , help="número de consumos esenciales exógenos de productos para los hogares")
@@ -1191,7 +1195,8 @@ def valores_opciones():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA4.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs4.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs4.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -1225,7 +1230,7 @@ def valores_opciones5():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs5' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Mcs5_Pruebas' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre")
 
     parser.add_argument('--NSAM'               , type=int  , default=5      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1243,32 +1248,32 @@ def valores_opciones5():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.09   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-09 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-08 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
-    parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
+    parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=5.0E-04, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
     parser.add_argument('--ALGE_MODO_POB_INI'  , type=int  , default=0      , help="de 0 a 15 formas de generar la población inicial")
     parser.add_argument('--ALGE_MODO_REINI_POB', type=int  , default=0      , help="modo reinicio de la población; 0=normal; 1=con variación del factor de dispersión")
     parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int  , default=5      , help="número máximo de veces que se reinician los calculos, desde una nueva población inicial, si no se alcanza el objetico")
-    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=30     , help="número de procesos simultáneos")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=32     , help="número de procesos simultáneos")
     parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float, default=1.e-04 , help="valor del error de la función objetivo por debajo del cual se considera una solución aceptable si no se ha podido alcanzar el objetivo GE_TOLERANCIA, no interviene el los cálculos, solo se usa a efectos informativos")
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float, default=0.0008, help="factor de alcance para generar de la población inicial")
     parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float, default=0.75  , help="sigma de la distribución normal para generar de la población inicial")
     parser.add_argument('--ALGE_VAR_DISPERSION', type=float, default=1.5   , help="variación del factor de alcance para generar de la población inicial a cada intento")
     parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int  , default=400   , help="Tnúmero de tramos en los que se divide el intervalo de existencia de las variables para generar sus valores en la población inicial")
-    parser.add_argument('--ALGE_NPOB'          , type=int  , default=16020 , help="Número de individuos en la población")
+    parser.add_argument('--ALGE_NPOB'          , type=int  , default=19968 , help="Número de individuos en la población")
     parser.add_argument('--ALGE_EST_POB_INI'   , type=int  , default=0     , help="1 = Genera un fichero con la estadística de la población inicial")
-    parser.add_argument('--ALGE_F_MUTACION'    , type=float, default=[0.70 , 1.50], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
+    parser.add_argument('--ALGE_F_MUTACION'    , type=float, default=[0.80 , 0.80], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
     parser.add_argument('--ALGE_RECOMBINACION' , type=float, default=0.999 , help="constante de recombinación")
     parser.add_argument('--RECOMBINACION_EXTRA', type=float, default=0.995 , help="constante de recombinación para las extra mutaciones")
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -1288,19 +1293,17 @@ def valores_opciones5():
         fijo     : será acotado al valor VALOR_F_TRA si es > 0
         calculado: si VALOR_F_TRA = 0
     '''
-    parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True , help="las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
+    parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=False, help="las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
     parser.add_argument('--OR_PRE_EXCLUIDO'    , type=int  , default=1    , help="ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_EXCLUIDO'")
     parser.add_argument('--PRECIO_F_EXCLUIDO'  , type=float, default=1.0  , help="precio que se fija para el factor de referencia")
     parser.add_argument('--VALOR_F_TRA'        , type=float, default=-1   , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
     parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10 , help="tanto por uno de paro para la curva Phillips")
     parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5 , help="relación desempleo salarios, en la bibliografía se encuentra -0.4566") 
-
     parser.add_argument('--ALP_FACTOR'         , type=float, default=0.0  , help="tanto por uno de los excesos de factores aportados, sobre sus valores iniciales, que se lleva a la cuenta Alp") 
     parser.add_argument('--EQ_BAL_PAGOS'       , type=sab  , default=True , help="si True se exige que el importe de la balanza de pagos se amntenga constante e igual a la de la MCS, lo contrario es incoherente")
-
-    parser.add_argument('--FIX'                , type=str  , default=['epsilon'], nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
+    parser.add_argument('--FIX'                , type=str  , default=[''] , nargs='*', help="variables para las que se fijan los límites inferior y superior expresamente")
     parser.add_argument('--FIX_LON'            , type=int  , default=[1]  , nargs='*', help="número de ternas para cada variable en FIX")
-    parser.add_argument('--FIX_LIMITES'        , type=str  , default=[0,1.,1.] , nargs='*', help="una terna para cada variable: indice,valor inferior,valor superior; '*' = criterio general, cualquier 'str' el valor inicial")
+    parser.add_argument('--FIX_LIMITES'        , type=str  , default=[0,1.,1.], nargs='*', help="una terna para cada variable: indice,valor inferior,valor superior; '*' = criterio general, cualquier 'str' el valor inicial")
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # escenarios predefinidos
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1308,17 +1311,17 @@ def valores_opciones5():
     parser.add_argument('--FDO_UE'             , type=float, default=0.0     , help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_AD_LON'         , type=int  , default=1       , help="número de demandas adicionales exógenas de productos para los hogares")
-    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
+    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,4,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0       , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False   , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_AD_LON'         , type=int  , default=0    , help="número de ayudas exógenas de productos para los hogares")
-    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
+    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,4,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_AD_LON'         , type=int  , default=0       , help="número de consumos esenciales exógenos de productos para los hogares")
-    parser.add_argument('--CON_AD_HO_PRO'      , type=float, default=[0,0,1000.], nargs='*', help="el 'hogar' (i1) para el 'producto' (i2) tiene un 'consumo' esencial (v)")
+    parser.add_argument('--CON_AD_HO_PRO'      , type=float, default=[0,10,1000.], nargs='*', help="el 'hogar' (i1) para el 'producto' (i2) tiene un 'consumo' esencial (v)")
     parser.add_argument('--DEM_ESENCIALES'     , type=sab, default=False   , help="True: usar Stone-Geary con 'CON_ESENCIALES' en el cálculo de productos demandados")
 
     parser.add_argument('--AJC_AD_LON'         , type=int  , default=0     , help="número de ajustes en coste por sectores")
@@ -1348,9 +1351,9 @@ def valores_opciones5():
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False  , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False  , help="salida de los valores iniciales de las variables y sus límites")
-    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=True   , help="informe de los valores iniciales de las variables")
+    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=False  , help="informe de los valores iniciales de las variables")
     parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False  , help="calcular una primera valoración de modelo")
-    parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=True   , help="salida con el detalla de las desviaciones")
+    parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False  , help="salida con el detalla de las desviaciones")
     parser.add_argument('--SAL_AUXILIARES'     , type=sab  , default=False  , help="imprimir los valores del historial y la evolución de la solución")
     parser.add_argument('--SAL_GRAFICOS_EVOL'  , type=sab  , default=False  , help="generar gráficos de las evoluciones")
     parser.add_argument('--SAL_GRAFICO_CES_DM' , type=sab  , default=False  , help="generar graficos de isocuantas CES")
@@ -1363,7 +1366,7 @@ def valores_opciones5():
 
     parser.add_argument('--GE_HISTORIAL'       , type=int  , default=10000  , help="número de generaciones para mostrar evolución y en su caso salvar el historial")
     parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=-1     , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
-    parser.add_argument('--GE_MAX_ITER'        , type=int  , default=0, help="máximo número de generaciones a simular")
+    parser.add_argument('--GE_MAX_ITER'        , type=int  , default=1000000, help="máximo número de generaciones a simular")
     parser.add_argument('--GE_PRE_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de los precios es su valor inicial por   (1 - GE_PRE_MIN/100)")
     parser.add_argument('--GE_PRE_MAX'         , type=float, default=99.0   , help="el límite superior del rango de variación de los precios es su valor inicial por   (1 + GE_PRE_MAX/100)")
     parser.add_argument('--GE_VAR_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de las variables es su valor inicial por (1 - GE_PRE_MIN/100)")
@@ -1377,8 +1380,8 @@ def valores_opciones5():
     parser.add_argument('--GE_RESTRICCIONES'   , type=sab  , default=False  , help="restricciones en cantidad de importación (M) y exportación (E)")
     parser.add_argument('--GE_TIPO_RE'         , type=int  , default=1      , help="0: lineal; 1: No lineal")
     parser.add_argument('--GE_ACTUALIZACION'   , type=str  , default='immediate', help="cada vez que se cambia un individuo")
-    parser.add_argument('--GE_F_MUTACION'      , type=float, default=[0.70 , 1.50], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
-    parser.add_argument('--GE_RECOMBINACION'   , type=float, default=1.0    , help="recombinación")
+    parser.add_argument('--GE_F_MUTACION'      , type=float, default=[0.75, 0.85], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
+    parser.add_argument('--GE_RECOMBINACION'   , type=float, default=.999   , help="recombinación")
     parser.add_argument('--GE_DIM_POBLACION'   , type=int  , default=5      , help="factor para establecer el tamaño de la población (por defecto es 15) individuos = GE_DIM_POBLACION * len(vec_opt)")
     '''
     Se genera un candidato a solución mediante los siguientes tres pasos:
@@ -1418,15 +1421,16 @@ def valores_opciones5():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
-    parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
-    parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='vector_solucion_Mcs5.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
-    parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='v_vars_solucion_Mcs5.log', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='C:/MEGA/MEGA_GPU/Casos/Fuentes/=', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
+    parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto con el vector solución a probar, en lugar del que se obtiene de la MCS")
+    parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='', help="nombre del fichero de texto donde guardar el vector solución obtenido")
+    parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='', help="nombre del fichero de texto donde guardar el valor de todas las variables de la solución")
     args = parser.parse_args()
 
     return args
 
-def valores_opciones6():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=6      , help="Matriz de Contabilidad Social asociada a esta función")
     
@@ -1494,11 +1498,11 @@ def valores_opciones6():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-11 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-06 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=3.0E-03, help="probabilidad de cuasi replicar al mejor individuo: si < 0 descartar cuando i1=i2")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -1519,7 +1523,7 @@ def valores_opciones6():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -1559,13 +1563,13 @@ def valores_opciones6():
     parser.add_argument('--FDO_UE'             , type=float, default=0.0   , help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_AD_LON'         , type=int  , default=0     , help="número de demandas adicionales exógenas de productos para los hogares")
-    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,14,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
+    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0     , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_AD_LON'         , type=int  , default=0    , help="número de ayudas exógenas de productos para los hogares")
-    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,14,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
+    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_AD_LON'         , type=int  , default=0    , help="número de consumos esenciales exógenos de productos para los hogares")
@@ -1667,9 +1671,10 @@ def valores_opciones6():
     parser.add_argument('--SENDA_SALIDAS'      , type=str  , default='C:/MEGA/Salidas_IDE'                   , help="senda para las salidas")
     parser.add_argument('--SENDA_GRAFICOS'     , type=str  , default='C:/MEGA/Graficos_IDE'                  , help="senda para los gráficos")
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
-    parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6r.dll', help="senda para la DLL")
+    parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='C:/MEGA/MEGA_GPU/Casos/Fuentes/=', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -1724,7 +1729,7 @@ def valores_opciones7():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=1002' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=1000' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
 
     parser.add_argument('--NSAM'               , type=int  , default=7      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1742,32 +1747,32 @@ def valores_opciones7():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-10 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-06 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
-    parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=3.3E-03, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
+    parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=0.0    , help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
     parser.add_argument('--ALGE_MODO_POB_INI'  , type=int  , default=0      , help="de 0 a 15 formas de generar la población inicial")
     parser.add_argument('--ALGE_MODO_REINI_POB', type=int  , default=1      , help="modo reinicio de la población; 0=normal; 1=con variación del factor de dispersión")
     parser.add_argument('--ALGE_MAX_INTENTOS'  , type=int  , default=5      , help="número máximo de veces que se reinician los calculos, desde una nueva población inicial, si no se alcanza el objetico")
-    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=30     , help="número de procesos simultáneos")
+    parser.add_argument('--ALGE_N_HILOS'       , type=int  , default=32     , help="número de procesos simultáneos")
     parser.add_argument('--ALGE_TOL_ACEPTABLE' , type=float, default=1.e-05 , help="valor del error de la función objetivo por debajo del cual se considera una solución aceptable si no se ha podido alcanzar el objetivo GE_TOLERANCIA, no interviene el los cálculos, solo se usa a efectos informativos")
     parser.add_argument('--ALGE_F_INICIO_POB'  , type=float, default=0.001 , help="factor de alcance para generar de la población inicial")
     parser.add_argument('--ALGE_SIGMA_POB_INI' , type=float, default=0.1   , help="sigma de la distribución normal para generar de la población inicial")
     parser.add_argument('--ALGE_VAR_DISPERSION', type=float, default=1.5   , help="variación del factor de alcance para generar de la población inicial a cada intento")
     parser.add_argument('--ALGE_TRAMOS_LHS'    , type=int  , default=100   , help="Tnúmero de tramos en los que se divide el intervalo de existencia de las variables para generar sus valores en la población inicial")
-    parser.add_argument('--ALGE_NPOB'          , type=int  , default=6000  , help="Número de individuos en la población")
+    parser.add_argument('--ALGE_NPOB'          , type=int  , default=5888  , help="Número de individuos en la población")
     parser.add_argument('--ALGE_EST_POB_INI'   , type=int  , default=0     , help="1 = Genera un fichero con la estadística de la población inicial")
     parser.add_argument('--ALGE_F_MUTACION'    , type=float, default=[0.75 , 0.85], nargs='*', help="factor de mutación, se modifica aleatoriamente entre los dos valores aportados")
     parser.add_argument('--ALGE_RECOMBINACION' , type=float, default=0.999 , help="constante de recombinación")
-    parser.add_argument('--RECOMBINACION_EXTRA', type=float, default=0.995 , help="constante de recombinación para las extra mutaciones")
+    parser.add_argument('--RECOMBINACION_EXTRA', type=float, default=0.999 , help="constante de recombinación para las extra mutaciones")
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -1804,16 +1809,16 @@ def valores_opciones7():
     # escenarios predefinidos
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     parser.add_argument('--NCASO'              , type=int  , default=[10]  , nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
-    parser.add_argument('--FDO_UE'             , type=float, default=13512., help="Fondos transferidos al gobierno por la UE") 
+    parser.add_argument('--FDO_UE'             , type=float, default=0., help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
-    parser.add_argument('--DEM_AD_LON'         , type=int  , default=0       , help="número de demandas adicionales exógenas de productos para los hogares")
-    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[1,14,16.,1,19,882.,1,21,4342.,1,29,6199.,1,25,1995.,1,30,78.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
+    parser.add_argument('--DEM_AD_LON'         , type=int  , default=0     , help="número de demandas adicionales exógenas de productos para los hogares")
+    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0     , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_AD_LON'         , type=int  , default=6     , help="número de ayudas exógenas de productos para los hogares")
-    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[1,14,16.,1,19,882.,1,21,4342.,1,29,6199.,1,25,1995.,1,30,78.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
+    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_AD_LON'         , type=int  , default=0     , help="número de consumos esenciales exógenos de productos para los hogares")
@@ -1917,7 +1922,8 @@ def valores_opciones7():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='caso_cuda.txt', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")
@@ -1990,11 +1996,11 @@ def valores_opciones8():
     parser.add_argument('--GE_MIN_PROGRESO'    , type=float, default=0.05   , help="% de mejora mínima para considerar que hay progreso")
     parser.add_argument('--GE_TOLERANCIA'      , type=float, default=1.e-10 , help="límite para considerar el objetivo alcanzado")
     parser.add_argument('--GE_VERIFICAR'       , type=float, default=1.e-06 , help="límite para considerar que una ecuación se cumple")
-    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, mínimo 2.0")
-    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.5    , help="fracción de población a regularizar, máximo 0.9")
+    parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
+    parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
 
-    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO")
+    parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
     parser.add_argument('--USAR_ALGE_DLL'      , type=sab  , default=True   , help="si True se usa el algoritmo genético de la DLL")
     parser.add_argument('--DESV_RELATIVA'      , type=int  , default=0      , help="1: desviaciones en términos relativos, tanto por uno")
@@ -2015,7 +2021,7 @@ def valores_opciones8():
     parser.add_argument('--ALGE_CTRL_FACTIBLE' , type=int  , default=1     , help="1: Controlar que los valores de las variables tras el cruce están dentro de sus rangos de validez")
     parser.add_argument('--ALGE_RES_EXTENSA'   , type=int  , default=0     , help="La DLL devuelve: 0= el vector solución y el detalle de los devios; 1= el valor de todas las variables")
     parser.add_argument('--EL_MEJOR_PRIMERO'   , type=int  , default=0     , help="recolocar el mejor individuo en la posición 0 de la matriz de población. No sirve de nada")
-    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="incluir en la población en vector de prueba inicial")
+    parser.add_argument('--ALGE_INCLUIR_X0'    , type=int  , default=1     , help="1=incluir en la población en vector de prueba inicial")
 
     parser.add_argument('--GE_INCLUYE_XP'      , type=sab  , default=False  , help="incluir Xp en el vector solución")
     parser.add_argument('--GE_INCLUYE_AgH'     , type=sab  , default=False  , help="incluir AgH en el vector solución")
@@ -2052,16 +2058,16 @@ def valores_opciones8():
     # escenarios predefinidos
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     parser.add_argument('--NCASO'              , type=int  , default=[0]   , nargs='*', help="número de esenario a utilizar, se pueden combinar varios, por ejemplo default=[0,14], atención al orden")
-    parser.add_argument('--FDO_UE'             , type=float, default=13512., help="Fondos transferidos al gobierno por la UE") 
+    parser.add_argument('--FDO_UE'             , type=float, default=0., help="Fondos transferidos al gobierno por la UE") 
     # Para ver los efectos de la demanda adicional lo apropiado es usar NCASO = 0
     parser.add_argument('--DEM_AD_LON'         , type=int  , default=0     , help="número de demandas adicionales exógenas de productos para los hogares")
-    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[1,14,16.,1,19,882.,1,21,4342.,1,29,6199.,1,25,1995.,1,30,78.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
+    parser.add_argument('--DEM_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el hogar (i1) y producto (i2) la demanda adicional exógena (v)")
     parser.add_argument('--DEM_ADICIONAL_TIPO' , type=int  , default=0     , help="0: se añade 'DEM_ADICIONAL' al importe demandado; 1: se añade 'DEM_ADICIONAL' a la cantidad demandada")
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
     parser.add_argument('--AYD_AD_LON'         , type=int  , default=0     , help="número de ayudas exógenas de productos para los hogares")
-    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[1,14,16.,1,19,882.,1,21,4342.,1,29,6199.,1,25,1995.,1,30,78.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
+    parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
     parser.add_argument('--CON_AD_LON'         , type=int  , default=0     , help="número de consumos esenciales exógenos de productos para los hogares")
@@ -2165,7 +2171,8 @@ def valores_opciones8():
     parser.add_argument('--SENDA_SOLUCIONES'   , type=str  , default='C:/MEGA/Soluciones_IDE'                , help="senda para los vectores solución")
     parser.add_argument('--SENDA_DLL'          , type=str  , default='C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA6.dll', help="senda para la DLL")
 
-    parser.add_argument('--FI_CASO'            , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con todos los datos del caso")
+    parser.add_argument('--FI_LEE_CASO'        , type=str  , default='', help="senda de un fichero de texto del que se leerán todos los datos del caso")
+    parser.add_argument('--FI_CASO_SALVA'      , type=str  , default='', help="senda de un fichero de texto en el que se escibirán todos los datos del caso, si el último caracter es '=', se sustituye este caracter por el nombre del CASO")
     parser.add_argument('--FI_SOL_LEE'         , type=str  , default='', help="nombre de un fichero de texto en la carpeta SENDA_SOLUCIONES con el vector solución a probar, en lugar del que se obtiene de la MCS")
     parser.add_argument('--FI_SOL_SALVA'       , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el vector solución obtenido")
     parser.add_argument('--FI_SOL_TOT_SALVA'   , type=str  , default='', help="nombre del fichero de texto en la carpeta SENDA_SOLUCIONES donde guardar el valor de todas las variables de la solución")

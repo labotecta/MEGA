@@ -377,8 +377,8 @@ def merito_sol(libc, vec_opt):
     return r_sol
     '''
 
-def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida, senda_salidas, caso):
-    libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int, ct.c_char_p, ct.c_char_p)
+def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida, senda_salidas, caso, fi_lee_caso):
+    libc.soluciona.argtypes = (ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int, ct.c_char_p, ct.c_char_p, ct.c_char_p)
     libc.soluciona.restype = ct.POINTER(ct.c_double)
     v1 = np.array(par).ctypes.data_as(ct.POINTER(ct.c_double))
     v2 = np.array(cotas_inf).ctypes.data_as(ct.POINTER(ct.c_double))
@@ -386,6 +386,7 @@ def soluciona(libc, par, cotas_inf, cotas_sup, vec, extendida, senda_salidas, ca
     v4 = vec.ctypes.data_as(ct.POINTER(ct.c_double))
     v5 = ct.c_char_p(senda_salidas.encode('utf-8'))
     v6 = ct.c_char_p(caso.encode('utf-8'))
-    res = libc.soluciona(v1, v2, v3, v4, extendida, v5, v6)
+    v7 = ct.c_char_p(fi_lee_caso.encode('utf-8'))
+    res = libc.soluciona(v1, v2, v3, v4, extendida, v5, v6, v7)
     return res
 

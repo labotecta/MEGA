@@ -1,0 +1,104 @@
+inicio: Mon Oct 26 16:39:25 2026
+
+Librería               : C:\MEGA\MEGA_DLL\x64\Ultimas\MEGA6.dll
+Caso                   : 206_salarios_1_5_42_det_1_00
+
+Estrategia             : RAND1
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :           31
+-------------------------------------
+Modo azar hilos        : local
+Números aleatorios     : mt19937
+Ini.aleatorios fichero : no
+Semilla num.aleatorios :           42
+
+Población              :         5888
+Modo población inicial :            0
+Factor dispersión unif.:  1.00000e-03
+Sigma dispersión normal:  1.00000e-01
+-------------------------------------
+Número procesos        :           32
+Tolerancia en el merito:  1.00000e-11
+Intentos (reinicios)   :            5
+-------------------------------------
+Control progreso cada  :        10000 generaciones
+Progreso mínimo        :        0.050 %
+Umbral regularización  :  0.00000e+00 veces el progreso mínimo
+Regularización         :       30.000 % = 1766 individuos
+Modo reinicio población:            1
+Factor dispersión reini:  1.50000e+00
+-------------------------------------
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Probab.copiar el mejor :  3.00000e-03
+Recombinación normal
+-------------------------------------
+Factor Alp             :  1.00000e+00
+Fondos UE              :  0.00000e+00
+Inc.demanda              SIN renta ficticia
+Opción cálculo desvios :            1
+Número de desviaciones :         1662
+-------------------------------------
+Xp incluido en la solución: NO
+AgH incluido en la solución: NO
+Datos de cabecera      :            7
+Variables solución     :          251
+Resto variables modelo :         1634
+Variables recalculadas :         1633
+-------------------------------------
+Total                  :         3525
+
+Variables fijas en sol :            8
+----------------------------------------
+Variables con valores fijos
+    0 pF           0    1.0500000000e+00
+   94 epsilon      0    1.0000000000e+00
+  166 E            8    0.0000000000e+00
+  167 E            9    0.0000000000e+00
+  197 M            8    0.0000000000e+00
+  198 M            9    0.0000000000e+00
+  199 M           10    0.0000000000e+00
+  200 M           11    0.0000000000e+00
+----------------------------------------
+
+máximo 'n.gen.pro2' por tramo:  14307840000 | 'n.gen.pro2' probable por tramo:     14307840
+
+
+Merito vec            :   3.248943867003025e+08
+Merito     pb1        :   3.248943867003025e+08
+Merito sol pb1        :   3.248943867003025e+08
+VAB                   :   8.492072679190408e+05
+Impuestos             :   2.422708299132593e+05
+Cotizacion SS         :   1.346770744386573e+05
+Z                     :   1.962588548132117e+06
+Q                     :   2.201812273788377e+06
+
+generacio d.est.poblac      ECT     var.max.err   bloque  despl       VAB       impuestos   cotización SS     suma Z        suma Q      segs.p mins.tot  n.gen.pro2  n.mejoras n.mejs.mej
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+        1  2.26403e+01  3.24723e+08  5.94173e+03 Fi          61  8.492201e+05  2.422770e+05  1.346797e+05  1.962653e+06  2.201850e+06                           119
+    10000  7.29516e-02  1.97288e+02  5.63186e+00 Ydp         22  8.972011e+05  2.557437e+05  1.435117e+05  2.012873e+06  2.254929e+06     64.9      1.1    14088485   14669542      25450
+    20000  2.15895e-03  3.04849e-01  2.72808e-01 Ydp         22  8.973320e+05  2.557744e+05  1.435355e+05  2.013078e+06  2.255152e+06     67.4      2.2    14385595   14978437      25229
+    30000  5.70170e-05  5.50677e-05  3.68404e-03 Ydp         22  8.973383e+05  2.557759e+05  1.435366e+05  2.013088e+06  2.255163e+06     67.9      3.3    14432865   14895833      25322
+    40000  4.11344e-05  6.72106e-09  2.92649e-05 Ydp         23  8.973383e+05  2.557759e+05  1.435366e+05  2.013088e+06  2.255163e+06     68.0      4.5    14432611   14915415      25154
+--------- ------------ ------------ ------------ -------- ----- ------------- ------------- ------------- ------------- ------------- -------- --------  ---------- ---------- ----------
+    46123  4.11326e-05  9.99051e-12  1.34566e-06 Ydp         22  8.973383e+05  2.557759e+05  1.435366e+05  2.013088e+06  2.255163e+06     41.6      5.2        2322
+
+Merito                :   9.990506975704317e-12
+VAB                   :   8.973382633776076e+05
+Impuestos             :   2.557758522339874e+05
+Cotizacion SS         :   1.435366049308318e+05
+Z                     :   2.013088071082137e+06
+Q                     :   2.255162544367395e+06
+
+
+tiempo medio en minutos: mutación y cruce =     0.605  selección =     4.411
+
+número de mutaciones extra =     861561  media por generación =    18.680   % medio sobre total de mutaciones=    0.3172
+
+número de variables extra  =    1047209  media sobre mutaciones extra=    1.2155
+
+fin   : Mon Oct 26 16:44:37 2026
+

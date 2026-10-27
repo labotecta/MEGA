@@ -2,6 +2,7 @@ import os
 import sys
 import glob
 import subprocess
+from timeit import default_timer as timer
 
 FICHERO_LOG = 'C:/MEGA/BAT/LanzaBAT.log'
 def imprime(texto, rc=True):
@@ -24,13 +25,15 @@ patron  = carpeta + "/**/*.bat"
 ficheros = glob.glob(patron, recursive=True)
 n = 0
 for fi in ficheros:
+    t_inicio = timer()
     fi = fi.replace('\\','/')
     n += 1
     if fi.lower().endswith('_borra.bat'):
         # de cierres anteriores, se borra
-        os.remove(fi)
-        continue
-    imprime('{:4d} de {:4d} {}'.format(n, len(ficheros), fi))
+        try:
+            os.remove(fi)
+        finally:
+            continue
     fi_c = fi.replace('\\','/')[:-4] + '_borra.bat'
     sal = open(fi_c, "w", encoding="utf-8")
     with open(fi, "r", encoding="utf-8") as ent:
@@ -55,6 +58,8 @@ for fi in ficheros:
         sys.exit(1)
     if os.path.exists(fi_c):
         os.remove(fi_c)
+    t_fin = timer()
+    imprime('{:4d} de {:4d} {:11,.0f}s {}'.format(n, len(ficheros), t_fin - t_inicio, fi))
 imprime('')
 imprime('Fin')
 imprime('')

@@ -16,15 +16,15 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_TOLERANCIA       1.e-08 ^
 --GE_VERIFICAR        1.e-05 ^
 --ALGE_TOL_ACEPTABLE  1.0e-05 ^
---PROB_COP_MEJOR      7.8e-04 ^
---ALGE_NPOB           10500 ^
---ALGE_N_HILOS        30 ^
+--PROB_COP_MEJOR      5.0e-04 ^
+--ALGE_NPOB           19968 ^
+--ALGE_N_HILOS        32 ^
 --ALGE_MODO_POB_INI   0 ^
 --ALGE_EST_POB_INI    0 ^
 --ALGE_F_INICIO_POB   0.001 ^
---ALGE_F_MUTACION     0.80 0.80 ^
+--ALGE_F_MUTACION     0.8 0.8 ^
 --ALGE_RECOMBINACION  0.9995 ^
---RECOMBINACION_EXTRA 0.995 ^
+--RECOMBINACION_EXTRA 0.997 ^
 --FF_ENDOGENA         True ^
 --ALP_FACTOR          1.0 ^
 --FDO_UE              0. ^
@@ -73,7 +73,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --SAL_MCS             True  ^
 --SAL_VAR_MCS         True  ^
 --GE_HISTORIAL        10000 ^
---GE_SOLUCIONES       10000 ^
+--GE_SOLUCIONES       -1 ^
 --SIGMA_CES_DEMANDA   2. 2. 2. ^
 --MODO_PSEUDOIMPTOS   0 ^
 --PRECIO_INI          0.5 ^
@@ -112,14 +112,16 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --ALGE_TRAMOS_LHS     100 ^
 --ECT_ECM             0 ^
 --DESV_RELATIVA       0 ^
---SOLO_CASO           False ^
 --ALGE_UMBRAL_REGUL   0. ^
 --ALGE_FRAC_REGUL     0.2 ^
 --GE_SEMILLA          42 ^
---FI_CASO             "" ^
 --FI_SOL_LEE          "" ^
 --FI_SOL_SALVA        "" ^
 --FI_SOL_TOT_SALVA    "" ^
+--FI_CASO             "" ^
+--SOLO_CASO           False ^
+--FI_LEE_CASO         "" ^
+--FI_CASO_SALVA       C:/MEGA/MEGA_GPU/Casos/Fuentes/= ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5/Phillips ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^
