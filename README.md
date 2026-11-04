@@ -5,7 +5,7 @@
 ___
 
 ## Este es el repositorio del Libro "Guía práctica para Modelos de Equilibrio General Aplicado (MEGA)"
-### "Computable General Equilibrium (CGE)"
+## "Computable General Equilibrium (CGE)"
 ## Publicado en la Editorial universitaria Aula Magna McGraw Hill
 ## [Ver en la tienda del autor](https://libros.cc/autor/Alberto-Ba%C3%B1%C3%B3n-Serrano.htm)
 El libro muestra cómo construir y resolver un Modelo de Equilibrio General Aplicado (MEGA), sin conocimientos previos y desde el principio. Una parte importante será el planteamiento y resolución de escenarios que, en definitiva, es lo que se pretende con un MEGA. El libro no se limita a exponer cómo construir un modelo, en él se construye uno plenamente operativo. El código fuente de la aplicación informática (Python y C++) está disponible en un repositorio público y es de libre utilización, así como los datos utilizados en el calibrado y resolución de los escenarios tratados en este libro.
