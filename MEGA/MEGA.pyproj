@@ -35,6 +35,7 @@
     <Compile Include="informes.py" />
     <Compile Include="MEGA.py" />
     <Compile Include="produccion.py" />
+    <Compile Include="reduccion_dimension.py" />
     <Compile Include="restricciones.py">
       <SubType>Code</SubType>
     </Compile>

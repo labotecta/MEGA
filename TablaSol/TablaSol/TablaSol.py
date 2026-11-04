@@ -11,7 +11,7 @@ from pandas import DataFrame
 NMCS = 5
 MENOS_INI = 0
 MENOS_FIN = 0
-SUFIJO = '_0_42_dll_sol_'
+SUFIJO = '_0_42_dll_'
 
 if   NMCS == 4:
     # sin Alp

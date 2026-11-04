@@ -17,6 +17,8 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_VERIFICAR        1.e-05 ^
 --ALGE_TOL_ACEPTABLE  1.0e-05 ^
 --PROB_COP_MEJOR      3.0e-04 ^
+--F_PASO_PROLONGAR    0.0 ^
+--DIS_PROLONGA_MIN    0.0 ^
 --ALGE_NPOB           19968 ^
 --ALGE_N_HILOS        32 ^
 --ALGE_MODO_POB_INI   0 ^
@@ -121,11 +123,11 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --FI_CASO             "" ^
 --SOLO_CASO           False ^
 --FI_LEE_CASO         "" ^
---FI_CASO_SALVA       C:/MEGA/MEGA_GPU/Casos/Fuentes/= ^
+--FI_CASO_SALVA       C:/MEGA/MEGA_GPU/Casos/Fuentes5/= ^
 --SENDA_DATOS         C:/MEGA/Datos ^
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5/Phillips/2020 ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^
 --SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs5 ^
---SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll ^
 
 timeout 60

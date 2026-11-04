@@ -16,13 +16,20 @@ def imprime(texto, rc=True):
         with open(FICHERO_LOG, "a", encoding="utf-8") as log: log.write(texto)
 
 carpeta = input('carpeta: ')
+if carpeta[0] == '-':
+    # solo la carpeta indicada
+    carpeta = carpeta[1:]
+    recursivo = False
+    patron  = carpeta + "/*.bat"
+else:
+    recursivo = True
+    patron  = carpeta + "/**/*.bat"
 if os.path.exists(FICHERO_LOG):
     os.remove(FICHERO_LOG)
 FICHERO_LOG = carpeta + '/_LanzaBAT.log'
 if os.path.exists(FICHERO_LOG):
     os.remove(FICHERO_LOG)
-patron  = carpeta + "/**/*.bat"
-ficheros = glob.glob(patron, recursive=True)
+ficheros = glob.glob(patron, recursive=recursivo)
 n = 0
 for fi in ficheros:
     t_inicio = timer()

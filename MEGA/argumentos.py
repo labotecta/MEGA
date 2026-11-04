@@ -68,6 +68,8 @@ def valores_opciones0():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=False  , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -318,6 +320,8 @@ def valores_opciones1():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -546,6 +550,8 @@ def valores_opciones2():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -795,6 +801,8 @@ def valores_opciones3():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -1002,7 +1010,7 @@ def valores_opciones4():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=3000' , help="un literal que se añade al principio del nombre de los archivos de salida")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=PCA' , help="un literal que se añade al principio del nombre de los archivos de salida")
 
     parser.add_argument('--NSAM'               , type=int  , default=4      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1023,6 +1031,8 @@ def valores_opciones4():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -1125,21 +1135,21 @@ def valores_opciones4():
     #------------------------------------------------------------------------------------------------------------------------------------------------------------------
     parser.add_argument('--SAL_CALIBRADO'      , type=sab  , default=False  , help="imprimir los valores de los parámetros calibrados")
     parser.add_argument('--SALIDA_VEC_OPT'     , type=sab  , default=False  , help="salida de los valores iniciales de las variables y sus límites")
-    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=True   , help="informe de los valores iniciales de las variables")
+    parser.add_argument('--SALIDA_VAL_INI'     , type=sab  , default=False  , help="informe de los valores iniciales de las variables")
     parser.add_argument('--PRIMERA_VALORACION' , type=sab  , default=False  , help="calcular una primera valoración de modelo")
-    parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=True   , help="salida con el detalla de las desviaciones")
+    parser.add_argument('--SALIDA_DESVIOS'     , type=sab  , default=False  , help="salida con el detalla de las desviaciones")
     parser.add_argument('--SAL_AUXILIARES'     , type=sab  , default=False  , help="imprimir los valores del historial y la evolución de la solución")
     parser.add_argument('--SAL_GRAFICOS_EVOL'  , type=sab  , default=False  , help="generar gráficos de las evoluciones")
     parser.add_argument('--SAL_GRAFICO_CES_DM' , type=sab  , default=False  , help="generar graficos de isocuantas CES")
     parser.add_argument('--SAL_ISOCUANTA'      , type=sab  , default=False  , help="generar gráficos adicionales de isocuantas")
-    parser.add_argument('--SAL_VARIACIONES'    , type=sab  , default=True   , help="imprime las diferencias entre los valores iniciales y finales de las variables")
-    parser.add_argument('--SAL_MCS'            , type=sab  , default=True   , help="imprime la MCS")
-    parser.add_argument('--SAL_VAR_MCS'        , type=sab  , default=True   , help="imprime las diferencias entre los valores iniciales y finales de la MCS")
+    parser.add_argument('--SAL_VARIACIONES'    , type=sab  , default=False  , help="imprime las diferencias entre los valores iniciales y finales de las variables")
+    parser.add_argument('--SAL_MCS'            , type=sab  , default=False  , help="imprime la MCS")
+    parser.add_argument('--SAL_VAR_MCS'        , type=sab  , default=False  , help="imprime las diferencias entre los valores iniciales y finales de la MCS")
     parser.add_argument('--GE_IMG_FIL'         , type=int  , default=5      , help="número de filas del mapa de gráficos con la evolución de los precios y las variables")
     parser.add_argument('--GE_IMG_COL'         , type=int  , default=6      , help="número de columnas del mapa de gráficos con la evolución de los precios y las variables")
 
     parser.add_argument('--GE_HISTORIAL'       , type=int  , default=1000   , help="número de generaciones para mostrar evolución y en su caso salvar el historial")
-    parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=-1     , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
+    parser.add_argument('--GE_SOLUCIONES'      , type=int  , default=0      , help="número de generaciones para salvar la solución: 0 = ninguna; -1 = la final")
     parser.add_argument('--GE_MAX_ITER'        , type=int  , default=1000000, help="máximo número de generaciones a simular")
     parser.add_argument('--GE_PRE_MIN'         , type=float, default=90.0   , help="el límite inferior del rango de variación de los precios es su valor inicial por   (1 - GE_PRE_MIN/100)")
     parser.add_argument('--GE_PRE_MAX'         , type=float, default=120.0   , help="el límite superior del rango de variación de los precios es su valor inicial por   (1 + GE_PRE_MAX/100)")
@@ -1251,6 +1261,8 @@ def valores_opciones5():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=5.0E-04, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -1501,6 +1513,8 @@ def valores_opciones():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=3.0E-03, help="probabilidad de cuasi replicar al mejor individuo: si < 0 descartar cuando i1=i2")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -1750,6 +1764,8 @@ def valores_opciones7():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=0.0    , help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")
@@ -1999,6 +2015,8 @@ def valores_opciones8():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
+    parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
     parser.add_argument('--SOLO_CASO'          , type=sab  , default=False  , help="solo genera el fichero del caso FI_CASO_SALVA")
     parser.add_argument('--USAR_DLL'           , type=sab  , default=True   , help="si True se usa la función objetivo de la DLL, en caso contrario la función Python")

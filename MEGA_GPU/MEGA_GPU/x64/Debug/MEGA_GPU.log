@@ -1,0 +1,7 @@
+﻿  Compiling CUDA source file kernel.cu...
+  
+  C:\MEGA\MEGA_GPU\MEGA_GPU>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\bin\nvcc.exe" -gencode=arch=compute_75,code=\"sm_75,compute_75\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include"  -G   --keep-dir x64\Debug  -maxrregcount=0     --machine 64 --compile  -g  -DWIN32 -DWIN64 -D_DEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -Xcompiler "/Fdx64\Debug\vc145.pdb" -o C:\MEGA\MEGA_GPU\MEGA_GPU\x64\Debug\kernel.cu.obj "C:\MEGA\MEGA_GPU\MEGA_GPU\kernel.cu" 
+  kernel.cu
+C:\MEGA\MEGA_GPU\MEGA_GPU\kernel.cu(4524): warning C4267: 'inicializando': conversión de 'size_t' a 'int'; posible pérdida de datos
+C:\MEGA\MEGA_GPU\MEGA_GPU\kernel.cu(4749): warning C4267: 'inicializando': conversión de 'size_t' a 'int'; posible pérdida de datos
+  MEGA_GPU.vcxproj -> C:\MEGA\MEGA_GPU\x64\Debug\MEGA_GPU.exe

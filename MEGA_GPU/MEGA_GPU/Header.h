@@ -27,6 +27,12 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 #define azar curandStatePhilox4_32_10
 #endif
 
+// tipo de memoria para las matrices 'cotas', 'poblacion' y 'descendiente' 
+#define DINAMICA
+
+// no aporta nada y es ineficiente
+//#define REGULA
+
 #define MEGA6
 
 #ifdef MEGA0
@@ -170,14 +176,6 @@ public:
 
 #pragma region Merito
 
-__global__ void kernel_merito_s_todo(double* vec_opt_todo, double* res, int hNIF_K);
-__global__ void kernel_merito_s(double* vec_opt, double* res);
-__global__ void kernel_sol_mejor_merito();
-
-bool hllama_merito_s_todo(double** pobla, int bloques, int hilos);
-double hllama_merito_s(double* vec_opt);
-bool hllama_sol_mejor_merito();
-
 __device__ double merito_s(double* vec_opt);
 __device__ double* merito_sol(double* vec_opt);
 __device__ void produccion_factor_compuesto_Y(double* Y, double F[NSEC][NFAC], double beta[NSEC][NFAC], double* b);
@@ -228,6 +226,8 @@ static __global__ void kernelIniGene(
 	double* pro_poblacion,
 	double* pro_descendiente
 );
+
+static __global__ void kernelConstantes();
 static __global__ void kernelPoblacion(double* pro_poblacion);
 static __global__ void kernel_inicia_estados_azar(azar* state, unsigned long semilla);
 __global__ void kernel_mutacion_cruze(azar* estado_gen_azar);
@@ -235,16 +235,25 @@ __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar);
 __global__ void kernel_seleccion();
 __global__ void kernel_seleccion_1();
 __device__ bool planoA2D(double* fte, double**& dest, int fils, int cols);
+__global__ void kernel_merito_s_todo(double* vec_opt_todo, double* res, int hNIF_K);
+__global__ void kernel_merito_s(double* vec_opt, double* res);
+__global__ void kernel_sol_mejor_merito();
+
+bool hllama_merito_s_todo(double** pobla, int bloques, int hilos);
+double hllama_merito_s(double* vec_opt);
+bool hllama_sol_mejor_merito();
 bool copiaPoblacionAlDevice();
 double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
-static bool copiaMtIntHostDevice(int* fte, int ta, int*& des);
-static bool copiaMtDoubleHostDevice(double* fte, int ta, double*& des);
+static bool copiaVectorIntHostDevice(int* fte, int ta, int*& des);
+static bool copiaVectorDoubleHostDevice(double* fte, int ta, double*& des);
+//void imprime(const char* f, ...);
+void imprime_error(const char* rot);
 void cancelar(int sig);
 int parametros_alge(double* par);
 bool inicia_cotas();
 bool fija_cotas(double* cotasInf, double* cotasSup);
-bool inicia_poblacion(double ajuste);
-static bool genera_poblacion(double* vec_central, int modo, double modulacion);
+bool inicia_poblacion();
+static bool genera_poblacion(double* vec_central);
 double diferencia_relativa(double a, double b);
 int resuelve();
 void resuelveHaTerminado();
@@ -259,6 +268,5 @@ bool copiaGeneticoGPU();
 bool hllama_merito_s_todo(double** pobla, int bloques, int hilos);
 bool tarjeta(); 
 void rtrim_string(char* cadena, char caracter);
-void imprime_error(const char* rot);
+bool crear_carpeta_si_no_existe(char* cadena);
 int main(int argc, char* argv[]);
-bool comprueba_carpeta(const char* senda);

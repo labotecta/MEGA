@@ -1,0 +1,79 @@
+﻿  Compiling CUDA source file kernel.cu...
+  
+  C:\MEGA\MEGA_GPU\MEGA_GPU>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\bin\nvcc.exe" -gencode=arch=compute_75,code=\"sm_75,compute_75\" --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\HostX64\x64" -x cu   -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\include"     --keep-dir x64\Release  -maxrregcount=0     --machine 64 --compile -Xptxas -O3 -Xptxas -v   -DWIN32 -DWIN64 -DNDEBUG -D_CONSOLE -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /FS   /MD " -Xcompiler "/Fdx64\Release\vc145.pdb" -o C:\MEGA\MEGA_GPU\MEGA_GPU\x64\Release\kernel.cu.obj "C:\MEGA\MEGA_GPU\MEGA_GPU\kernel.cu" 
+  ptxas info    : 237651 bytes gmem, 128 bytes cmem[3], 432 bytes cmem[4]
+  ptxas info    : Compiling entry function '_Z15kernelPoblacionPd' for 'sm_75'
+  ptxas info    : Function properties for _Z15kernelPoblacionPd
+      8 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 36 registers, used 0 barriers, 8 bytes cumulative stack size, 360 bytes cmem[0]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Compiling entry function '_Z16kernelConstantesv' for 'sm_75'
+  ptxas info    : Function properties for _Z16kernelConstantesv
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 34 registers, used 0 barriers, 352 bytes cmem[0]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Compiling entry function '_Z13kernelIniGenePiS_PdS0_S0_S0_' for 'sm_75'
+  ptxas info    : Function properties for _Z13kernelIniGenePiS_PdS0_S0_S0_
+      24 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 38 registers, used 0 barriers, 24 bytes cumulative stack size, 400 bytes cmem[0]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Compiling entry function '_Z9kernelIniPiPdS0_S0_S0_P8OPCIONESP5DATOSP10PARAMETROS' for 'sm_75'
+  ptxas info    : Function properties for _Z9kernelIniPiPdS0_S0_S0_P8OPCIONESP5DATOSP10PARAMETROS
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 20 registers, used 0 barriers, 416 bytes cmem[0]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Compiling entry function '_Z23kernel_sol_mejor_meritov' for 'sm_75'
+  ptxas info    : Function properties for _Z23kernel_sol_mejor_meritov
+      32864 bytes stack frame, 14648 bytes spill stores, 25744 bytes spill loads
+  ptxas info    : Used 255 registers, used 0 barriers, 32864 bytes cumulative stack size, 352 bytes cmem[0], 184 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Function properties for __internal_accurate_pow
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Compiling entry function '_Z15kernel_merito_sPdS_' for 'sm_75'
+  ptxas info    : Function properties for _Z15kernel_merito_sPdS_
+      32832 bytes stack frame, 7172 bytes spill stores, 12412 bytes spill loads
+  ptxas info    : Used 255 registers, used 0 barriers, 32832 bytes cumulative stack size, 368 bytes cmem[0], 184 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Function properties for __internal_accurate_pow
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Compiling entry function '_Z20kernel_merito_s_todoPdS_i' for 'sm_75'
+  ptxas info    : Function properties for _Z20kernel_merito_s_todoPdS_i
+      33152 bytes stack frame, 7728 bytes spill stores, 11148 bytes spill loads
+  ptxas info    : Used 255 registers, used 0 barriers, 33152 bytes cumulative stack size, 372 bytes cmem[0], 184 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Function properties for __internal_accurate_pow
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Compiling entry function '_Z18kernel_seleccion_1v' for 'sm_75'
+  ptxas info    : Function properties for _Z18kernel_seleccion_1v
+      32992 bytes stack frame, 7176 bytes spill stores, 11536 bytes spill loads
+  ptxas info    : Used 255 registers, used 0 barriers, 32992 bytes cumulative stack size, 352 bytes cmem[0], 184 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Function properties for __internal_accurate_pow
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Compiling entry function '_Z16kernel_seleccionv' for 'sm_75'
+  ptxas info    : Function properties for _Z16kernel_seleccionv
+      33136 bytes stack frame, 7640 bytes spill stores, 11060 bytes spill loads
+  ptxas info    : Used 255 registers, used 0 barriers, 33136 bytes cumulative stack size, 352 bytes cmem[0], 184 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Function properties for __internal_accurate_pow
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Compiling entry function '_Z23kernel_mutacion_cruze_1P19curandStateMRG32k3a' for 'sm_75'
+  ptxas info    : Function properties for _Z23kernel_mutacion_cruze_1P19curandStateMRG32k3a
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 48 registers, used 0 barriers, 360 bytes cmem[0], 24 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Compiling entry function '_Z21kernel_mutacion_cruzeP19curandStateMRG32k3a' for 'sm_75'
+  ptxas info    : Function properties for _Z21kernel_mutacion_cruzeP19curandStateMRG32k3a
+      0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 52 registers, used 0 barriers, 360 bytes cmem[0], 24 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  ptxas info    : Compiling entry function '_Z26kernel_inicia_estados_azarP19curandStateMRG32k3am' for 'sm_75'
+  ptxas info    : Function properties for _Z26kernel_inicia_estados_azarP19curandStateMRG32k3am
+      72 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+  ptxas info    : Used 90 registers, used 0 barriers, 72 bytes cumulative stack size, 364 bytes cmem[0], 32 bytes cmem[2]
+  ptxas info    : Compile time = 0.000 ms
+  kernel.cu
+C:\MEGA\MEGA_GPU\MEGA_GPU\kernel.cu(4536): warning C4267: 'inicializando': conversión de 'size_t' a 'int'; posible pérdida de datos
+C:\MEGA\MEGA_GPU\MEGA_GPU\kernel.cu(4761): warning C4267: 'inicializando': conversión de 'size_t' a 'int'; posible pérdida de datos
+  LINK : se especificó /LTCG pero no se requiere generación de código; quite /LTCG de la línea de comandos de vínculo para mejorar el rendimiento del vinculador
+  MEGA_GPU.vcxproj -> C:\MEGA\MEGA_GPU\x64\Release\MEGA_CUDA6.exe

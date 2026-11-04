@@ -77,6 +77,8 @@ import ahorro_inv    as ainv
 import demanda       as deho
 import exterior      as exte
 import restricciones as restri
+import reduccion_dimension as redim
+import random
 
 # los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
 global datos
@@ -190,6 +192,8 @@ if ALGE_FRAC_REGUL > 0.95:
     avisos_diferidos.append('La fracción de población a regularizar {} se ha modificado a 0.95, que es el máximo'.format(ALGE_FRAC_REGUL))
     ALGE_FRAC_REGUL = 0.95
 PROB_COP_MEJOR      = args.PROB_COP_MEJOR
+F_PASO_PROLONGAR    = args.F_PASO_PROLONGAR
+DIS_PROLONGA_MIN    = args.DIS_PROLONGA_MIN
 ALGE_MODO_POB_INI   = args.ALGE_MODO_POB_INI
 ALGE_EST_POB_INI    = args.ALGE_EST_POB_INI
 ALGE_MODO_REINI_POB = args.ALGE_MODO_REINI_POB
@@ -829,6 +833,7 @@ if __name__ == '__main__':
         # con errores se cancela la aplicación
         sys.exit()
 
+n_precios = 0
 def punteros():
     # para saber la posición de las distintas variables en el vector solución en el que están
     # todas concatenadas una tras otra. Se usará en la función 'extrae_var'
@@ -856,6 +861,8 @@ def punteros():
     i += 1  # epsilon
     pvec_desde[i] = pvec_hasta[i - 1] 
     pvec_hasta[i] = pvec_desde[i] + 1
+    global n_precios
+    n_precios = pvec_hasta[i]
     i += 1  # Apz
     pvec_desde[i] = pvec_hasta[i - 1] 
     pvec_hasta[i] = pvec_desde[i] + 1
@@ -1665,6 +1672,8 @@ def imprime_opciones(nvec_opt):
         imprime('    Número GE_MIN_PROGRESO para efectuar regularización {:10}'.format(ALGE_UMBRAL_REGUL))
         imprime('    Fracción de población a regularizar                 {:10}'.format(ALGE_FRAC_REGUL))
         imprime('    Probabilidad de cuasi replicar el mejor individuo   {:10.8f}'.format(PROB_COP_MEJOR))
+        imprime('    Factor del paso de prolongación                     {:10.8f}'.format(F_PASO_PROLONGAR))
+        imprime('    Variación mínima de variables para prolongar        {:10.8f}'.format(DIS_PROLONGA_MIN))
         imprime('    Modo reinicio de la población inicial               {:10}'.format(ALGE_MODO_REINI_POB))
         imprime('    Variación del factor de alcance                     {:10}'.format(1.0 if ALGE_MODO_REINI_POB == 0 else ALGE_VAR_DISPERSION))
         imprime('    Control de factibilidad                             {}'.format('Si' if ALGE_CTRL_FACTIBLE == 1 else 'No'))
@@ -2046,6 +2055,8 @@ if len(FI_LEE_CASO) > 0:
         ALGE_EST_POB_INI = np.int(sal_caso.readline())
         DESV_RELATIVA = np.int(sal_caso.readline())
         PROB_COP_MEJOR = np.float64(sal_caso.readline())
+        F_PASO_PROLONGAR = np.float64(sal_caso.readline())
+        DIS_PROLONGA_MIN = np.float64(sal_caso.readline())
         for i in range(nvec_opt):
             bnds[i][0] = np.float64(sal_caso.readline())
             vec_opt[i] = np.float64(sal_caso.readline())
@@ -2807,6 +2818,8 @@ if __name__ == '__main__':
             sal_caso.write('{}\n'.format(np.float64(ALGE_EST_POB_INI)))
             sal_caso.write('{}\n'.format(np.float64(DESV_RELATIVA)))
             sal_caso.write('{}\n'.format(np.float64(PROB_COP_MEJOR)))
+            sal_caso.write('{}\n'.format(np.float64(F_PASO_PROLONGAR)))
+            sal_caso.write('{}\n'.format(np.float64(DIS_PROLONGA_MIN)))
             for i in range(nvec_opt):
                 sal_caso.write('{}\n'.format(np.float64(bnds[i][0])))
                 sal_caso.write('{}\n'.format(vec_opt[i]))
@@ -2821,6 +2834,43 @@ if __name__ == '__main__':
     # minimizar el error de la función objetivo
     #---------------------------------------------------------------------
     t_inicio = timer()
+
+    '''
+    n_muestras = 5000
+    muestra   = np.zeros((nvec_opt), dtype = np.float64)
+    poblacion = np.zeros((n_muestras, nvec_opt),dtype = np.float64)
+    merito    = np.zeros((n_muestras), dtype = np.float64)
+    for i in range(n_muestras):
+        for j in range(nvec_opt):
+            signo = 1 if random.uniform(0, 1) > 0.5 else -1
+            if j < n_precios:
+                despla = random.uniform(0, 1) * 0.00001
+            if j == n_precios:
+                despla = 0
+            else:
+                despla = random.uniform(0, 1) * 0.0001
+            v = vec_opt[j] + signo * despla
+            muestra[j] = v
+        poblacion[i]  = muestra
+        merito[i]     = fo(muestra)
+
+    mor = np.sort(merito)
+    mmin = mor[int(n_muestras / 4.)]
+    mmax = mor[int(n_muestras * 3. / 4.)]
+
+    nh = 10.
+    ancho = (mmax - mmin) / nh
+    for i in range(n_muestras):
+        if merito[i] > mmax:
+            merito[i] = nh + 2
+        elif merito[i] < mmin:
+            merito[i] = 0
+        else:
+            merito[i] = np.round((merito[i] - mmin) / ancho, 0) + 1
+
+    redim.reduce(SENDA_GRAFICOS, '/redim_' + PREFIJO[1:] + '_' + str(n_muestras) + '_', poblacion, merito)
+    sys.exit()
+    '''
 
     mensaje_fin = []
     if USAR_ALGE_DLL:
@@ -2864,6 +2914,8 @@ if __name__ == '__main__':
         par.append(np.float64(ALGE_EST_POB_INI))
         par.append(np.float64(DESV_RELATIVA))
         par.append(np.float64(PROB_COP_MEJOR))
+        par.append(np.float64(F_PASO_PROLONGAR))
+        par.append(np.float64(DIS_PROLONGA_MIN))
 
         cotas_inf =[]
         cotas_sup =[]

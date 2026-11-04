@@ -11,7 +11,7 @@ using namespace std;
 // copysign no incrementa el tiempo de cálculo
 #define signo(x) copysign(1.0, (x))
 
-const double MILLONESIMA = 0.000001;
+const double Micro = 1.0e-06;
 
 /*
 Sobre la reproducibilidad de los resultados.
@@ -61,9 +61,8 @@ Opciones de compilación, no se trata de opciones en tiempo de ejecución.
 La mayoría son inútiles, pero se mantienen para que el olvido no haga que en el futuro se repita la historia
 ------------------------------------------------------------------------------------------------------------
 */
-// no define la matriz Xr em merito_s para ahorrar memoria, es incompatible con CONSUMO_INTERMEDIO_AX y CONSUMO_INTERMEDIO_INDESADO
-// tiene el inconveniente de que al perderse el valor individual de Xr, el cuadre de mercado se hace con X y no con Xr 
-//#define SIN_XR
+// tipo de memoria para las matrices 'cotas', 'poblacion' y 'descendiente' 
+//#define DINAMICA
 
 // RAND1: Mejor + F * (I2 - I1)
 // en el libro esta es la que se usa y denomina best1bin
@@ -85,9 +84,6 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 #define MT19937
 // otro generador es rl 'ranlux48'
 
-// para inicializar el generador de números aleatorios 'mt19937' con un fichero
-//#define INI_AZAR_FICHERO
-
 // si RECOMBINACION_NORMAL está definido, los cruces sin recombinación toman el valor de la variable del individuo correspondiente de la
 // población, si no, se toma el valor del mejor individuo. No parece que una sea mejor que otra, pero quizás sea preferible que
 // RECOMBINACION_NORMAL esté definido porque recombinar con el mejor ofrece menos variedad que con los individuos de la población.
@@ -105,7 +101,14 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 // desactivarla no ahorra tiempo
 #define TPO_MUTA_SELECCION
 
-// prolongar en la dirección de mejora, no funciona
+// para inicializar el generador de números aleatorios 'mt19937' con un fichero
+//#define INI_AZAR_FICHERO
+
+// no define la matriz Xr em merito_s para ahorrar memoria, es incompatible con CONSUMO_INTERMEDIO_AX y CONSUMO_INTERMEDIO_INDESADO
+// tiene el inconveniente de que al perderse el valor individual de Xr, el cuadre de mercado se hace con X y no con Xr 
+//#define SIN_XR
+
+// prolongar en la dirección de mejora, dudoso tirando a mal
 //#define PROLONGAR
 
 // estadística de cuando una mutación extra se convierte en el mejor individuo. resulta insignificante menos del 0.5% de las veces
@@ -314,6 +317,7 @@ int comprobar_final();
 void salida_solucion(char* fichero);
 double distancia_clonacion();
 int PreparaMP();
+void valoresConstantes();
 bool Arranque();
 int ProcesoMP(int gh);
 #ifdef AZAR_HILOS_LOCAL
