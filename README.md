@@ -23,7 +23,7 @@ El objetivo de los Modelos de Equilibrio General Aplicado es obtener cual será 
 
 ## El material de este repositorio es como es, sin ningún tipo de garantía ni responsabilidad relacionados con él.
 
-### Aplicaciones
+## Aplicaciones
 
 Tenemos tres aplicaciones:
 
