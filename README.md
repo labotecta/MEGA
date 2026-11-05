@@ -26,9 +26,13 @@ El objetivo de los Modelos de Equilibrio General Aplicado es obtener cual será 
 ### Aplicaciones
 
 Tenemos tres aplicaciones:
+
 •	MEGA
+
 •	MEGA_DLL
+
 •	MEGA_GPU
+
 MEGA.
 Se trata de una aplicación escrita en Python, tiene programado el modelo de equilibrio general aplicado del libro y predefinidos algunos tipos de escenarios habituales (incrementos de demanda, ayudas, precios fijos, salarios, etc.) que se pueden concretar a través de las opciones de la aplicación. Puede resolver el modelo de forma independiente sin necesidad de otras aplicaciones o librerías externas, aunque tarda demasiado tiempo, pero puede hacer uso de la librería de enlace dinámico MEGA_DLL para reducir drásticamente el tiempo de cálculo.
 Tiene la opción de generar ficheros de texto con la evolución de la solución y en especial con el conjunto de datos y opciones de cada caso, para que sirva de entrada a la aplicación MEGA_GPU.
