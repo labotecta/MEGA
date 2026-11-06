@@ -17,7 +17,7 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 
 //__managed__ se usa para tener el mismo nombre de variable en el host y el device y que compartan su valor de forma automática, pero
 // es menos eficiente que dos nombres de variable distintos cuyos valores se coordinan manualmente cuando es necesario
-//__managed__ double MILLONESIMA = 0.000001;
+//__managed__ double Micro = 1.0e-06;
 
 #define MRG32k3a
 
@@ -27,7 +27,8 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 #define azar curandStatePhilox4_32_10
 #endif
 
-// tipo de memoria para las matrices 'cotas', 'poblacion' y 'descendiente' 
+// tipo de memoria para las matrices 2D: 'cotas', 'poblacion' y 'descendiente'
+// si no se especifica DINAMICA será estática
 #define DINAMICA
 
 // no aporta nada y es ineficiente
@@ -35,35 +36,44 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 
 #define MEGA6
 
+const int hNFAC = 2;
+__device__ const int NFAC = 2;
+
 #ifdef MEGA0
 const int hNDEM = 1;
 const int hNSEC = 2;
 __device__ const int NDEM = 1;
 __device__ const int NSEC = 2;
+const int hMAX_POB = 5120;
 #elif defined(MEGA1)
 const int hNDEM = 2;
 const int hNSEC = 2;
 __device__ const int NDEM = 2;
 __device__ const int NSEC = 2;
+const int hMAX_POB = 5120;
 #elif defined(MEGA2)
 // es idéntica a MEGA1
 const int hNDEM = 2;
 const int hNSEC = 2;
 __device__ const int NDEM = 2;
 __device__ const int NSEC = 2;
+const int hMAX_POB = 5120;
 #elif defined(MEGA3)
 const int hNDEM = 3;
 const int hNSEC = 2;
 __device__ const int NDEM = 3;
 __device__ const int NSEC = 2;
+const int hMAX_POB = 5120;
 #elif defined(MEGA4)
 const int hNDEM = 2;
 const int hNSEC = 6;
 __device__ const int NDEM = 2;
 __device__ const int NSEC = 6;
+const int hMAX_POB = 5120;
 #elif defined(MEGA5)
 const int hNDEM = 3;
 const int hNSEC = 63;
+const int hMAX_POB = 30720;
 __device__ const int NDEM = 3;
 __device__ const int NSEC = 63;
 #elif defined(MEGA6)
@@ -71,20 +81,19 @@ const int hNDEM = 2;
 const int hNSEC = 31;
 __device__ const int NDEM = 2;
 __device__ const int NSEC = 31;
+const int hMAX_POB = 10240;
 #elif defined(MEGA8)
 const int NDEM = 2;
 const int NSEC = 32;
 __device__ const int NDEM = 2;
 __device__ const int NSEC = 32;
+const int hMAX_POB = 10240;
 #endif
 
 const double hMicro = 1.0e-06;
 __device__ const double Micro = 1.0e-06;
-
 const double hDeciMicro = 1.0e-07;
 const double mega_byte = 1024.0 * 1024.0; // 1048576.0
-const int hNFAC = 2;
-__device__ const int NFAC = 2;
 
 typedef struct
 {
@@ -226,9 +235,8 @@ static __global__ void kernelIniGene(
 	double* pro_poblacion,
 	double* pro_descendiente
 );
-
 static __global__ void kernelConstantes();
-static __global__ void kernelPoblacion(double* pro_poblacion);
+static __global__ void kernelPoblacionAdevice(double* pro_poblacion);
 static __global__ void kernel_inicia_estados_azar(azar* state, unsigned long semilla);
 __global__ void kernel_mutacion_cruze(azar* estado_gen_azar);
 __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar);

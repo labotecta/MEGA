@@ -447,7 +447,6 @@ __device__ double** descendiente;
 
 // El uso de matrices estáticas solo ahorra un 3%
 
-const int hMAX_POB = 30000;
 __device__ double cotas[2][hMAX_VEC];
 __device__ double poblacion[hMAX_POB][hMAX_VEC];
 __device__ double descendiente[hMAX_POB][hMAX_VEC];
@@ -468,23 +467,23 @@ int res_Simulacion;
 int nvar_fijas;
 int intentos;
 double factor_dispersion_actualizado;
+int mem_comp_max;
 
-// parametros que se pueden particularizar respecto del fichero de datos
+// adicionalmente se leen del fichero auxiliar
+int n_hilos;
+int hNPOB;
+int NBLO_K;
+int hNIF_K;
+__constant__ int NIF_K;
+int sol_mem_compartida;
+int red_prob_cop_mejor;
 
+// parametros que se pueden particularizar, respecto del fichero de datos, a través del fichero auxiliar
 int max_generaciones;
 int max_intentos;
 unsigned int semilla;
 double variacion_dispersion;
 double hprob_cop_mejor_ini;
-int red_prob_cop_mejor;
-int n_hilos;
-int hNPOB;
-// adicionalmente se deben leer 
-int sol_mem_compartida;
-int NBLO_K;
-int hNIF_K;
-__constant__ int NIF_K;
-int mem_comp_max;
 
 /*
 parámetro F que pondera la diferencia entre dos individuos al azar, que se suma al mejor individuo para
@@ -1913,7 +1912,7 @@ bool hllama_merito_s_todo(double** pobla, int bloques, int hilos) {
 	double* pro_res;
 	cudaStatus = cudaMalloc((void**)&pro_res, hNPOB * sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMalloc hmerito_s_todo dres");
+		imprime_error("cudaMalloc hllama_merito_s_todo dres");
 		return false;
 	}
 	double* hplano;
@@ -1930,8 +1929,8 @@ bool hllama_merito_s_todo(double** pobla, int bloques, int hilos) {
 		return false;
 	}
 	cudaMemcpy(hres_merito, pro_res, hNPOB * sizeof(double), cudaMemcpyDeviceToHost);
-	cudaFree(pro_res);
 	free(hplano);
+	cudaFree(pro_res);
 	cudaFree(pro_pobla);
 	return true;
 }
@@ -1961,10 +1960,12 @@ double hllama_merito_s(double* vec_opt) {
 	double* hres_s;
 	hres_s = (double*)malloc(sizeof(double));
 	if (hres_s == nullptr) {
-		fprintf(salida, "malloc llama_merito_s\n");
+		fprintf(salida, "malloc hllama_merito_s\n");
 		return -1.0;
 	}
 	cudaMemcpy(hres_s, pro_res, sizeof(double), cudaMemcpyDeviceToHost);
+	cudaFree(pro_res);
+	cudaFree(dvec_opt);
 	return *hres_s;
 }
 
@@ -4242,9 +4243,6 @@ static __global__ void kernelIniGene(
 		}
 	}
 #endif
-	free(pro_vector_cotas);
-	free(pro_vector_poblacion);
-	free(pro_vector_descendiente);
 }
 
 static __global__ void kernelConstantes() {
@@ -4267,7 +4265,7 @@ static __global__ void kernelConstantes() {
 	}
 }
 
-static __global__ void kernelPoblacion(double* pro_vector_poblacion)
+static __global__ void kernelPoblacionAdevice(double* pro_vector_poblacion)
 {
 #ifdef DINAMICA
 	if (planoA2D(pro_vector_poblacion, poblacion, NPOB, NVEC) == false) {
@@ -4278,8 +4276,7 @@ static __global__ void kernelPoblacion(double* pro_vector_poblacion)
 	int n = 0;
 	for (int i = 0; i < NPOB; i++) {
 		for (int j = 0; j < NVEC; j++) {
-			poblacion[i][j] = pro_vector_poblacion[n];
-			n++;
+			poblacion[i][j] = pro_vector_poblacion[n++];
 		}
 	}
 #endif
@@ -4465,6 +4462,9 @@ bool copiaGeneticoGPU() {
 		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelIniGene");
 		return false;
 	}
+	cudaFree(pro_vector_cotas);
+	cudaFree(pro_vector_poblacion);
+	cudaFree(pro_vector_descendiente);
 	cudaMemGetInfo(&free_t, &total_t);
 	free_m = (float)(free_t / mega_byte);
 	total_m = (float)(total_t / mega_byte);
@@ -4500,15 +4500,15 @@ bool copiaPoblacionAlDevice() {
 		return false;
 	}
 	free(hplano);
-	kernelPoblacion << <1, 1 >> > (pro_vector_poblacion);
+	kernelPoblacionAdevice << <1, 1 >> > (pro_vector_poblacion);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("copiaPoblacionAlDevice. lanzar kernelPoblacion");
+		imprime_error("copiaPoblacionAlDevice. lanzar kernelPoblacionAdevice");
 		return false;
 	}
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelPoblacion");
+		imprime_error("copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelPoblacionAdevice");
 		return false;
 	}
 	cudaStatus = cudaMemcpyToSymbol(ind_mejor_merito, &hind_mejor_merito, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
@@ -4668,6 +4668,13 @@ int main(int argc, char* argv[]) {
 		return -1;
 	};
 	hNPOB = atoi(c);
+#ifndef DINAMICA
+	if (hNPOB >= hMAX_POB) {
+		fclose(fop);
+		printf("parametros. error. hNPOB %d >= MAX_POB %d\n", hNPOB, hMAX_POB);
+		return -1;
+	}
+#endif
 	if (fgets(c, 63, fop) == NULL) {
 		fclose(fop);
 		printf("error lectura NBLO_K\n");
