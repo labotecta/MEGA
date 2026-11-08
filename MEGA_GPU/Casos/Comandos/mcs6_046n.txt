@@ -1,0 +1,18 @@
+PCM 4.6e-03
+C:\MEGA\MEGA_GPU\Casos\Fuentes6\
+PCM_046n_
+C:\MEGA\MEGA_GPU\Casos\Salidas6\
+C:\MEGA\MEGA_GPU\Casos\Soluciones6\
+C:\MEGA\MEGA_GPU\Casos\SolModelo6\
+64  hilos
+5888    poblacion
+92      bloques
+1       individuos bloque
+-1      k memoria compartida
+1000000 max generaciones
+5       max intentos
+42      semilla
+4.6e-3  prob. copia mejor
+0       aplicar reducción de probabilidad de copiar el mejor
+-1      factor de dispersión
+1.2     incremento del factor de dispersión

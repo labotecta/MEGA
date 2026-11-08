@@ -15,10 +15,6 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 -Xptxas -maxrregcount=N establece el número de registros por hilo a N, lo que determina la ocupación y el spilling
 */
 
-//__managed__ se usa para tener el mismo nombre de variable en el host y el device y que compartan su valor de forma automática, pero
-// es menos eficiente que dos nombres de variable distintos cuyos valores se coordinan manualmente cuando es necesario
-//__managed__ double Micro = 1.0e-06;
-
 #define MRG32k3a
 
 #ifdef MRG32k3a
@@ -34,37 +30,22 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 // no aporta nada y es ineficiente
 //#define REGULA
 
+// si se define BLOQUES_VARIABLES, el número de bloques del kernel 'selecciona' se ajusta al número de
+// individuos factibles, lo que puede mejorar la eficiencia (al principio) y en cualquier caso no
+// supone un coste adicional de tiempo
+#define BLOQUES_VARIABLES
+
+#ifdef BLOQUES_VARIABLES
+const int MIN_RATIO_FACTIBLES = 99;
+#endif
+
+// solo vale la pena para MEGA4, MEGA5, MEGA6 y MEGA8
 #define MEGA6
 
 const int hNFAC = 2;
 __device__ const int NFAC = 2;
 
-#ifdef MEGA0
-const int hNDEM = 1;
-const int hNSEC = 2;
-__device__ const int NDEM = 1;
-__device__ const int NSEC = 2;
-const int hMAX_POB = 5120;
-#elif defined(MEGA1)
-const int hNDEM = 2;
-const int hNSEC = 2;
-__device__ const int NDEM = 2;
-__device__ const int NSEC = 2;
-const int hMAX_POB = 5120;
-#elif defined(MEGA2)
-// es idéntica a MEGA1
-const int hNDEM = 2;
-const int hNSEC = 2;
-__device__ const int NDEM = 2;
-__device__ const int NSEC = 2;
-const int hMAX_POB = 5120;
-#elif defined(MEGA3)
-const int hNDEM = 3;
-const int hNSEC = 2;
-__device__ const int NDEM = 3;
-__device__ const int NSEC = 2;
-const int hMAX_POB = 5120;
-#elif defined(MEGA4)
+#if defined(MEGA4)
 const int hNDEM = 2;
 const int hNSEC = 6;
 __device__ const int NDEM = 2;
@@ -90,8 +71,12 @@ __device__ const int NSEC = 32;
 const int hMAX_POB = 10240;
 #endif
 
+//__managed__ se usa para tener el mismo nombre de variable en el host y el device y que compartan su valor de forma automática, pero
+// es menos eficiente que dos nombres de variable distintos cuyos valores se coordinan manualmente cuando es necesario
+//__managed__ double Micro = 1.0e-06;
 const double hMicro = 1.0e-06;
 __device__ const double Micro = 1.0e-06;
+
 const double hDeciMicro = 1.0e-07;
 const double mega_byte = 1024.0 * 1024.0; // 1048576.0
 

@@ -435,11 +435,6 @@ __device__ int* factible;
 __device__ double* merito_individuo;
 
 #ifdef DINAMICA
-/*
-__device__ double** cotas;
-__device__ double** poblacion;
-__device__ double** descendiente;
-*/
 __device__ double** cotas;
 __device__ double** poblacion;
 __device__ double** descendiente;
@@ -450,6 +445,13 @@ __device__ double** descendiente;
 __device__ double cotas[2][hMAX_VEC];
 __device__ double poblacion[hMAX_POB][hMAX_VEC];
 __device__ double descendiente[hMAX_POB][hMAX_VEC];
+#endif
+#ifdef BLOQUES_VARIABLES
+__device__ int indice_ind[hMAX_POB];
+__device__ int n_individuos_factibles;
+bool indesando_individuos_factibles = true;
+int hn_individuos_factibles;
+int ratio_factibles = 0;
 #endif
 
 // valores constantes durante toda la simulación
@@ -482,6 +484,7 @@ int red_prob_cop_mejor;
 int max_generaciones;
 int max_intentos;
 unsigned int semilla;
+double factor_dispersion;
 double variacion_dispersion;
 double hprob_cop_mejor_ini;
 
@@ -490,7 +493,6 @@ parámetro F que pondera la diferencia entre dos individuos al azar, que se suma
 obtener un mutante. Va camviando a cada generación por un valor comprendido entre los dos valores de 'par_mutacion'
 */
 double hprob_cop_mejor;
-double factor_dispersion;
 double par_mutacion[2]{};
 double hfactor_mutacion;
 /*
@@ -753,6 +755,9 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 	auto inicio = chrono::system_clock::to_time_t(t_inicio);
 	char tmBuff[30];
 	ctime_s(tmBuff, sizeof(tmBuff), &inicio);
+	for (int i = 0; i < hNVEC; i++) {
+		vec_ini[i] = vec[i];
+	}
 
 	printf("%s\n", descripcion_caso);
 	printf("caso              :%s\n", fichero_caso);
@@ -797,9 +802,6 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 		printf("\nError al iniciar la población\n");
 		fprintf(salida, "\nError al iniciar la población\n");
 		return nullptr;
-	}
-	for (int i = 0; i < hNVEC; i++) {
-		vec_ini[i] = vec[i];
 	}
 	gen.seed((unsigned int)semilla);
 	dis_entero = uniform_int_distribution<int>{ 0, (int)(hNPOB - 1) };
@@ -1054,6 +1056,7 @@ bool inicia_cotas() {
 		if (hcotas[i] == NULL) return false;
 	}
 	hfijo = (int*)malloc(hNVEC * sizeof(int));
+
 	return true;
 }
 // crea las variables dinámicas para la población, los descendientes, el mérito de cada individuo y si un vector de prueba es factible o no
@@ -1167,7 +1170,6 @@ bool genera_poblacion(double* vec_central) {
 	free(hres_merito);
 	return true;
 }
-
 static __global__ void kernel_inicia_estados_azar(azar* state, unsigned long semilla) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	int desde = idx * NIF_K;
@@ -1178,7 +1180,6 @@ static __global__ void kernel_inicia_estados_azar(azar* state, unsigned long sem
 		curand_init(semilla, idx, 0, &state[idx]);
 	}
 }
-
 static __global__ void kernel_mutacion_cruze(azar* estado_gen_azar) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 
@@ -1279,7 +1280,6 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 	// recupera el estado del generador aleatorio asociado a este hilo
 
 	azar ult_estado = estado_gen_azar[idx];
-
 	double vazar;
 #ifdef REGULA
 	vazar = curand_uniform_double(&ult_estado);
@@ -1363,6 +1363,16 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 	// salva el estado del generador aleatorio asociado a este hilo
 	estado_gen_azar[idx] = ult_estado;
 }
+#ifdef BLOQUES_VARIABLES
+static __global__ void kernel_indexa_factibles() {
+	n_individuos_factibles = 0;
+	for (int i = 0; i < NPOB; i++) {
+		if (factible[i] == 1) {
+			indice_ind[n_individuos_factibles++] = i;
+		}
+	}
+}
+#endif
 //static __global__ __launch_bounds__(512) void  kernel_seleccion() {
 static __global__ void  kernel_seleccion() {
 	// No parece tener ningún efecto
@@ -1388,6 +1398,25 @@ static __global__ void kernel_seleccion_1() {
 	//asm(".pragma \"enable_smem_spilling\";");
 	double me_descendiente;
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+	if (factible[idx] == 1) {
+		me_descendiente = merito_s(descendiente[idx]);
+		if (me_descendiente < merito_individuo[idx]) {
+			for (int j = 0; j < NVEC; j++) {
+				poblacion[idx][j] = descendiente[idx][j];
+			}
+			merito_individuo[idx] = me_descendiente;
+		}
+	}
+}
+static __global__ void kernel_seleccion_1i() {
+	// No parece tener ningún efecto
+	//asm(".pragma \"enable_smem_spilling\";");
+	double me_descendiente;
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+#ifdef BLOQUES_VARIABLES
+	if (idx >= n_individuos_factibles) return;
+	idx = indice_ind[idx];
+#endif
 	if (factible[idx] == 1) {
 		me_descendiente = merito_s(descendiente[idx]);
 		if (me_descendiente < merito_individuo[idx]) {
@@ -1456,8 +1485,11 @@ int resuelve() {
 		return -64;
 	}
 	ftime(&tiempo_ini);
-	dim3 grid(NBLO_K);
-	dim3 block(n_hilos);
+	int num_bloques = NBLO_K;
+	int num_hilos_bloque = n_hilos;
+#ifdef BLOQUES_VARIABLES
+	indesando_individuos_factibles = true;
+#endif
 	while (generacion < max_generaciones) {
 		ftime(&tiempo_ant);
 		hfactor_mutacion = par_mutacion[0] + dis_double(gen) * (par_mutacion[1] - par_mutacion[0]);
@@ -1484,22 +1516,60 @@ int resuelve() {
 		par_tpo_segs += tpo_var;
 		tot_tpo_mins += tpo_var;
 
+#ifdef BLOQUES_VARIABLES
+		if (indesando_individuos_factibles) {
+			kernel_indexa_factibles << <1, 1 >> > ();
+			cudaStatus = cudaMemcpyFromSymbol(&hn_individuos_factibles, n_individuos_factibles, sizeof(int));
+			if (cudaStatus != cudaSuccess) {
+				imprime_error("resuelve. cudaMemcpyFromSymbol error extraer n_individuos_factibles del device");
+				return -66;
+			}
+			ratio_factibles = (100 * hn_individuos_factibles) / hNPOB;
+			if (ratio_factibles < MIN_RATIO_FACTIBLES) {
+				num_bloques = hn_individuos_factibles % n_hilos == 0 ? hn_individuos_factibles / n_hilos : hn_individuos_factibles / n_hilos + 1;
+			}
+			else {
+				// si el ratio de individuos factibles es mayor que MIN_RATIO_FACTIBLES, no merece la pena indexar los individuos factibles que
+				// es muy probable que no vuelvan a ser menos que MIN_RATIO_FACTIBLES, por lo que se desactiva la indexación de individuos factibles
+				indesando_individuos_factibles = false;
+				num_bloques = NBLO_K;
+			}
+		}
+#endif
 		ftime(&tiempo_ant);
 		if (sol_mem_compartida > 0) {
 			// Lanzar el kernel pasando el tamaño dinámico como tercer parámetro de los brackets <<< >>>
 			if (hNIF_K == 1) {
-				kernel_seleccion_1 << <grid, block, peticion_mem_comp >> > ();
+#ifdef BLOQUES_VARIABLES
+				if (indesando_individuos_factibles) {
+					kernel_seleccion_1i << <num_bloques, num_hilos_bloque, peticion_mem_comp >> > ();
+				}
+				else {
+					kernel_seleccion_1 << <num_bloques, num_hilos_bloque, peticion_mem_comp >> > ();
+				}
+#else
+				kernel_seleccion_1 << <num_bloques, num_hilos_bloque, peticion_mem_comp >> > ();
+#endif
 			}
 			else {
-				kernel_seleccion << <grid, block, peticion_mem_comp >> > ();
+				kernel_seleccion << <num_bloques, num_hilos_bloque, peticion_mem_comp >> > ();
 			}
 		}
 		else {
 			if (hNIF_K == 1) {
-				kernel_seleccion_1 << <grid, block >> > ();
+#ifdef BLOQUES_VARIABLES
+				if (indesando_individuos_factibles) {
+					kernel_seleccion_1i << <num_bloques, num_hilos_bloque >> > ();
+				}
+				else {
+					kernel_seleccion_1 << <num_bloques, num_hilos_bloque >> > ();
+				}
+#else
+				kernel_seleccion_1 << <num_bloques, num_hilos_bloque >> > ();
+#endif
 			}
 			else {
-				kernel_seleccion << <grid, block >> > ();
+				kernel_seleccion << <num_bloques, num_hilos_bloque >> > ();
 			}
 		}
 		cudaStatus = cudaDeviceSynchronize();
@@ -1564,8 +1634,21 @@ bool muestra_evolucion(const char* rotulo) {
 		fprintf(salida, "%s. muestra_evolucion\n", rotulo);
 		return false;
 	}
-	printf("%8d %5d %12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %9.1f %9.2f\n", generacion, hind_mejor_merito, hmerito_individuo[hind_mejor_merito], hVAB, himpuestos, hcotizacionesSS, hsZ, hsQ, par_tpo_segs, tot_tpo_mins / 60.);
-	fprintf(salida, "%8d %5d %12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %9.1f %9.2f\n", generacion, hind_mejor_merito, hmerito_individuo[hind_mejor_merito], hVAB, himpuestos, hcotizacionesSS, hsZ, hsQ, par_tpo_segs, tot_tpo_mins / 60.);
+	printf("%8d %5d %12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %9.1f %9.2f", generacion, hind_mejor_merito, hmerito_individuo[hind_mejor_merito], hVAB, himpuestos, hcotizacionesSS, hsZ, hsQ, par_tpo_segs, tot_tpo_mins / 60.);
+	fprintf(salida, "%8d %5d %12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %9.1f %9.2f", generacion, hind_mejor_merito, hmerito_individuo[hind_mejor_merito], hVAB, himpuestos, hcotizacionesSS, hsZ, hsQ, par_tpo_segs, tot_tpo_mins / 60.);
+#ifdef BLOQUES_VARIABLES
+	if (indesando_individuos_factibles) {
+		printf(" %6d %4d\n", hn_individuos_factibles, ratio_factibles);
+		fprintf(salida, " %6d %4d\n", hn_individuos_factibles, ratio_factibles);
+	}
+	else {
+		printf("\n");
+		fprintf(salida, "\n");
+	}
+#else
+	printf("\n");
+	fprintf(salida, "\n");
+#endif
 	fflush(salida);
 	return true;
 }
@@ -1606,6 +1689,9 @@ int comprobar_final() {
 				fprintf(salida, "Reinicio. Factor dispersión: %12.5e  probabilidad copiar el mejor %11.5e\n", factor_dispersion_actualizado, hprob_cop_mejor);
 				max_generaciones += generacion;
 				mejor_merito_anterior = 1.0e+99;
+#ifdef BLOQUES_VARIABLES
+				indesando_individuos_factibles = true;
+#endif
 			}
 			else {
 				// se han superado los intentos disponibles
@@ -4750,6 +4836,12 @@ int main(int argc, char* argv[]) {
 		red_prob_cop_mejor = atoi(c);
 		if (fgets(c, 63, fop) == NULL) {
 			fclose(fop);
+			printf("error lectura factor_dispersion\n");
+			return -1;
+		};
+		factor_dispersion = atof(c);
+		if (fgets(c, 63, fop) == NULL) {
+			fclose(fop);
 			printf("error lectura variacion_dispersion\n");
 			return -1;
 		};
@@ -4758,7 +4850,7 @@ int main(int argc, char* argv[]) {
 	fclose(fop);
 	rtrim_string(descripcion_caso, '\n');
 	rtrim_string(fichero_caso, '\n');
-	rtrim_string(prefijo_salidas, '\n');
+	rtrim_string(prefijo_salidas, '\n');	// no se usa en este caso
 	rtrim_string(senda_salidas, '\n');
 	rtrim_string(senda_vector_solucion, '\n');
 	rtrim_string(senda_modelo_solucion, '\n');
@@ -5131,7 +5223,17 @@ int main(int argc, char* argv[]) {
 	fgets(c, 32, fop);
 	hpar[hipar++] = modo_reinicio_poblacion = atoi(c);
 	fgets(c, 32, fop);
-	hpar[hipar++] = factor_dispersion = atof(c);
+	if (datos_nuevos) {
+		if (factor_dispersion < 0) {
+			hpar[hipar++] = factor_dispersion = atof(c);
+		}
+		else {
+			hpar[hipar++] = factor_dispersion;
+		}
+	}
+	else {
+		hpar[hipar++] = factor_dispersion = atof(c);
+	}
 	fgets(c, 32, fop);
 	hpar[hipar++] = factor_sigma = atof(c);
 	fgets(c, 32, fop);
