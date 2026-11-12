@@ -16,3 +16,4 @@ C:\MEGA\MEGA_GPU\Casos\SolModelo5\300_demanda_42_exo_modelo_D.txt
 0       aplicar reducción de probabilidad de copiar el mejor
 -1      factor de dispersión
 1.2     incremento del factor de dispersión.
+0       modo población inicial

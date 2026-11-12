@@ -1442,7 +1442,7 @@ def valores_opciones5():
 
     return args
 
-def valores_opciones():
+def valores_opciones6():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=6      , help="Matriz de Contabilidad Social asociada a esta función")
     
@@ -1492,7 +1492,7 @@ def valores_opciones():
     # lugar de componerlos a partir de las opciones seleccionadas, en este caso NO puede haber ESPACIOS en blanco intercalados,
     # componer el nombre del fichero de salida a partir de las opciones seleccionadas es poco útil por lo dificil de interpretar el nombre resultante, se
     # introdujo inicialmente cuando se hacian muchas pruebas, pero con la aplicación en 'explotación' es poco útil
-    parser.add_argument('--PREFIJO'            , type=str  , default='=1002_Salarios_1_5' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
+    parser.add_argument('--PREFIJO'            , type=str  , default='=Base' , help="un literal que se añade al principio del nombre de los archivos de salida, o el propio nombre si empieza con el caracter '='")
 
     parser.add_argument('--NSAM'               , type=int  , default=6      , help="Matriz de Contabilidad Social a utilizar, ver 'etq_sam'")
     parser.add_argument('--DECIMALES'          , type=int  , default=1      , help="número de decimales en las cantidades e importes")
@@ -1558,9 +1558,9 @@ def valores_opciones():
         calculado: si VALOR_F_TRA = 0
     '''
     parser.add_argument('--FF_ENDOGENA'        , type=sab  , default=True , help="las aportaciones de factores por los hogares pueden ser variables endogenas o exogenas")
-    parser.add_argument('--OR_PRE_EXCLUIDO'    , type=int  , default=0    , help="ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_EXCLUIDO'")
+    parser.add_argument('--OR_PRE_EXCLUIDO'    , type=int  , default=1    , help="ordinal (columna de h, empezando en 0) del precio para el que se fija el valor 'PRECIO_F_EXCLUIDO'")
     parser.add_argument('--PRECIO_F_EXCLUIDO'  , type=float, default=1.0  , help="precio que se fija para el factor de referencia")
-    parser.add_argument('--VALOR_F_TRA'        , type=float, default=1.05 , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
+    parser.add_argument('--VALOR_F_TRA'        , type=float, default=1.0  , help="precio que se fija para el factor trabajo; -1 : no se fija valor, 0 : curva Phillips")
     parser.add_argument('--PARO_INICIAL'       , type=float, default=0.10 , help="tanto por uno de paro para la curva Phillips")
     parser.add_argument('--ALFA_PHILLIPS'      , type=float, default=-0.5 , help="relación desempleo salarios, en la bibliografía se encuentra -0.4566") 
 
@@ -1624,9 +1624,9 @@ def valores_opciones():
     parser.add_argument('--SAL_GRAFICOS_EVOL'  , type=sab  , default=False  , help="generar gráficos de las evoluciones")
     parser.add_argument('--SAL_GRAFICO_CES_DM' , type=sab  , default=False  , help="generar graficos de isocuantas CES")
     parser.add_argument('--SAL_ISOCUANTA'      , type=sab  , default=False  , help="generar gráficos adicionales de isocuantas")
-    parser.add_argument('--SAL_VARIACIONES'    , type=sab  , default=True   , help="imprime las diferencias entre los valores iniciales y finales de las variables")
-    parser.add_argument('--SAL_MCS'            , type=sab  , default=True   , help="imprime la MCS")
-    parser.add_argument('--SAL_VAR_MCS'        , type=sab  , default=True   , help="imprime las diferencias entre los valores iniciales y finales de la MCS")
+    parser.add_argument('--SAL_VARIACIONES'    , type=sab  , default=False  , help="imprime las diferencias entre los valores iniciales y finales de las variables")
+    parser.add_argument('--SAL_MCS'            , type=sab  , default=False  , help="imprime la MCS")
+    parser.add_argument('--SAL_VAR_MCS'        , type=sab  , default=False  , help="imprime las diferencias entre los valores iniciales y finales de la MCS")
     parser.add_argument('--GE_IMG_FIL'         , type=int  , default=5      , help="número de filas del mapa de gráficos con la evolución de los precios y las variables")
     parser.add_argument('--GE_IMG_COL'         , type=int  , default=6      , help="número de columnas del mapa de gráficos con la evolución de los precios y las variables")
 
@@ -1696,7 +1696,7 @@ def valores_opciones():
     args = parser.parse_args()
     return args
 
-def valores_opciones7():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=7      , help="Matriz de Contabilidad Social asociada a esta función")
     '''

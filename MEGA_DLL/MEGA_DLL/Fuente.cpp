@@ -1,22 +1,24 @@
 #include "pch.h"
 #include "Mega.h"
 #include <algorithm>
-#include <cstdlib>
+#include <chrono>
 #include <cmath>
-#include <Windows.h>
-#include <random>
+#include <csignal>
+#include <cstdlib>
 #include <cstdio>
+#include <ctime>
+#include <exception>
 #include <malloc.h>
 #include <process.h>
-#include <chrono>
-#include <ctime>
+#include <random>
 #include <share.h>
-#include <csignal>
+#include <string.h>
 #include <sys\timeb.h> 
+#include <Windows.h>
 
 #ifdef INI_AZAR_FICHERO
-#include <fstream>
 #include <array>
+#include <fstream>
 #include <functional>
 #include <iterator>
 #endif
@@ -454,10 +456,6 @@ double** cotas = NULL;
 double** poblacion = NULL;
 double** descendiente = NULL;
 #else
-
-// El uso de matrices estáticas solo ahorra un 3%
-
-const int MAX_POB = 30000;
 double cotas[2][MAX_VEC];
 double poblacion[MAX_POB][MAX_VEC];
 double descendiente[MAX_POB][MAX_VEC];
@@ -545,7 +543,7 @@ double prob_cop_mejor_ini;
 double prob_cop_mejor;
 double f_paso_prolongar;
 double dis_prolonga_min;
-// El mejor modo es el 0, el resto han sido pruebas nada concluyentes
+// El modo normal es el 0, el resto han sido pruebas nada concluyentes
 const int N_MODOS_INICIO = 15;
 double factor_dispersion_actualizado = 1.0;
 
@@ -1332,10 +1330,10 @@ las variables a partir del vector solución aplicando las ecuaciones del modelo.
 double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso, const char* caso_para_leer) {
 	sprintf_s(senda_salidas, 127, "%s", senda);
 	sprintf_s(nombre_caso, 256, "%s", caso);
-	CANCELAR = false;
 
-	// capturar la señal Ctrl+C, al pulsar esta combinación de teclas se ejecuta la funciín 'cancelar'
+	// capturar la señal Ctrl+C, al pulsar esta combinación de teclas se ejecuta la función 'cancelar'
 	signal(SIGINT, &cancelar);
+	CANCELAR = false;
 
 	int res = parametros_alge(par);
 	if (res != 0) {
@@ -1438,13 +1436,11 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	static int dummy{};
 	TCHAR szFileName[MAX_PATH];
 	VirtualQuery(&dummy, &mbi, sizeof(mbi));	// inicializa la estructura 'mbi'
-	if (&mbi != 0) {
-		HMODULE hMod = (HMODULE)mbi.AllocationBase;
-		GetModuleFileName(hMod, szFileName, MAX_PATH);
-		fprintf(salida, "Librería               : %ws\n", szFileName);
-	}
-	fprintf(salida, "Caso                   : %s\n\n", nombre_caso);
-
+	HMODULE hMod = (HMODULE)mbi.AllocationBase;
+	GetModuleFileName(hMod, szFileName, MAX_PATH);
+	fprintf(salida, "Librería               : %ws\n", szFileName);
+	fprintf(salida, "Caso                   : %s\n", nombre_caso);
+	fprintf(salida, "-------------------------------------\n");
 #ifdef RAND1
 	fprintf(salida, "Estrategia             : %s\n\n", "RAND1");
 #else
@@ -1473,13 +1469,15 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 #else
 	fprintf(salida, "Ini.aleatorios fichero : no\n");
 #endif
-	fprintf(salida, "Semilla num.aleatorios : %12d\n\n", (unsigned int)semilla);
+	fprintf(salida, "Semilla num.aleatorios : %12d\n", (unsigned int)semilla);
+	fprintf(salida, "-------------------------------------\n");
 #ifdef FIJAR_VARIABLES
 	fprintf(salida, "FIJAR_VARIABLES\n");
 	fprintf(salida, "Generaciones calentar  : %12d\n", GENS_CALENTAR);
 	fprintf(salida, "Cada n generaciones    : %12d\n", BLOQUE_FIJAR);
 	fprintf(salida, "Valor mínimo variable  : %12.5e\n", MIN_FIJAR);
 	fprintf(salida, "Tolerancia para fijar  : %12.5e\n", TOL_DISPERSION);
+	fprintf(salida, "-------------------------------------\n");
 #endif
 	fprintf(salida, "Población              : %12d\n", NPOB);
 	fprintf(salida, "Modo población inicial : %12d\n", modo_poblacion_inicial);
@@ -1498,7 +1496,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Umbral regularización  : %12.5e veces el progreso mínimo\n", umbral_regularizacion);
 	fprintf(salida, "Regularización         : %12.3f %% = %d individuos\n", 100. * fraccion_regularizacion, (int)(fraccion_regularizacion * NPOB));
 	fprintf(salida, "Modo reinicio población: %12d\n", modo_reinicio_poblacion);
-	if (modo_reinicio_poblacion != 0) {
+	if (modo_reinicio_poblacion == 0) {
 		fprintf(salida, "Factor dispersión reini: %12.5e\n", 1.0);
 	}
 	else {
@@ -2264,13 +2262,13 @@ bool inicia_cotas() {
 crea las variables dinámicas para la población, los descendientes, el mérito de cada individuo y si un vector de prueba es factible o no
 */
 bool inicia_poblacion(double factor_inicio) {
+	size_t const memoria_fila = NVEC * sizeof(double);
 #ifdef DINAMICA
 	size_t const mem_primer_indice = NPOB * sizeof(double*);
 	poblacion = (double**)malloc(mem_primer_indice);
 	if (poblacion == NULL) return false;
 	descendiente = (double**)malloc(mem_primer_indice);
 	if (descendiente == NULL) return false;
-	size_t const memoria_fila = NVEC * sizeof(double);
 	for (int i = 0; i < NPOB; i++) {
 		poblacion[i] = (double*)malloc(memoria_fila);
 		if (poblacion[i] == NULL) return false;
@@ -2280,15 +2278,13 @@ bool inicia_poblacion(double factor_inicio) {
 #endif
 #ifdef PROLONGAR
 	if (f_paso_prolongar > 0) {
-		size_t const memoria_fila = NVEC * sizeof(double);
 		vector_prolongado = (double*)malloc(memoria_fila);
 		if (vector_prolongado == NULL) return false;
 		poblacion_mejor_anterior = (double*)malloc(memoria_fila);
 		if (poblacion_mejor_anterior == NULL) return false;
 	}
 #endif
-	size_t const mem_npob = NPOB * sizeof(double);
-	merito_individuo = (double*)malloc(mem_npob);
+	merito_individuo = (double*)malloc(NPOB * sizeof(double));
 	if (merito_individuo == NULL) return false;
 	factible = (bool*)malloc(NPOB * sizeof(bool));
 	if (factible == NULL) return false;

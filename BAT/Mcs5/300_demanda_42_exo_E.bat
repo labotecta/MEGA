@@ -1,9 +1,9 @@
 @echo off
-TITLE 300_demanda_42_exo_P
+TITLE 300_demanda_42_exo_E
 mode CON cols=118 lines=30
 cd C:\MEGA\MEGA
 CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py ^
---PREFIJO             =300_demanda_42_exo_P ^
+--PREFIJO             =300_demanda_42_exo_E ^
 --NSAM                5 ^
 --DECIMALES           1 ^
 --NFAC                2 ^
@@ -16,7 +16,7 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --GE_TOLERANCIA       1.e-08 ^
 --GE_VERIFICAR        1.e-05 ^
 --ALGE_TOL_ACEPTABLE  1.0e-05 ^
---PROB_COP_MEJOR      1.0e-04 ^
+--PROB_COP_MEJOR      5.0e-04 ^
 --F_PASO_PROLONGAR    0.0 ^
 --DIS_PROLONGA_MIN    0.0 ^
 --ALGE_NPOB           19968 ^
@@ -128,6 +128,6 @@ CALL C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe MEGA.py
 --SENDA_SALIDAS       C:/MEGA/Salidas/Mcs5 ^
 --SENDA_GRAFICOS      C:/MEGA/Graficos/Mcs5 ^
 --SENDA_SOLUCIONES    C:/MEGA/Soluciones/Mcs5 ^
---SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5.dll ^
+--SENDA_DLL           C:/MEGA/MEGA_DLL/x64/Ultimas/MEGA5E.dll ^
 
 timeout 60

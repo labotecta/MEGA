@@ -401,6 +401,8 @@ mt19937 gen;
 uniform_int_distribution<int> dis_entero{};
 uniform_real_distribution<double> dis_double(0.0, 1.0);
 
+uniform_int_distribution<int> dis_entero_nvec{};
+
 struct timeb tiempo_ant_ms, tiempo_act_ms;
 double dif_tpo_ms;
 double tot_tpo_muta{};
@@ -532,21 +534,7 @@ struct timeb tiempo_ini;
 struct timeb tiempo_ant, tiempo_act;
 double dif_tpo_par;
 double dif_tpo_tot;
-/*
-void imprime(const char* f, ...) {
-	va_list args;
-	va_start(args, f);
-	if (strlen(args) > 0) {
-		printf(f, args);
-		if (salida != NULL) fprintf(salida, f, args);
-	}
-	else {
-		printf(f);
-		if (salida != NULL) fprintf(salida, f);
-	}
-	va_end(args);
-}
-*/
+
 void imprime_error(const char* rot) {
 	printf("%s (%d) %s\n", rot, cudaStatus, cudaGetErrorString(cudaStatus));
 	fprintf(salida, "%s (%d) %s\n", rot, cudaStatus, cudaGetErrorString(cudaStatus));
@@ -805,6 +793,9 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 	}
 	gen.seed((unsigned int)semilla);
 	dis_entero = uniform_int_distribution<int>{ 0, (int)(hNPOB - 1) };
+
+	dis_entero_nvec = uniform_int_distribution<int>{ 0, (int)(hNVEC - 1) };
+
 	kernelConstantes << <1, 1 >> > ();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -849,6 +840,7 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 #endif
 	fprintf(salida, "Semilla num.aleatorios : %12d\n", (unsigned int)semilla);
 	fprintf(salida, "-------------------------------------\n");
+	fprintf(salida, "Modo población inicial : %12d\n", modo_poblacion_inicial);
 	fprintf(salida, "Factor dispersión      : %12.5e\n", factor_dispersion);
 	fprintf(salida, "Variación F.dispersión : %12.5e\n", variacion_dispersion);
 	fprintf(salida, "Factor mutación (F)    : %12.5e %12.5e\n", par_mutacion[0], par_mutacion[1]);
@@ -1106,39 +1098,102 @@ bool genera_poblacion(double* vec_central) {
 	double a;
 	double v;
 	double f;
+	int cuantas;
+	int j;
+
+	// -----------------------------------------------------------------------------------------------------
+	// la forma de generar la población inicial no es crítica porque al principio evoluciona muy rápidamente
+	// -----------------------------------------------------------------------------------------------------
+
 	// intérvalo simétrico centrado en 'vec_central' con distribución uniforme
 
-	for (int i = 0; i < hNPOB; i++) {
-		for (int j = 0; j < hNVEC; j++) {
-			if (hfijo[j] == 1) {
-				hpoblacion[i][j] = hcotas[0][j];
+	if (modo_poblacion_inicial == 0) {
+		
+		// se cambian todas las variables respecto del individuo central
+
+		for (int i = 0; i < hNPOB; i++) {
+			for (int j = 0; j < hNVEC; j++) {
+				if (hfijo[j] == 1) {
+					hpoblacion[i][j] = hcotas[0][j];
+				}
+				else {
+					semi_izq = vec_central[j] - hcotas[0][j];
+					semi_dch = hcotas[1][j] - vec_central[j];
+					if (semi_izq < semi_dch) {
+						semi_intervalo = semi_izq;
+					}
+					else {
+						semi_intervalo = semi_dch;
+					}
+					f = (semi_izq + semi_dch) / (2. * semi_intervalo);
+					a = dis_double(gen);
+					desplazamiento = f * factor_dispersion_actualizado * a * semi_intervalo;
+					a = dis_double(gen);
+					if (a < 0.5) {
+						v = vec_central[j] - desplazamiento;
+					}
+					else {
+						v = vec_central[j] + desplazamiento;
+					}
+					if (v < hcotas[0][j]) {
+						v = hcotas[0][j] + hMicro;
+					}
+					else if (v > hcotas[1][j]) {
+						v = hcotas[1][j] - hMicro;
+					}
+					hpoblacion[i][j] = v;
+				}
+			}
+		}
+	}
+	else {
+
+		// se cambia una fracción al azar de las variables respecto del individuo central
+
+		for (int i = 0; i < hNPOB; i++) {
+			for (int k = 0; k < hNVEC; k++) {
+				hpoblacion[i][k] = vec_central[k];
+			}
+			a = dis_double(gen);
+			if (a < 0.5) {
+				// para la mitad se cambia solo una variable
+				cuantas = 0;
 			}
 			else {
-				semi_izq = vec_central[j] - hcotas[0][j];
-				semi_dch = hcotas[1][j] - vec_central[j];
-				if (semi_izq < semi_dch) {
-					semi_intervalo = semi_izq;
+				cuantas = dis_entero_nvec(gen);
+			}
+			for (int k = 0; k <= cuantas; k++) {
+				j = dis_entero_nvec(gen);
+				if (hfijo[j] == 1) {
+					hpoblacion[i][j] = hcotas[0][j];
 				}
 				else {
-					semi_intervalo = semi_dch;
+					semi_izq = vec_central[j] - hcotas[0][j];
+					semi_dch = hcotas[1][j] - vec_central[j];
+					if (semi_izq < semi_dch) {
+						semi_intervalo = semi_izq;
+					}
+					else {
+						semi_intervalo = semi_dch;
+					}
+					f = (semi_izq + semi_dch) / (2. * semi_intervalo);
+					a = dis_double(gen);
+					desplazamiento = f * factor_dispersion_actualizado * a * semi_intervalo;
+					a = dis_double(gen);
+					if (a < 0.5) {
+						v = vec_central[j] - desplazamiento;
+					}
+					else {
+						v = vec_central[j] + desplazamiento;
+					}
+					if (v < hcotas[0][j]) {
+						v = hcotas[0][j] + hMicro;
+					}
+					else if (v > hcotas[1][j]) {
+						v = hcotas[1][j] - hMicro;
+					}
+					hpoblacion[i][j] = v;
 				}
-				f = (semi_izq + semi_dch) / (2. * semi_intervalo);
-				a = dis_double(gen);
-				desplazamiento = f * factor_dispersion_actualizado * a * semi_intervalo;
-				a = dis_double(gen);
-				if (a < 0.5) {
-					v = vec_central[j] - desplazamiento;
-				}
-				else {
-					v = vec_central[j] + desplazamiento;
-				}
-				if (v < hcotas[0][j]) {
-					v = hcotas[0][j] + hMicro;
-				}
-				else if (v > hcotas[1][j]) {
-					v = hcotas[1][j] - hMicro;
-				}
-				hpoblacion[i][j] = v;
 			}
 		}
 	}
@@ -4846,6 +4901,12 @@ int main(int argc, char* argv[]) {
 			return -1;
 		};
 		variacion_dispersion = atof(c);
+		if (fgets(c, 63, fop) == NULL) {
+			fclose(fop);
+			printf("error lectura modo_poblacion_inicial\n");
+			return -1;
+		};
+		modo_poblacion_inicial = atoi(c);
 	}
 	fclose(fop);
 	rtrim_string(descripcion_caso, '\n');
@@ -5219,7 +5280,12 @@ int main(int argc, char* argv[]) {
 	fgets(c, 32, fop);
 	hpar[hipar++] = hhisto_sol = atoi(c);
 	fgets(c, 32, fop);
-	hpar[hipar++] = modo_poblacion_inicial = atoi(c);
+	if (datos_nuevos) {
+		hpar[hipar++] = modo_poblacion_inicial;
+	}
+	else {
+		hpar[hipar++] = modo_poblacion_inicial = atoi(c);
+	}
 	fgets(c, 32, fop);
 	hpar[hipar++] = modo_reinicio_poblacion = atoi(c);
 	fgets(c, 32, fop);

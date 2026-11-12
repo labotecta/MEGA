@@ -77,14 +77,17 @@ import ahorro_inv    as ainv
 import demanda       as deho
 import exterior      as exte
 import restricciones as restri
+
+'''
 import reduccion_dimension as redim
 import random
+'''
 
 # los escenarios pueden cambiar los valores iniciales de las variable y los parámetros
 global datos
 global parametros
 
-VERSION = '1.9.2'
+VERSION = '1.9.3'
 
 # 9 Matrices de Contabilidad Social para las pruebas, se selecciona con NSAM
 # estas etiquetas solo se usan para construir el nombre del fichero de salida
@@ -129,6 +132,22 @@ es imprescindible que la que esté activa: 'valores_opciones()', que es la que
 no tiene un número al final, sea la que corresponda con la MCS que se va a usar, tanto si
 se ejecuta desde la línea de comandos (BAT) como si se ejecuta desde un IDE
 '''
+
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+#
+# para "aproximar" la función de mérito meiante una red neuronal
+# en realidad para comprobar que no es posible
+
+RN_INICIAL = False
+RN_ESCENA  = False
+SOLO_RN    = False
+if RN_INICIAL or RN_ESCENA:
+    import rna as rna
+
+#----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+
 try:
     args = argumentos.valores_opciones()
 except BaseException as e:
@@ -707,7 +726,7 @@ elif NSAM == 6:
     dem  = ('C1','C2')                              # demanda de los hogares
     idt  = ('INP',)                                 # impuestos a la producción, otros impuestos a la producción
     trf  = ('TRF',)                                 # aranceles pagados por la producción (no los hay en esta MCS)
-    gov  = ('SP',)                                  # gobierno
+    gov  = ('SP',)                                            # gobierno
     ayd  = ('AYD',)                                 # ayudas del gobierno
     inv  = ('A-I',)                                 # ahorro e inversión
     ext  = ('SE',)                                  # sector exterior
@@ -2341,6 +2360,44 @@ if __name__ == '__main__':
                             vec_veri_sol, etq_veri, UTILIDAD_DEMANDA, DEM_ESENCIALES, DEM_ADICIONAL_TIPO, DEM_ADICIONAL, RENTA_FICTICIA, INDICE_F_TRA, AYD_ADI_DEM, ALP_FACTOR, CON_ESENCIALES,
                             'Verifica con los valores iniciales', GE_VERIFICAR, MODO_PSEUDOIMPTOS, 0
                             )
+    if RN_INICIAL:
+        # sin el precio del último factor '[0:nfac-1]' ya que su valor se fija de forma exógena, esto es realmente incorrecto
+        # porque según las opciones, el precio del factor que se incluirá en el vector de prueba puede ser el del
+        # capital o el del trabajo, pero inicialmente ambos están puestos a 1.0 en 'datos.pF0'
+        pf0 = datos.pF0[0:nfac-1].flatten()
+        # sólución inicial para la función minimizar
+        vec_opt = np.concatenate((
+                    pf0,                        # precio de los factores
+                    datos.pY0.flatten(),        # precio del factor compuesto
+                    datos.pQ0.flatten(),        # precio del producto de Armington
+                    datos.pD0.flatten(),        # precio de los sectores para la demanda
+                    np.array([datos.epsilon]),  # tipo de cambio
+                    np.array([datos.Apz0]),     # holgura pseudo impuestos
+                    datos.F0.flatten(),         # utilización de factores por cada sector
+                    datos.E0.flatten(),         # exportaciones de cada sector
+                    datos.M0.flatten(),         # importaciones de cada sector
+                    datos.D0.flatten(),         # demanda local, es decir, la producción para el consumo local, de cada sector
+        ))
+        if GE_INCLUYE_XP:
+            vec_opt = np.concatenate((vec_opt, datos.Xp0.flatten()))
+        if GE_INCLUYE_AgH:
+            vec_opt = np.concatenate((vec_opt, (datos.AgH0 + AYD_ADI_DEM).flatten()))
+        # definir el rango de variación de los precios y variables
+        (bnds, n_Efijas, n_Mfijas) = cotas(ndem, nsec, vec_opt, len(vec_opt), npre_sol, ind_pvec_desde)
+        # hacer compatible el vector de prueba inicial con los límites de variación de las variables
+        for i in range(len(vec_opt)):
+            if (bnds[i][1] - bnds[i][0]) > 0.000001:
+                if vec_opt[i]  < bnds[i][0]:
+                    vec_opt[i] = bnds[i][0]
+                if vec_opt[i]  > bnds[i][1]:
+                    vec_opt[i] = bnds[i][1]
+        # con el equilibrio inicial
+        imprime("RN con el equilibrio inicial\n")
+        rna.calcula(vec_opt, bnds)
+        imprime("\nfin. RN con el equilibrio inicial\n")
+        if SOLO_RN and RN_ESCENA == False:
+            imprime("\ntrabajo terminado\n")
+            sys.exit()
 
 # adaptar algunos valores y parámetros según el escenario que se haya seleccionado
 #---------------------------------------------------------------------------------
@@ -2513,6 +2570,15 @@ if __name__ == '__main__':
         imprime(texto)
         imprime('')
     imprime_opciones(nvec_opt)
+
+    if RN_ESCENA:
+        # con el escenario ya definido
+        imprime("RN con el escenario ya definido\n")
+        rna.calcula(vec_opt, bnds)
+        imprime("fin. RN con el escenario ya definido\n")
+    if (RN_INICIAL or RN_ESCENA) and SOLO_RN:
+        imprime("\ntrabajo terminado\n")
+        sys.exit()
 
     if PRIMERA_VALORACION:
         imprime('#################################################################')

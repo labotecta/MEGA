@@ -1,9 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>C:\MEGA\MEGA_GPU\Casos\Comandos\mcs7_030.txt 1001_demanda_42_det_P_0_90_RentaF.txt</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArgumentsHistory>C:\MEGA\MEGA_GPU\Casos\parametros\mcs6_205_017.txt 205_salarios_1_5_42_det_0_00|C:\\MEGA\\MEGA_GPU\\Casos\\Actual\\par_caso_cuda.txt|C:\MEGA\MEGA_GPU\Casos\parametros\mcs6_000n.txt 201_precios_ini_42_EXO|C:\MEGA\MEGA_GPU\Casos\parametros\mcs5_005.txt 300_demanda_42_exo_E|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs5_005.txt 300_demanda_42_exo_E|</LocalDebuggerCommandArgumentsHistory>
+    <LocalDebuggerCommandArgumentsHistory>C:\\MEGA\\MEGA_GPU\\Casos\\Actual\\par_caso_cuda.txt|C:\MEGA\MEGA_GPU\Casos\parametros\mcs6_000n.txt 201_precios_ini_42_EXO|C:\MEGA\MEGA_GPU\Casos\parametros\mcs5_005.txt 300_demanda_42_exo_E|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs5_005.txt 300_demanda_42_exo_E|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs7_030.txt 1001_demanda_42_det_P_0_90_RentaF.txt|</LocalDebuggerCommandArgumentsHistory>
   </PropertyGroup>
 </Project>

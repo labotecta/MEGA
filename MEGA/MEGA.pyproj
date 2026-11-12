@@ -39,6 +39,7 @@
     <Compile Include="restricciones.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="rna.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|CGE" />
