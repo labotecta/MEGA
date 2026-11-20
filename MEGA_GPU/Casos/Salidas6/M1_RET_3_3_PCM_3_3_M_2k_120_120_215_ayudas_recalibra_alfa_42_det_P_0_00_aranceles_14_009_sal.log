@@ -1,0 +1,200 @@
+RETENER 3-3 PCM 3-3 M_2k_120_120
+caso              :C:\MEGA\MEGA_GPU\Casos\Fuentes6\215_ayudas_recalibra_alfa_42_det_P_0_00_aranceles_14_009.txt
+prefijo salidas   :M1_RET_3_3_PCM_3_3_M_2k_120_120_
+salidas           :C:\MEGA\MEGA_GPU\Casos\Salidas6\M1_RET_3_3_PCM_3_3_M_2k_120_120_215_ayudas_recalibra_alfa_42_det_P_0_00_aranceles_14_009_sal.log
+vector solución   :C:\MEGA\MEGA_GPU\Casos\Soluciones6\M1_RET_3_3_PCM_3_3_M_2k_120_120_215_ayudas_recalibra_alfa_42_det_P_0_00_aranceles_14_009_vector.txt
+solución completa :C:\MEGA\MEGA_GPU\Casos\SolModelo6\M1_RET_3_3_PCM_3_3_M_2k_120_120_215_ayudas_recalibra_alfa_42_det_P_0_00_aranceles_14_009_modelo.txt
+-------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+
+Device name: Quadro RTX 6000
+Total global memory (Gbytes)            24.0
+multiProcessorCount                       72
+Shared memory per block (Kbytes)        48.0
+regsPerBlock                           65536
+warpSize                                  32
+memPitch (ancho filas 2D)         2147483647
+Max Threads per Block:                  1024
+maxThreadsDim:                   1024 1024 64
+maxGridSize:                     2147483647 65535 65535
+totalConstMem                          65536
+major-minor:                     7.5
+textureAlignment                         512
+integrated (motherboard)                   0
+canMapHostMemory                           1
+Memory Bus Width (bits):                 384
+Concurrent kernels:              si
+L2 Cache Size (bytes):               6291456
+
+capacidad máxima de memoria compartida: 65536
+-------------------------------------------------------------------------------------------------------------
+kernel_merito_s_todo:
+con 64 hilos
+un máximo de 4 bloques activos por SM, el número de warps activos es 8 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 256
+
+-------------------------------------------------------------------------------------------------------------
+kernel_mutacion_cruze:
+con 64 hilos
+un máximo de 16 bloques activos por SM, el número de warps activos es 32 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 1024
+
+-------------------------------------------------------------------------------------------------------------
+kernel_seleccion:
+con 64 hilos
+un máximo de 4 bloques activos por SM, el número de warps activos es 8 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 256
+
+-------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+inicio: Thu Nov 19 21:59:44 2026
+
+MEMORIA ESTATICA
+----------------
+
+tamaño matriz de población :      105031696    100.17 MB
+tamaño variables me_sol    :          28712      0.03 MB
+tamaño variables VEC_OPT_E :           3096      0.00 MB
+cudaLimitMallocHeapSize    :     1680539648   1602.69 MB
+memoria usada              :                  5341.56 MB
+memoria libre              :    20168310784  19234.00 MB
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :           31
+-------------------------------------
+Población              :         5888
+Número de hilos        :           64
+Número de bloques      :           92
+Individuos por hilo    :            1
+Memoria compartida     : por defecto
+-------------------------------------
+Tolerancia en el mérito:  1.00000e-11
+Intentos (reinicios)   :            5
+Números aleatorios     : MRG32k3a
+Semilla num.aleatorios :           42
+-------------------------------------
+Modo población inicial :            0
+Factor dispersión      :  1.00000e-03
+Variación F.dispersión :  1.20000e+00
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Probab.copiar el mejor :  3.00000e-04
+Número mejor retenidos :            3
+-------------------------------------
+Mestizaje              :           si
+Generaciones mestizaje :         2000
+Número de mestizos     :          120    120
+Valores ini.sol. fijos :            0
+Probab.copiar el mejorB:  3.00000e-04
+Número mejor retenidos :            3
+-------------------------------------
+Control progreso cada  :        10000 generaciones
+Progreso mínimo        :        0.050 %
+-------------------------------------
+Factor Alp             :  0.00000e+00
+Fondos UE              :  0.00000e+00
+Inc.demanda            : SIN renta ficticia
+-------------------------------------
+Xp NO incluido en la solución
+AgH NO incluido en la solución
+Datos de cabecera      :            7
+Variables solución     :          251
+Resto variables modelo :         1634
+Variables recalculadas :         1633
+-------------------------------------
+Total                  :         3525
+
+Variables fijas en sol :            8
+-------------------------------------
+Variables con valores fijos
+    0 pF           0  1.00000000e+00
+   94 epsilon      0  1.00000000e+00
+  166 E            8  0.00000000e+00
+  167 E            9  0.00000000e+00
+  197 M            8  0.00000000e+00
+  198 M            9  0.00000000e+00
+  199 M           10  0.00000000e+00
+  200 M           11  0.00000000e+00
+-------------------------------------
+
+mejor mérito inicial  :   3.432013839484486e+06
+VAB                   :   8.783900451102096e+05
+Impuestos             :   2.468664380943354e+05
+Cotización SS         :   1.367520682625502e+05
+Z                     :   1.962593209730890e+06
+Q                     :   2.201460339287563e+06
+
+generac. ind.m      ECT          VAB         impuestos   cotizacionSS     suma Z        suma Q      segs.p   mins.tot
+-------- ----- ------------ ------------- ------------- ------------- ------------- ------------- --------- ---------
+       0     0  3.43201e+06  8.783900e+05  2.468664e+05  1.367521e+05  1.962593e+06  2.201460e+06       0.0      0.00      0    0      0  3.43201e+06
+       1  3613  3.42453e+06  8.783900e+05  2.468665e+05  1.367521e+05  1.962595e+06  2.201464e+06       0.0      0.00   2557   43      0  3.43201e+06
+   10000  2543  2.14147e+01  8.788169e+05  2.469749e+05  1.367540e+05  1.964286e+06  2.203458e+06     100.4      1.67               3803  2.38980e+01
+   20000  1034  7.21665e-02  8.790803e+05  2.470552e+05  1.368032e+05  1.964961e+06  2.204177e+06     103.9      3.41               5829  5.91698e-02
+   30000  2118  7.05054e-05  8.790798e+05  2.470550e+05  1.368030e+05  1.964960e+06  2.204176e+06     102.2      5.11               4153  6.79104e-05
+   40000   502  1.02484e-06  8.790793e+05  2.470549e+05  1.368029e+05  1.964959e+06  2.204175e+06     103.4      6.83               4156  1.11807e-06
+   50000  4663  3.74940e-09  8.790793e+05  2.470549e+05  1.368029e+05  1.964959e+06  2.204175e+06     101.8      8.53                111  3.71025e-09
+   60000  3867  2.88081e-11  8.790793e+05  2.470549e+05  1.368029e+05  1.964959e+06  2.204175e+06     101.9     10.23               5870  2.60241e-11
+-------- ----- ------------ ------------- ------------- ------------- ------------- ------------- --------- ---------
+   61075   108  9.95335e-12  8.790793e+05  2.470549e+05  1.368029e+05  1.964959e+06  2.204175e+06      11.3     10.42               2882  1.06430e-11
+
+Encontrada solución
+
+tiempo de 61075 generaciones =     625.0 s | tiempo cada 10000 generaciones     102.3 s
+tiempo: mutación y cruce =      19.1 s | selección =    605.87 s
+
+mejor mérito final    :   9.953345085137489e-12
+VAB final             :   8.790793120794822e+05
+Impuestos final       :   2.470548875658033e+05
+Cotización SS final   :   1.368029343344123e+05
+Z final               :   1.964959218087847e+06
+Q final               :   2.204174662072843e+06
+
+Desviaciones por bloques de ecuaciones
+                                          acumulado
+-------- ----------------------- -----------------------
+     ebp   1.337520759972687e-14   1.337520759972687e-14
+     Qeq   5.034733470990489e-13   5.168485546987758e-13
+    F-FF   0.000000000000000e+00   5.168485546987758e-13
+     Alp   0.000000000000000e+00   5.168485546987758e-13
+      Sg   4.047396805173496e-19   5.168489594384563e-13
+      Sp   2.745252893232060e-15   5.195942123316884e-13
+ vacante   0.000000000000000e+00   5.195942123316884e-13
+     Agh   0.000000000000000e+00   5.195942123316884e-13
+    CssH   2.192346260620744e-18   5.195964046779490e-13
+      Td   3.047161442191951e-15   5.226435661201409e-13
+      FF   8.269885986542146e-14   6.053424259855624e-13
+     Xpi   0.000000000000000e+00   6.053424259855624e-13
+      Xp   4.563994181455485e-15   6.099064201670179e-13
+      Ei   4.839812985625130e-13   1.093887718729531e-12
+      Mi   1.855000694754033e-13   1.279387788204934e-12
+     Dai   8.875260156812713e-13   2.166913803886205e-12
+       E   1.935601816912933e-14   2.186269822055335e-12
+       M   2.023058103864277e-14   2.206500403093978e-12
+     Ydp   4.654632688886527e-12   6.861133091980505e-12
+     Dat   1.731857536734259e-13   7.034318845653931e-12
+       Z   4.318786393431874e-13   7.466197484997118e-12
+      Xg   3.606353874497162e-15   7.469803838871615e-12
+      Xv   1.757811281677396e-15   7.471561650153293e-12
+       Q   2.563321157241493e-13   7.727893765877442e-12
+      Tz   3.920594770811141e-17   7.727932971825150e-12
+      Tm   8.885579309923452e-20   7.727933060680943e-12
+     AgE   4.957660763232799e-19   7.727933556447020e-12
+    CssE   1.623937762583960e-14   7.744172934072859e-12
+      Fi   1.891882627648957e-12   9.636055561721816e-12
+       F   2.572259300399143e-13   9.893281491761730e-12
+       X   5.985794542980585e-14   9.953139437191536e-12
+      Ti   2.121819650454390e-16   9.953351619156582e-12
+      Yp   0.000000000000000e+00   9.953351619156582e-12
+      Yd   0.000000000000000e+00   9.953351619156582e-12
+      Da   0.000000000000000e+00   9.953351619156582e-12
+      Dt   0.000000000000000e+00   9.953351619156582e-12
+    AgHi   0.000000000000000e+00   9.953351619156582e-12
+-------- ----------------------- -----------------------
+
+fin : Thu Nov 19 22:10:14 2026
+

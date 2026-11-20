@@ -58,7 +58,7 @@ class calcula(object):
             imprime("")
 
         # Dibuja las dos curvas de aprendizaje: la de entrenamiento y la de evaluación
-        def plot_aprendizaje(loss, val_loss):
+        def dibuja_aprendizaje(loss, val_loss):
             # 'b' color blue '.-' puntos unidos por lí­neas
 
             plt.plot(np.arange(len(loss)) + 0.5, loss, "b.-", label="Error entrenamiento")
@@ -71,7 +71,7 @@ class calcula(object):
             plt.ylabel("Error", fontsize=14)
             plt.grid(True)
 
-        def plot_prediccion(real, pred, titulo):
+        def dibuja_dato_prediccion(real, pred, titulo):
             plt.plot(np.arange(len(real)) + 0.5, real, "bo", label="dato", markersize=1)
             if not (pred is None):
                 plt.plot(np.arange(len(pred)) + 0.5, pred, "ro", label="predicción", markersize=1)
@@ -79,7 +79,16 @@ class calcula(object):
             plt.legend(fontsize=10)
             plt.title(titulo, fontsize=14)
             plt.xlabel("n observación", fontsize=13)
-            plt.ylabel("demérito", fontsize=13)
+            plt.ylabel("demérito ECT", fontsize=13)
+            plt.grid(True)
+
+        def dibuja_merito_distancia(X, Y):
+            plt.plot(X, Y, "bo", markersize=2)
+            plt.gca().xaxis.set_major_locator(mpl.ticker.MaxNLocator(integer=True))
+            plt.legend(fontsize=10)
+            plt.title("relación entre el mérito y la distancia", fontsize=14)
+            plt.xlabel("distancia ** 2", fontsize=13)
+            plt.ylabel("demérito ECT", fontsize=13)
             plt.grid(True)
 
         # Salva el gráfico
@@ -155,47 +164,57 @@ class calcula(object):
             imprime('% acierto validar  :{:8.2f} {:8.2f} {:8.2f} {:8.2f}'.format(acto_v0, acto_v1, acto_v2, acto_v3))
             imprime('                    -------- -------- -------- --------')
             # Dibujamos las curvas de aprendizaje
-            plot_aprendizaje(historia.history["loss"], historia.history["val_loss"])
+            dibuja_aprendizaje(historia.history["loss"], historia.history["val_loss"])
             salva_figura(tit + "_ev_" + nb_caso)
-            plot_prediccion(Y_valid, Y_pred, 'predicciones para la muestra de validación')
+            dibuja_dato_prediccion(Y_valid, Y_pred, 'predicciones para la muestra de validación')
             salva_figura(tit + "_rpv_" + nb_caso)
             vali = np.zeros(Y_valid.shape[0], dtype=np.float64)
             pred = np.zeros(Y_pred.shape[0], dtype=np.float64)
             for i in range(Y_valid.shape[0]):
                 vali[i] = math.log10(Y_valid[i])
                 pred[i] = math.log10(Y_pred[i][0])
-            plot_prediccion(vali, pred, 'Log de las predicciones para la muestra de validación')
+            dibuja_dato_prediccion(vali, pred, 'Log de las predicciones para la muestra de validación')
             salva_figura(tit + "_rpv_log_" + nb_caso)
 #-------------------------------------------------------------------------------------------------------
 # fin funciones
 #-------------------------------------------------------------------------------------------------------
+        CONV = True
+        DENS = True
 
         carpeta_modelos = 'C:/MEGA/Modelos/'
         os.makedirs(carpeta_modelos, exist_ok=True)  # crear el directorio si no existe
+
+        #---------------------------------------------------------------------------------
+        # generar las muestras
+        #---------------------------------------------------------------------------------
+        # número de observaciones
+        n_observaciones   = 20000
+        # número de valores en cada observación
         nvec = len(vec_opt)
 
         # Fracciones de las muestras
         f_train           = 0.7
         f_valid           = 0.2
 
-        CONV = True
-        DENS = True
-
-        n_observaciones   = 20000
+        # fracción de observaciones que solo varian el valor de una variable
         frac_uni_var      = -1.0
+        # intervalo de variación de los valores respecto de los de equilibrio
         factor_dispersion = 1.0e-08
         log_merito        = False
 
         observacion = np.zeros((n_observaciones, nvec, 1), dtype=np.float64)
-        valor       = np.zeros((n_observaciones), dtype=np.float64)
+        merito       = np.zeros((n_observaciones), dtype=np.float64)
+        distancia   = np.zeros((n_observaciones), dtype=np.float64)
         for j in range(nvec):
             observacion[0, j, 0] = vec_opt[j]
         if log_merito:
-            valor[0] = math.log10(prin.fo(observacion[0, :, 0]))
+            merito[0] = math.log10(prin.fo(observacion[0, :, 0]))
         else:
-            valor[0] = prin.fo(observacion[0, :, 0])
+            merito[0] = prin.fo(observacion[0, :, 0])
+        distancia[0] = 0.
+
         imax = -1
-        vmax = valor[0]
+        vmax = merito[0]
         for i in range (1,n_observaciones):
             if frac_uni_var < 0:
                 cuantas = nvec
@@ -207,6 +226,7 @@ class calcula(object):
                     cuantas = 1
                 else:
                     cuantas = int(random.uniform(0, nvec))
+            distancia[i] = 0.
             for k in range(cuantas):
                 if frac_uni_var < 0:
                     j = k
@@ -238,19 +258,21 @@ class calcula(object):
                     elif v > bnds[j][1]:
                         v = bnds[j][1] - 0.000001;
                     observacion[i, j, 0] = v;
+                d = observacion[i, j, 0] - vec_opt[j]
+                distancia[i] += d * d
             if log_merito:
-                valor[i] = math.log10(prin.fo(observacion[i, :, 0]))
+                merito[i] = math.log10(prin.fo(observacion[i, :, 0]))
             else:
-                valor[i] = prin.fo(observacion[i, :, 0])
-            if valor[i] > vmax:
+                merito[i] = prin.fo(observacion[i, :, 0])
+            if merito[i] > vmax:
                 imax = i
-                vmax = valor[i]
+                vmax = merito[i]
         
-        plot_prediccion(valor, None, 'observaciones')
+        dibuja_dato_prediccion(merito, None, 'observaciones')
         salva_figura('OBS')
 
-        imprime('ECT vec_opt :       {:14.5e}'.format(np.min(valor[0])))
-        imprime('ECT mínimo  :       {:14.5e}'.format(np.min(valor)))
+        imprime('ECT vec_opt :       {:14.5e}'.format(np.min(merito[0])))
+        imprime('ECT mínimo  :       {:14.5e}'.format(np.min(merito)))
         imprime('ECT máximo  :{:6d} {:14.5e}\n'.format(imax, vmax))
         imprime("Diferencia con el valor de la variable en el equilibrio inicial")
         for j in range(nvec):
@@ -258,7 +280,8 @@ class calcula(object):
                 imprime("")
             imprime(' {:9.2e}'.format(observacion[imax, j, 0] - vec_opt[j]), False)
         imprime("\n")
-
+        
+        # separar muestras
         n70 = int(n_observaciones * f_train)
         n90 = int(n_observaciones * (f_train + f_valid))
 
@@ -266,9 +289,9 @@ class calcula(object):
         X_valid = observacion[n70:n90]
         X_test = observacion[n90:]
 
-        Y_train = valor[0:n70]
-        Y_valid = valor[n70:n90]
-        Y_test = valor[n90:]
+        Y_train = merito[0:n70]
+        Y_valid = merito[n70:n90]
+        Y_test = merito[n90:]
 
         imprime('Número de observaciones     : {:12d} x {:5d}'.format(n_observaciones, nvec))
         imprime('  entrenar                  : {:12d}'.format(X_train.shape[0]))
@@ -276,6 +299,10 @@ class calcula(object):
         imprime('  probar                    : {:12d}'.format(X_test.shape[0]))
         imprime('Fracción variaciones únicas : {:12.3e}'.format(frac_uni_var))
         imprime('Factor de dispersión        : {:12.3e}'.format(factor_dispersion))
+
+        nb_caso = '{:d}_{:7.1e}_{:5.2f}_{:s}'.format(n_observaciones, factor_dispersion, frac_uni_var, 'log' if log_merito else 'val')
+        dibuja_merito_distancia(merito, distancia)
+        salva_figura("M_D_" + nb_caso)
 
 #-------------------------------------------------------------------------------------------------------
 # Red neuronal convolucional
@@ -471,6 +498,5 @@ class calcula(object):
                 imprime('mínimo {:4d} {:12.5e}'.format(imin, vmin))
                 imprime('máximo {:4d} {:12.5e}'.format(imax, vmax))
                 imprime("")
-
 
 print('\nfin.\n')

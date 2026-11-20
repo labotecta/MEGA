@@ -134,18 +134,13 @@ se ejecuta desde la línea de comandos (BAT) como si se ejecuta desde un IDE
 '''
 
 #----------------------------------------------------------------------------
-#----------------------------------------------------------------------------
 #
 # para "aproximar" la función de mérito meiante una red neuronal
 # en realidad para comprobar que no es posible
 
 RN_INICIAL = False
 RN_ESCENA  = False
-SOLO_RN    = False
-if RN_INICIAL or RN_ESCENA:
-    import rna as rna
-
-#----------------------------------------------------------------------------
+SOLO_RN    = True
 #----------------------------------------------------------------------------
 
 try:
@@ -162,12 +157,6 @@ nfac = args.NFAC    # número de factores
 ndem = args.NDEM    # número de hogares
 nsec = args.NSEC    # número de sectores
 
-#----------------------------------------------------------------------------
-# retrasamos hasta aquí la importación del módulo 'dll'
-# para que al importarlo ya estén definidas 'nfac, ndem y nsec'
-#----------------------------------------------------------------------------
-import dll as dll
-#----------------------------------------------------------------------------
 NSAM                = args.NSAM
 if args.NSAM_OP    != args.NSAM:
     errores_diferidos.append('La función "valores_opciones()" para procesar los argumentos ({}) no es coherente con la MCS especificada ({})'.format(args.NSAM_OP, args.NSAM))
@@ -211,6 +200,7 @@ if ALGE_FRAC_REGUL > 0.95:
     avisos_diferidos.append('La fracción de población a regularizar {} se ha modificado a 0.95, que es el máximo'.format(ALGE_FRAC_REGUL))
     ALGE_FRAC_REGUL = 0.95
 PROB_COP_MEJOR      = args.PROB_COP_MEJOR
+N_MEJS_RETENER      = args.N_MEJS_RETENER
 F_PASO_PROLONGAR    = args.F_PASO_PROLONGAR
 DIS_PROLONGA_MIN    = args.DIS_PROLONGA_MIN
 ALGE_MODO_POB_INI   = args.ALGE_MODO_POB_INI
@@ -534,6 +524,17 @@ if len(FI_CASO_SALVA) > 0:
     i = max(i1, i2, i3, i4)
     if i > 0:
         os.makedirs(FI_CASO_SALVA[0:i], exist_ok=True)  # crear el directorio si no existe
+
+#----------------------------------------------------------------------------
+# retrasamos hasta aquí la importación del módulo 'dll'
+# para que al importarlo ya estén definidas 'nfac, ndem y nsec'
+#----------------------------------------------------------------------------
+import dll as dll
+#----------------------------------------------------------------------------
+# solo impotamos 'rna' si la vamos a usar y así evitar que se carge innecesariamente tensorflow
+if RN_INICIAL or RN_ESCENA:
+    import rna as rna
+#----------------------------------------------------------------------------
 
 # para el algoritmo genético de la DLL
 
@@ -1691,6 +1692,7 @@ def imprime_opciones(nvec_opt):
         imprime('    Número GE_MIN_PROGRESO para efectuar regularización {:10}'.format(ALGE_UMBRAL_REGUL))
         imprime('    Fracción de población a regularizar                 {:10}'.format(ALGE_FRAC_REGUL))
         imprime('    Probabilidad de cuasi replicar el mejor individuo   {:10.8f}'.format(PROB_COP_MEJOR))
+        imprime('    Número de mejores individuos anteriores a retener   {:10.8f}'.format(N_MEJS_RETENER))
         imprime('    Factor del paso de prolongación                     {:10.8f}'.format(F_PASO_PROLONGAR))
         imprime('    Variación mínima de variables para prolongar        {:10.8f}'.format(DIS_PROLONGA_MIN))
         imprime('    Modo reinicio de la población inicial               {:10}'.format(ALGE_MODO_REINI_POB))
@@ -2074,6 +2076,7 @@ if len(FI_LEE_CASO) > 0:
         ALGE_EST_POB_INI = np.int(sal_caso.readline())
         DESV_RELATIVA = np.int(sal_caso.readline())
         PROB_COP_MEJOR = np.float64(sal_caso.readline())
+        N_MEJS_RETENER = np.int(sal_caso.readline())
         F_PASO_PROLONGAR = np.float64(sal_caso.readline())
         DIS_PROLONGA_MIN = np.float64(sal_caso.readline())
         for i in range(nvec_opt):
@@ -2884,6 +2887,7 @@ if __name__ == '__main__':
             sal_caso.write('{}\n'.format(np.float64(ALGE_EST_POB_INI)))
             sal_caso.write('{}\n'.format(np.float64(DESV_RELATIVA)))
             sal_caso.write('{}\n'.format(np.float64(PROB_COP_MEJOR)))
+            sal_caso.write('{}\n'.format(np.float64(N_MEJS_RETENER)))
             sal_caso.write('{}\n'.format(np.float64(F_PASO_PROLONGAR)))
             sal_caso.write('{}\n'.format(np.float64(DIS_PROLONGA_MIN)))
             for i in range(nvec_opt):
@@ -2980,6 +2984,7 @@ if __name__ == '__main__':
         par.append(np.float64(ALGE_EST_POB_INI))
         par.append(np.float64(DESV_RELATIVA))
         par.append(np.float64(PROB_COP_MEJOR))
+        par.append(np.float64(N_MEJS_RETENER))
         par.append(np.float64(F_PASO_PROLONGAR))
         par.append(np.float64(DIS_PROLONGA_MIN))
 

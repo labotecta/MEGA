@@ -21,7 +21,7 @@ ES IMPRESCINDIBLE QUE LA FUNCION 'valores_opciones()' SEA LA CORRECTA AL EJECUTA
 ------------------------------------------------------------------------------------------------
 '''
 
-def valores_opciones0():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=0      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -68,6 +68,7 @@ def valores_opciones0():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -320,6 +321,7 @@ def valores_opciones1():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -550,6 +552,7 @@ def valores_opciones2():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -801,6 +804,7 @@ def valores_opciones3():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -1031,6 +1035,7 @@ def valores_opciones4():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -1261,6 +1266,7 @@ def valores_opciones5():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=5.0E-04, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -1442,7 +1448,7 @@ def valores_opciones5():
 
     return args
 
-def valores_opciones6():
+def valores_opciones():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=6      , help="Matriz de Contabilidad Social asociada a esta función")
     
@@ -1513,6 +1519,7 @@ def valores_opciones6():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=3.0E-03, help="probabilidad de cuasi replicar al mejor individuo: si < 0 descartar cuando i1=i2")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -1696,7 +1703,7 @@ def valores_opciones6():
     args = parser.parse_args()
     return args
 
-def valores_opciones():
+def valores_opciones7():
     parser = argparse.ArgumentParser()
     parser.add_argument('--NSAM_OP'             , type=int  , default=7      , help="Matriz de Contabilidad Social asociada a esta función")
     '''
@@ -1764,6 +1771,7 @@ def valores_opciones():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=0.0    , help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 
@@ -1833,7 +1841,7 @@ def valores_opciones():
     parser.add_argument('--RENTA_FICTICIA'     , type=sab  , default=False , help="si True no se proveerán fondos para los incrementos de demanda, es un caso incoherente")
     
     # Para ver los efectos de las ayudas lo apropiado es usar NCASO = 10
-    parser.add_argument('--AYD_AD_LON'         , type=int  , default=6     , help="número de ayudas exógenas de productos para los hogares")
+    parser.add_argument('--AYD_AD_LON'         , type=int  , default=1     , help="número de ayudas exógenas de productos para los hogares")
     parser.add_argument('--AYD_AD_HO_PRO'      , type=float, default=[0,1,1000.], nargs='*', help="para el 'hogar' (i1) y el 'producto' (i2) la 'ayuda' exógena (v)")
 
     # 'CON_ESENCIALES' cantidades de consumos esenciales. Si DEM_ESENCIALES = False, simplemente se usan como el valor mínimo de las compras, sin usar la función de demanda Stone-Geary
@@ -2015,6 +2023,7 @@ def valores_opciones8():
     parser.add_argument('--ALGE_UMBRAL_REGUL'  , type=float, default=0.     , help="número de veces GE_MIN_PROGRESO para efectuar regularización, 0 si <= 0.001")
     parser.add_argument('--ALGE_FRAC_REGUL'    , type=float, default=0.     , help="fracción de población a regularizar, máximo 0.95")
     parser.add_argument('--PROB_COP_MEJOR'     , type=float, default=1.0E-06, help="probabilidad de cuasi replicar al mejor individuo: si < 0 igual 0.00002 * NPOB / 1000.")
+    parser.add_argument('--N_MEJS_RETENER'     , type=int  , default=4      , help="número de mejores individuos de generaciones anteriores a retener en la población")
     parser.add_argument('--F_PASO_PROLONGAR'   , type=float, default=1.0E-02, help="factor para calcular la longitud del paso a prolongar")
     parser.add_argument('--DIS_PROLONGA_MIN'   , type=float, default=1.0E-07, help="se multiplica por NVEC y es valor mínimo de suma de los valores absolutos de las variaciones de las variables del vector solución para probar una prolongación")
 

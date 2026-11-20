@@ -26,7 +26,7 @@ además, hay que cambiar el nombre en 'propiedades' de la solución MEGA_DLL: 'g
 desde la capeta 'C:\MEGA\MEGA_DLL\x64\Release' a otra carpeta, porque si se vuelve a compilar la solución, se sobreescribirá la DLL y se perderá la DLL anterior
 */
 
-#define MEGA6
+#define MEGA8
 const int NFAC = 2;
 
 #ifdef MEGA0
@@ -97,6 +97,10 @@ La mayoría son inútiles, pero se mantienen para que el olvido no haga que en e
 // población, si no, se toma el valor del mejor individuo. No parece que una sea mejor que otra, pero quizás sea preferible que
 // RECOMBINACION_NORMAL esté definido porque recombinar con el mejor ofrece menos variedad que con los individuos de la población.
 #define RECOMBINACION_NORMAL
+
+// retener el mejor individuo de generaciones anteriores, ha servido para comprobar que
+// la probabilidad de copiar el mejor es algo similar
+#define RETENER
 
 // añade estadísticas de las mutaciones a las salidas, registra el número de genes que se toman del segundo progenitor y no del mutante
 // desactivarla no ahorra tiempo
@@ -251,10 +255,10 @@ public:
 extern "C" MEGA_DLL_API OPCIONES recibe_opciones(OPCIONES vals);
 extern "C" MEGA_DLL_API DATOS recibe_datos(DATOS vals);
 extern "C" MEGA_DLL_API PARAMETROS recibe_parametros(PARAMETROS vals);
+extern "C" MEGA_DLL_API int recibe_caso(const char* fichero, double* vec, double* par);
 extern "C" MEGA_DLL_API double* merito_sol(double* vec_opt);
 extern "C" MEGA_DLL_API double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda, const char* caso, const char* caso_para_leer);
 extern "C" MEGA_DLL_API double merito_s(double* vec_opt);
-extern "C" MEGA_DLL_API int lee_caso(const char* fichero, double* vec, double* par);
 
 // estas dos funciones fueron útiles durante el desarrollo  pero se podrían eliminar
 extern "C" MEGA_DLL_API bool abre_salida(const char* senda, const char* caso);
@@ -337,6 +341,9 @@ void ProcesarTramo(int hilo, int desde, int hasta, mt19937& gh, uniform_int_dist
 #else
 void mutacion_cruzeH(int desde, int hasta, int hilo);
 void ProcesarTramo(int hilo, int desde, int hasta);
+#endif
+#ifdef RETENER
+void funcion_retener();
 #endif
 unsigned int WINAPI HiloTramos(LPVOID param);
 void fin_soluciona();

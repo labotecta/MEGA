@@ -1,0 +1,152 @@
+RETENER 3-3 PCM 3-3 M_2k_250_250
+caso              :C:\MEGA\MEGA_GPU\Casos\Fuentes6\230_fosiles_1_5_det_P_0_00.txt
+prefijo salidas   :M1_RET_3_3_PCM_3_3_M_2k_250_250_
+salidas           :C:\MEGA\MEGA_GPU\Casos\Salidas6\M1_RET_3_3_PCM_3_3_M_2k_250_250_230_fosiles_1_5_det_P_0_00_sal.log
+vector solución   :C:\MEGA\MEGA_GPU\Casos\Soluciones6\M1_RET_3_3_PCM_3_3_M_2k_250_250_230_fosiles_1_5_det_P_0_00_vector.txt
+solución completa :C:\MEGA\MEGA_GPU\Casos\SolModelo6\M1_RET_3_3_PCM_3_3_M_2k_250_250_230_fosiles_1_5_det_P_0_00_modelo.txt
+-------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+
+Device name: Quadro RTX 6000
+Total global memory (Gbytes)            24.0
+multiProcessorCount                       72
+Shared memory per block (Kbytes)        48.0
+regsPerBlock                           65536
+warpSize                                  32
+memPitch (ancho filas 2D)         2147483647
+Max Threads per Block:                  1024
+maxThreadsDim:                   1024 1024 64
+maxGridSize:                     2147483647 65535 65535
+totalConstMem                          65536
+major-minor:                     7.5
+textureAlignment                         512
+integrated (motherboard)                   0
+canMapHostMemory                           1
+Memory Bus Width (bits):                 384
+Concurrent kernels:              si
+L2 Cache Size (bytes):               6291456
+
+capacidad máxima de memoria compartida: 65536
+-------------------------------------------------------------------------------------------------------------
+kernel_merito_s_todo:
+con 64 hilos
+un máximo de 4 bloques activos por SM, el número de warps activos es 8 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 256
+
+-------------------------------------------------------------------------------------------------------------
+kernel_mutacion_cruze:
+con 64 hilos
+un máximo de 16 bloques activos por SM, el número de warps activos es 32 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 1024
+
+-------------------------------------------------------------------------------------------------------------
+kernel_seleccion:
+con 64 hilos
+un máximo de 4 bloques activos por SM, el número de warps activos es 8 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 256
+
+-------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+inicio: Thu Nov 19 12:25:29 2026
+
+MEMORIA ESTATICA
+----------------
+
+tamaño matriz de población :      105031696    100.17 MB
+tamaño variables me_sol    :          28712      0.03 MB
+tamaño variables VEC_OPT_E :           3096      0.00 MB
+cudaLimitMallocHeapSize    :     1680539648   1602.69 MB
+memoria usada              :                  5341.56 MB
+memoria libre              :    20168310784  19234.00 MB
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :           31
+-------------------------------------
+Población              :         5888
+Número de hilos        :           64
+Número de bloques      :           92
+Individuos por hilo    :            1
+Memoria compartida     : por defecto
+-------------------------------------
+Tolerancia en el mérito:  1.00000e-11
+Intentos (reinicios)   :            5
+Números aleatorios     : MRG32k3a
+Semilla num.aleatorios :           42
+-------------------------------------
+Modo población inicial :            0
+Factor dispersión      :  1.00000e-03
+Variación F.dispersión :  1.20000e+00
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Probab.copiar el mejor :  3.00000e-04
+Número mejor retenidos :            3
+-------------------------------------
+Mestizaje              :           si
+Generaciones mestizaje :         2000
+Número de mestizos     :          250    250
+Valores ini.sol. fijos :            0
+Probab.copiar el mejorB:  3.00000e-04
+Número mejor retenidos :            3
+-------------------------------------
+Control progreso cada  :        10000 generaciones
+Progreso mínimo        :        0.050 %
+-------------------------------------
+Factor Alp             :  0.00000e+00
+Fondos UE              :  0.00000e+00
+Inc.demanda            : SIN renta ficticia
+-------------------------------------
+Xp NO incluido en la solución
+AgH NO incluido en la solución
+Datos de cabecera      :            7
+Variables solución     :          251
+Resto variables modelo :         1634
+Variables recalculadas :         1633
+-------------------------------------
+Total                  :         3525
+
+Variables fijas en sol :            8
+-------------------------------------
+Variables con valores fijos
+    0 pF           0  1.00000000e+00
+   94 epsilon      0  1.00000000e+00
+  166 E            8  0.00000000e+00
+  167 E            9  0.00000000e+00
+  197 M            8  0.00000000e+00
+  198 M            9  0.00000000e+00
+  199 M           10  0.00000000e+00
+  200 M           11  0.00000000e+00
+-------------------------------------
+
+mejor mérito inicial  :   1.384978909299834e+09
+VAB                   :   8.725518007095770e+05
+Impuestos             :   2.450502760129166e+05
+Cotización SS         :   1.358355783345336e+05
+Z                     :   1.937561198391317e+06
+Q                     :   2.164881581398429e+06
+
+generac. ind.m      ECT          VAB         impuestos   cotizacionSS     suma Z        suma Q      segs.p   mins.tot
+-------- ----- ------------ ------------- ------------- ------------- ------------- ------------- --------- ---------
+       0   475  1.38498e+09  8.725518e+05  2.450503e+05  1.358356e+05  1.937561e+06  2.164882e+06       0.0      0.00   1404  1.32520e+09
+       1  3195  1.33480e+09  8.756131e+05  2.459000e+05  1.363240e+05  1.950564e+06  2.176812e+06       0.0      0.00   3613  1.32498e+09
+   10000  3359  3.38923e+05  8.357783e+05  2.339225e+05  1.291081e+05  1.867763e+06  2.091478e+06     104.9      1.75   1831  3.81069e+05
+   20000  1033  1.63377e+03  8.065342e+05  2.251154e+05  1.236484e+05  1.792963e+06  2.012238e+06     105.9      3.51   5020  1.59854e+03
+   30000  2107  3.47129e+02  8.063258e+05  2.250534e+05  1.236131e+05  1.792482e+06  2.011719e+06     105.4      5.27    916  3.44923e+02
+   40000    77  2.94451e+02  8.058821e+05  2.249204e+05  1.235311e+05  1.791343e+06  2.010510e+06     105.8      7.03   1821  2.94460e+02
+   50000   485  2.94198e+02  8.058849e+05  2.249213e+05  1.235316e+05  1.791349e+06  2.010517e+06     105.3      8.79   3107  2.94195e+02
+   60000   331  2.94129e+02  8.058961e+05  2.249247e+05  1.235337e+05  1.791378e+06  2.010548e+06     105.5     10.55    241  2.94128e+02
+Reinicio. Factor dispersión:  1.20000e-03  probabilidad copiar el mejor 3.00000e-04
+   70000    92  2.94117e+02  8.058986e+05  2.249254e+05  1.235341e+05  1.791385e+06  2.010555e+06     104.5     12.29   1856  2.94117e+02
+   80000  1547  2.94117e+02  8.058989e+05  2.249255e+05  1.235342e+05  1.791385e+06  2.010555e+06     105.3     14.04   4809  2.94117e+02
+Reinicio. Factor dispersión:  1.44000e-03  probabilidad copiar el mejor 3.00000e-04
+   90000  2092  2.94117e+02  8.058991e+05  2.249256e+05  1.235342e+05  1.791386e+06  2.010556e+06     104.6     15.79   2069  2.94117e+02
+  100000  1181  2.94117e+02  8.058992e+05  2.249256e+05  1.235343e+05  1.791386e+06  2.010556e+06     104.8     17.53    137  2.94117e+02
+Reinicio. Factor dispersión:  1.72800e-03  probabilidad copiar el mejor 3.00000e-04
+  110000  2118  2.94117e+02  8.058993e+05  2.249256e+05  1.235343e+05  1.791386e+06  2.010556e+06     104.9     19.28   4135  2.94117e+02
+  120000   885  2.94117e+02  8.058993e+05  2.249256e+05  1.235343e+05  1.791386e+06  2.010556e+06     105.8     21.04   1717  2.94117e+02
+Reinicio. Factor dispersión:  2.07360e-03  probabilidad copiar el mejor 3.00000e-04
+  130000  4297  2.94117e+02  8.058993e+05  2.249256e+05  1.235343e+05  1.791386e+06  2.010556e+06     105.5     22.80     12  2.94117e+02

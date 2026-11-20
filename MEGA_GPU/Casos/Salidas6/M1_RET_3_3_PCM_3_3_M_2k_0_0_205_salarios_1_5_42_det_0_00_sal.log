@@ -1,0 +1,163 @@
+RETENER 3-3 PCM 3-3 M_2k_0_0
+caso              :C:\MEGA\MEGA_GPU\Casos\Fuentes6\205_salarios_1_5_42_det_0_00.txt
+prefijo salidas   :M1_RET_3_3_PCM_3_3_M_2k_0_0_
+salidas           :C:\MEGA\MEGA_GPU\Casos\Salidas6\M1_RET_3_3_PCM_3_3_M_2k_0_0_205_salarios_1_5_42_det_0_00_sal.log
+vector solución   :C:\MEGA\MEGA_GPU\Casos\Soluciones6\M1_RET_3_3_PCM_3_3_M_2k_0_0_205_salarios_1_5_42_det_0_00_vector.txt
+solución completa :C:\MEGA\MEGA_GPU\Casos\SolModelo6\M1_RET_3_3_PCM_3_3_M_2k_0_0_205_salarios_1_5_42_det_0_00_modelo.txt
+-------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+
+Device name: Quadro RTX 6000
+Total global memory (Gbytes)            24.0
+multiProcessorCount                       72
+Shared memory per block (Kbytes)        48.0
+regsPerBlock                           65536
+warpSize                                  32
+memPitch (ancho filas 2D)         2147483647
+Max Threads per Block:                  1024
+maxThreadsDim:                   1024 1024 64
+maxGridSize:                     2147483647 65535 65535
+totalConstMem                          65536
+major-minor:                     7.5
+textureAlignment                         512
+integrated (motherboard)                   0
+canMapHostMemory                           1
+Memory Bus Width (bits):                 384
+Concurrent kernels:              si
+L2 Cache Size (bytes):               6291456
+
+capacidad máxima de memoria compartida: 65536
+-------------------------------------------------------------------------------------------------------------
+kernel_merito_s_todo:
+con 64 hilos
+un máximo de 4 bloques activos por SM, el número de warps activos es 8 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 256
+
+-------------------------------------------------------------------------------------------------------------
+kernel_mutacion_cruze:
+con 64 hilos
+un máximo de 16 bloques activos por SM, el número de warps activos es 32 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 1024
+
+-------------------------------------------------------------------------------------------------------------
+kernel_seleccion:
+con 64 hilos
+un máximo de 4 bloques activos por SM, el número de warps activos es 8 de un máximo de 32 por SM
+óptimo para mantener el máximo número de warps activos:
+número mínimo de bloques: 72  hilos: 256
+
+-------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+inicio: Thu Nov 19 16:47:11 2026
+
+MEMORIA ESTATICA
+----------------
+
+tamaño matriz de población :      105031696    100.17 MB
+tamaño variables me_sol    :          28712      0.03 MB
+tamaño variables VEC_OPT_E :           3096      0.00 MB
+cudaLimitMallocHeapSize    :     1680539648   1602.69 MB
+memoria usada              :                  5341.56 MB
+memoria libre              :    20168310784  19234.00 MB
+
+Número factores        :            2
+Número hogares         :            2
+Número sectores        :           31
+-------------------------------------
+Población              :         5888
+Número de hilos        :           64
+Número de bloques      :           92
+Individuos por hilo    :            1
+Memoria compartida     : por defecto
+-------------------------------------
+Tolerancia en el mérito:  1.00000e-11
+Intentos (reinicios)   :            5
+Números aleatorios     : MRG32k3a
+Semilla num.aleatorios :           42
+-------------------------------------
+Modo población inicial :            0
+Factor dispersión      :  1.00000e-03
+Variación F.dispersión :  1.20000e+00
+Factor mutación (F)    :  7.50000e-01  8.50000e-01
+Recombinación (CR)     :  9.99000e-01
+Recombinación extra    :  9.95000e-01
+Probab.copiar el mejor :  3.00000e-04
+Número mejor retenidos :            3
+-------------------------------------
+Mestizaje              :     inactivo
+Generaciones mestizaje :         2000
+Número de mestizos     :            0      0
+Valores ini.sol. fijos :            0
+Probab.copiar el mejorB:  3.00000e-04
+Número mejor retenidos :            3
+-------------------------------------
+Control progreso cada  :        10000 generaciones
+Progreso mínimo        :        0.050 %
+-------------------------------------
+Factor Alp             :  0.00000e+00
+Fondos UE              :  0.00000e+00
+Inc.demanda            : SIN renta ficticia
+-------------------------------------
+Xp NO incluido en la solución
+AgH NO incluido en la solución
+Datos de cabecera      :            7
+Variables solución     :          251
+Resto variables modelo :         1634
+Variables recalculadas :         1633
+-------------------------------------
+Total                  :         3525
+
+Variables fijas en sol :            8
+-------------------------------------
+Variables con valores fijos
+    0 pF           0  1.05000000e+00
+   94 epsilon      0  1.00000000e+00
+  166 E            8  0.00000000e+00
+  167 E            9  0.00000000e+00
+  197 M            8  0.00000000e+00
+  198 M            9  0.00000000e+00
+  199 M           10  0.00000000e+00
+  200 M           11  0.00000000e+00
+-------------------------------------
+
+mejor mérito inicial  :   2.318110834485648e+08
+VAB                   :   8.492072679190408e+05
+Impuestos             :   2.443758236063637e+05
+Cotización SS         :   1.349388526250953e+05
+Z                     :   1.962588548132117e+06
+Q                     :   2.201812273788377e+06
+
+generac. ind.m      ECT          VAB         impuestos   cotizacionSS     suma Z        suma Q      segs.p   mins.tot
+-------- ----- ------------ ------------- ------------- ------------- ------------- ------------- --------- ---------
+       0     0  2.31811e+08  8.492073e+05  2.443758e+05  1.349389e+05  1.962589e+06  2.201812e+06       0.0      0.00      0    0      0  2.31811e+08
+       1  4339  2.31763e+08  8.492046e+05  2.443751e+05  1.349387e+05  1.962587e+06  2.201810e+06       0.0      0.00   2557   43      0  2.31811e+08
+   10000  3501  1.23100e+06  8.509802e+05  2.445004e+05  1.357959e+05  1.914278e+06  2.149615e+06      99.7      1.66                509  1.31065e+06
+   20000  4528  6.60595e+04  7.281379e+05  2.118266e+05  1.158939e+05  1.617293e+06  1.833034e+06     100.7      3.34               4459  8.94097e+04
+   30000  2642  6.66835e+03  7.188571e+05  2.093582e+05  1.144016e+05  1.595111e+06  1.809304e+06     100.4      5.01               3305  1.26771e+04
+   40000    99  3.34123e+03  7.168797e+05  2.088307e+05  1.140905e+05  1.590288e+06  1.804174e+06     100.3      6.69               2498  2.26235e+03
+   50000  5442  2.54720e+02  7.109351e+05  2.072490e+05  1.131280e+05  1.575882e+06  1.788799e+06     100.4      8.36               2871  1.78064e+03
+   60000  3633  2.34424e+02  7.107862e+05  2.072093e+05  1.131044e+05  1.575520e+06  1.788411e+06     100.6     10.04               1755  1.77434e+03
+   70000  5073  2.28412e+02  7.106706e+05  2.071785e+05  1.130858e+05  1.575237e+06  1.788109e+06     100.8     11.71               4109  1.77114e+03
+   80000  1161  2.18912e+02  7.104025e+05  2.071072e+05  1.130424e+05  1.574586e+06  1.787415e+06     101.3     13.40               4750  1.77054e+03
+   90000  5236  2.17769e+02  7.103656e+05  2.070974e+05  1.130366e+05  1.574500e+06  1.787322e+06     101.1     15.09               5301  1.77006e+03
+  100000   476  2.17731e+02  7.103613e+05  2.070962e+05  1.130359e+05  1.574489e+06  1.787312e+06     100.8     16.77               5792  1.76989e+03
+Reinicio. Factor dispersión:  1.20000e-03  probabilidad copiar el mejor 3.00000e-04
+  110000  5791  1.30377e+06  8.538662e+05  2.452668e+05  1.362519e+05  1.920987e+06  2.156778e+06     100.0     18.44               2782  1.35108e+06
+  120000  5620  1.09505e+05  7.422566e+05  2.155788e+05  1.181867e+05  1.651460e+06  1.869472e+06     100.5     20.11               2359  3.60925e+04
+  130000  2864  1.94645e+04  7.264196e+05  2.113691e+05  1.156330e+05  1.613302e+06  1.828727e+06     100.6     21.79               2890  8.58896e+03
+  140000  3457  2.07283e+03  7.127153e+05  2.077239e+05  1.134111e+05  1.580094e+06  1.793309e+06      99.9     23.45               1751  4.86294e+03
+  150000  1366  1.81916e+03  7.122404e+05  2.075971e+05  1.133362e+05  1.578913e+06  1.792051e+06      99.9     25.12               1733  2.32203e+03
+  160000  3240  1.77289e+03  7.115120e+05  2.074033e+05  1.132186e+05  1.577158e+06  1.790178e+06      99.8     26.78                254  8.46915e+02
+  170000  2014  1.76956e+03  7.114048e+05  2.073747e+05  1.132017e+05  1.576899e+06  1.789901e+06     100.9     28.46               4947  6.45536e+01
+  180000  1437  1.76942e+03  7.113736e+05  2.073664e+05  1.131967e+05  1.576824e+06  1.789821e+06      99.7     30.12               2076  5.54205e+00
+Reinicio. Factor dispersión:  1.44000e-03  probabilidad copiar el mejor 3.00000e-04
+  190000  5650  1.24553e+06  8.510968e+05  2.445287e+05  1.358138e+05  1.914568e+06  2.149943e+06     100.5     31.80                352  1.31335e+06
+  200000  5410  2.51433e+05  7.610630e+05  2.205817e+05  1.212241e+05  1.696646e+06  1.917702e+06     102.3     33.50               2622  1.57968e+05
+  210000  3562  2.94743e+04  7.293113e+05  2.121391e+05  1.161009e+05  1.620399e+06  1.836310e+06     102.3     35.21                721  1.08111e+04
+  220000  5153  5.64206e+03  7.184468e+05  2.092489e+05  1.143392e+05  1.593921e+06  1.808064e+06     101.7     36.90               5593  4.57343e+03
+  230000  1089  3.67057e+03  7.167458e+05  2.087959e+05  1.140630e+05  1.589792e+06  1.803661e+06     100.1     38.57               4172  2.35930e+03
+  240000  4599  1.83005e+03  7.120662e+05  2.075509e+05  1.133074e+05  1.578502e+06  1.791612e+06     101.3     40.26               2370  2.20938e+03
+  250000  1797  1.78418e+03  7.116622e+05  2.074432e+05  1.132429e+05  1.577521e+06  1.790565e+06     102.3     41.96               3730  2.18982e+03
+  260000  4632  1.77745e+03  7.114424e+05  2.073847e+05  1.132077e+05  1.576989e+06  1.789997e+06     100.5     43.64                 66  1.26884e+03

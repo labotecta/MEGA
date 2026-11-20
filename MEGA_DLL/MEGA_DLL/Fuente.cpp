@@ -295,6 +295,8 @@ LSOL +
 2 * HISTO_MAX
 ;
 
+const int MAX_VEC = 640;
+
 double CeroDem[NDEM]{};
 double VEC_OPT_E[LVSOL]{};
 
@@ -407,6 +409,13 @@ static uniform_real_distribution<double> hdis_double{};
 
 #endif AZAR_HILOS_LOCAL
 
+const int hMAX_RETENIDOS = 50;
+#ifdef RETENER
+double retenido[hMAX_RETENIDOS][MAX_VEC];
+double merito_retenido[hMAX_RETENIDOS];
+int retenidos_registrados;
+int fila_ultimo_retenido;
+#endif
 
 #ifdef ESTA_CRUCES
 long long num_cruces_si[MAX_HILOS]{};
@@ -448,8 +457,6 @@ double desviacion[3][MAX_HILOS]{};
 int RESTO_NSEC4;
 int NSEC4;
 #endif
-
-const int MAX_VEC = 640;
 
 #ifdef DINAMICA
 double** cotas = NULL;
@@ -541,6 +548,7 @@ double umbral_regularizacion;
 double fraccion_regularizacion;
 double prob_cop_mejor_ini;
 double prob_cop_mejor;
+int num_retener;
 double f_paso_prolongar;
 double dis_prolonga_min;
 // El modo normal es el 0, el resto han sido pruebas nada concluyentes
@@ -572,7 +580,7 @@ double hAYD_ADI_DEM[NDEM]{};
 double PssH0_sum;
 double repartoFF[NDEM][NFAC];
 
-int lee_caso(const char* fichero, double* vec, double* par) {
+int recibe_caso(const char* fichero, double* vec, double* par) {
 	FILE* fop;
 	fopen_s(&fop, fichero, "r");
 	if (fop == nullptr) {
@@ -1007,6 +1015,9 @@ int lee_caso(const char* fichero, double* vec, double* par) {
 	hpar[hipar++] = prob_cop_mejor = prob_cop_mejor_ini = atof(c);
 	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error hipar %d\n", hipar);
 	fgets(c, 32, fop);
+	hpar[hipar++] = num_retener = atoi(c);
+	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error num_retener %d\n", hipar);
+	fgets(c, 32, fop);
 	hpar[hipar++] = f_paso_prolongar = atof(c);
 	if (hpar[hipar - 1] != par[hipar - 1]) fprintf(salida, "error F_PASO_PROLONGAR %d\n", hipar);
 	fgets(c, 32, fop);
@@ -1413,7 +1424,7 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 
 	if (strlen(caso_para_leer) > 0) {
 		fprintf(salida, "Lee caso\n");
-		if (lee_caso(caso_para_leer, vec, par) == -1) {
+		if (recibe_caso(caso_para_leer, vec, par) == -1) {
 			if (extendida == 1) {
 				me_sol[0] = -8;
 				me_sol[2] = intentos;
@@ -1507,6 +1518,9 @@ double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, 
 	fprintf(salida, "Recombinación (CR)     : %12.5e\n", cte_recombinacion);
 	fprintf(salida, "Recombinación extra    : %12.5e\n", cte_recombinacion_extra);
 	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", prob_cop_mejor_ini);
+#ifdef RETENER
+	fprintf(salida, "Número mejor retenidos : %12d\n", num_retener);
+#endif	
 #ifdef RECOMBINACION_NORMAL
 	fprintf(salida, "Recombinación normal\n");
 #else
@@ -2204,6 +2218,7 @@ int parametros_alge(double* par) {
 	estadistica_pob_ini = (int)par[ipar++];
 	desviaciones_relativas = (int)par[ipar++];
 	prob_cop_mejor = prob_cop_mejor_ini = par[ipar++];
+	num_retener = par[ipar++];
 	f_paso_prolongar = par[ipar++];
 	dis_prolonga_min = par[ipar++];
 
@@ -4192,6 +4207,52 @@ void mutacion_cruzeH(int desde, int hasta, int hilo, mt19937& gh, uniform_int_di
 #endif
 #endif
 }
+#ifdef RETENER
+void funcion_retener() {
+	// ha terminado la mutación y cruce de la generación actual y antes del proceso de selección
+	// añadimos el mejor individuo de la generación anterior al registro circular de retenidos
+
+	if (retenidos_registrados < num_retener) {
+		// un retenido más. Una vez que 'retenidos_registrados = num_retener' el número de retenidos no cambiará
+		retenidos_registrados++;
+	}
+	// mantenemos un índice 'fila_ultimo_retenido' que apunta a la fila de la tabla de 'retenidos' donde ponemos el
+	// último, es un índice circular, después de ocupar la última fila de la tabla de 'retenidos', apuntamos a la primera
+	fila_ultimo_retenido++;
+	if (fila_ultimo_retenido == num_retener) {
+		fila_ultimo_retenido = 0;
+	}
+	for (int j = 0; j < NVEC; j++) {
+		retenido[fila_ultimo_retenido][j] = poblacion[ind_mejor_merito][j];
+	}
+	merito_retenido[fila_ultimo_retenido] = merito_individuo[ind_mejor_merito];
+
+	// copiar los 'retenidos_registrados' en posiciones de la población, elegidas al azar 
+	// recorremos las filas de la tabla de 'retenidos' de abajo-arriba
+	int i1;
+	int fila = fila_ultimo_retenido;
+	for (int i = 0; i < retenidos_registrados; i++) {
+		i1 = hdis_entero(hgen[0]);
+		for (int j = 0; j < NVEC; j++) {
+			poblacion[i1][j] = retenido[fila][j];
+		}
+		merito_individuo[i1] = merito_retenido[fila];
+		// podemos no cambiar el estado factible de 'i1', para que:
+		//		si es 0, dejarlo porque el descendiente en 'i1' no es factible y la 'seleccion' no recalculará el mérito y se quederá el individuo que acabamos de recuperar
+		//		si es 1, dejarlo para que la 'seleccion' calcule el mérito del descendiente en 'i1' y si es mejor lo acepte.
+
+		// o forzar que siempre se quede el que acabamos de copiar, lo que es coherente con la idea de mantener a los abuelos
+		factible[i1] = 0;
+
+		// retroceder en el registro circular de retenidos
+		fila--;
+		if (fila < 0) {
+			// seguimos por el final
+			fila = num_retener - 1;
+		}
+	}
+}
+#endif
 
 /*
 versión mono proceso
@@ -4547,6 +4608,10 @@ int comprobar_final() {
 					genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
 					fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
 				}
+#ifdef RETENER
+				fila_ultimo_retenido=-1;
+				retenidos_registrados=-1;
+#endif
 				if (prob_cop_mejor > 0) {
 					prob_cop_mejor = prob_cop_mejor_ini * (1. - (double)intentos / (double)(max_intentos - 1));
 					fprintf(salida, "  Probabilidad copiar mejor %11.5e\n", prob_cop_mejor);
@@ -4629,6 +4694,10 @@ int comprobar_final() {
 						genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
 						fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
 					}
+#ifdef RETENER
+					fila_ultimo_retenido = -1;
+					retenidos_registrados = -1;
+#endif
 					if (prob_cop_mejor > 0) {
 						prob_cop_mejor = prob_cop_mejor_ini * (1. - (double)intentos / (double)max_intentos);
 						fprintf(salida, "  Probabilidad copiar mejor %11.5e\n", prob_cop_mejor);
@@ -4821,6 +4890,10 @@ int comprobar_final() {
 							genera_poblacion(vec_ini, modo_poblacion_inicial, factor_dispersion_actualizado);
 							fprintf(salida, "Reinicio. Factor dispersión: %12.5e", factor_dispersion_actualizado * factor_dispersion);
 						}
+#ifdef RETENER
+						fila_ultimo_retenido = -1;
+						retenidos_registrados = -1;
+#endif
 						if (prob_cop_mejor > 0) {
 							prob_cop_mejor = prob_cop_mejor_ini * (1. - (double)intentos / (double)max_intentos);
 							fprintf(salida, "  Probabilidad copiar mejor %11.5e\n", prob_cop_mejor);
@@ -5092,6 +5165,10 @@ void valoresConstantes() {
 }
 bool Arranque() {
 	factor_mutacion = (par_mutacion[0] + par_mutacion[1]) / 2.;
+#ifdef RETENER
+	fila_ultimo_retenido = -1;
+	retenidos_registrados = -1;
+#endif
 	CANCELADO = false;
 	return true;
 }
@@ -5459,6 +5536,12 @@ void ProcesarTramo(int hilo, int desde, int hasta) {
 #endif
 
 	mutacion_cruzeH(desde, hasta, hilo);
+#ifdef RETENER
+	if (num_retener > 0) {
+		// retener en la población los mejores de generaciones anteriores en posiciones al azar
+		funcion_retener();
+	}
+#endif
 
 #ifdef TPO_MUTA_SELECCION
 	ftime(&tiempo_act_ms);

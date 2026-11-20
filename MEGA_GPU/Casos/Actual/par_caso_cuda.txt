@@ -12,8 +12,16 @@ C:\MEGA\MEGA_GPU\Casos\SolModelo5\300_demanda_42_exo_modelo_D.txt
 1000000 max generaciones
 5       max intentos
 42      semilla
-5.0e-4  prob. copia mejor
-0       aplicar reducción de probabilidad de copiar el mejor
 -1      factor de dispersión
 1.2     incremento del factor de dispersión.
 0       modo población inicial
+5.0e-4  prob. copia mejor
+0       aplicar reducción de probabilidad de copiar el mejor
+0       número de recuerdos
+1       mestizaje, 1=si
+2000    generaciones para mestizaje
+3.0e-04 prob. copia mejor
+0       número de recuerdos B
+0       número de mestizos
+0       número de mestizos B
+0       val ini solución fijos
