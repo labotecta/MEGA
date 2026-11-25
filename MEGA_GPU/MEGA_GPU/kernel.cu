@@ -27,171 +27,15 @@ const int hMAX_DESVIOS_BLOQUE = 64;
 const int hMAX_ROT_DESVIOS_BLOQUE = 38;
 const int hN_BLO_VEC = 12;
 /*
-No se van a generar histogramas por lo que reducimos hHISTO_MAX a 0
-const int hHISTO_MAX = 201;
+No se van a generar histogramas pero mantenemos la variable 'hHISTO_MAX' por compatibilidad, reduciendo su valor a 0
 */
 const int hHISTO_MAX = 0;
-
-// longitud cabecera
-__device__ const int LCAB =
-1 +
-1 +
-1 +
-1 +
-1 +
-1 +
-1
-;
-__device__ const int LSOL =
-// longitud vector solución, incluidos 2 factores e incluidas Xpi y AgHi
-NFAC +
-NSEC +
-NSEC +
-NSEC +
-1 +
-1 +
-NSEC * NFAC +
-NSEC +
-NSEC +
-NSEC +
-// Xpi
-NDEM * NSEC +
-// AgHi
-NDEM;
-
-// longitud variables primer pase
-__device__ const int LVARS_PP =
-NSEC +
-NSEC +
-NSEC +
-NSEC * NFAC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NDEM +
-NSEC +
-NSEC +
-NDEM +
-NSEC +
-NDEM +
-NSEC +
-NDEM +
-1 +
-1 +
-1 +
-1 +
-NDEM * NSEC +
-NDEM * NFAC +
-NDEM * NFAC +
-NSEC * NSEC +
-1
-;
-
-// longitud variables recalculadas
-__device__ const int LVARS_SP =
-NSEC * NFAC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NSEC +
-NDEM +
-NSEC +
-NSEC +
-NDEM +
-NSEC +
-NDEM +
-NSEC +
-NDEM +
-1 +
-1 +
-1 +
-1 +
-NDEM * NSEC +
-NDEM * NFAC +
-NDEM * NFAC +
-NSEC * NSEC +
-1
-;
-int hLVDES =
-LCAB +
-LSOL +
-64
-;
-__device__ const int LVAR =
-// cabecera
-LCAB +
-// vector solución
-LSOL +
-// variables primer pase
-LVARS_PP +
-// variables recalculadas
-LVARS_SP;
-
 int caso;
 size_t ta_pob;
 size_t ta_me_sol;
 size_t ta_VEC_OPT_E;
 int peticion_mem_comp;
 size_t limite_mem_comp;
-
-__device__ __constant__ double CeroDem[NDEM]{};
-__device__ OPCIONES   op;
-__device__ DATOS      datos;
-__device__ PARAMETROS parametros;
-__device__ int* pvec;
-__device__ double* me_sol{};
-__device__ double* VEC_OPT_E{};
-__device__ double* AYD_ADI_DEM;
-__device__ double* desvios_bloque;
-__constant__ int NPOB;
-__constant__ int NVEC;
-__device__ double factor_mutacion;
-__constant__ double cte_recombinacion;
-__constant__ double cte_recombinacion_extra;
-__constant__ double prob_cop_mejor;
-__device__ int ind_mejor_merito;
-__constant__ int histo_int;
-__device__ int puntero_bloque_desviacion;
-__device__ int desplazamiento_desviacion;
-__device__ int N_DESVIACIONES;
-__device__ double VAB;
-__device__ double impuestos;
-__device__ double sZ;
-__device__ double sQ;
-__device__ double cotizacionesSS;
-__device__ int indice_desv_bloques;
-
-int hindice_desv_bloques;
-
-OPCIONES  hop;
-OPCIONES* pro_opciones;
-DATOS  hdatos;
-DATOS* pro_datos;
-PARAMETROS  hparametros;
-PARAMETROS* pro_parametros;
-
-char descripcion_caso[512];
-char fichero_caso[384];
-char prefijo_salidas[128];
-char senda_salidas[384];
-char senda_vector_solucion[384];
-char senda_modelo_solucion[384];
 
 // longitud cabecera
 const int hLCAB =
@@ -308,6 +152,61 @@ hLSOL +
 // evolución del mérito y de la desviación máxima
 2 * hHISTO_MAX
 ;
+
+// __constant__ no significa que la variable sea constante, solo que no puede cambierse desde el device, debe hacerse desde el host
+// ahorra tiempo cuando los hilos de un mismo warp acceden a ella porque se lee una sola vez.
+__constant__ double CeroDem[NDEM]{};
+__constant__ int NPOB;
+__constant__ int NVEC;
+__constant__ int NIF_K;
+__constant__ double cte_recombinacion;
+__constant__ double cte_recombinacion_extra;
+__constant__ double prob_cop_mejor;
+__constant__ int ind_mejor_merito;
+__constant__ double factor_mutacion;
+#ifdef __CONS_DAT_PAR
+__constant__ double AYD_ADI_DEM[NDEM];
+__constant__ OPCIONES   op;
+__constant__ DATOS      datos;
+__constant__ PARAMETROS parametros;
+#else
+__device__ double* AYD_ADI_DEM;
+__device__ OPCIONES   op;
+__device__ DATOS      datos;
+__device__ PARAMETROS parametros;
+#endif
+__device__ double* me_sol{};
+__device__ double* VEC_OPT_E{};
+__device__ double* desvios_bloque;
+__device__ int puntero_bloque_desviacion;
+__device__ int desplazamiento_desviacion;
+__device__ int N_DESVIACIONES;
+__device__ double VAB;
+__device__ double impuestos;
+__device__ double sZ;
+__device__ double sQ;
+__device__ double cotizacionesSS;
+__device__ int indice_desv_bloques;
+
+int hindice_desv_bloques;
+double hAYD_ADI_DEM[hNDEM]{};
+OPCIONES  hop;
+DATOS  hdatos;
+PARAMETROS  hparametros;
+#ifndef __CONS_DAT_PAR
+OPCIONES* pro_opciones;
+DATOS* pro_datos;
+PARAMETROS* pro_parametros;
+double* pro_AYD_ADI_DEM;
+#endif
+
+char descripcion_caso[512];
+char fichero_caso[384];
+char prefijo_salidas[128];
+char senda_salidas[384];
+char senda_vector_solucion[384];
+char senda_modelo_solucion[384];
+
 int hlen_var[hN_BLO_VEC] = { 1, hNSEC, hNSEC, hNSEC, 1, 1, hNSEC * hNFAC, hNSEC, hNSEC, hNSEC, hNDEM * hNSEC, hNDEM };
 const char* rot_desvios[hMAX_ROT_DESVIOS_BLOQUE] = {
 "ebp",
@@ -364,7 +263,6 @@ const char* rot_blo_vec[hN_BLO_VEC + 1] = {
 "AgH",
 "fin"
 };
-int* pro_pvec;
 int* hpvec;
 
 double hdesvios_bloque[hMAX_DESVIOS_BLOQUE];
@@ -445,6 +343,7 @@ __device__ double** descendiente;
 // El uso de matrices estáticas solo ahorra un 3%
 
 __device__ double cotas[2][hMAX_VEC];
+
 __device__ double poblacion[hMAX_POB][hMAX_VEC];
 __device__ double descendiente[hMAX_POB][hMAX_VEC];
 #endif
@@ -455,10 +354,56 @@ bool indesando_individuos_factibles = true;
 int hn_individuos_factibles;
 int ratio_factibles = 0;
 #endif
+const int hMAX_RETENIDOS = 50;
+#ifdef RETENER
+__constant__ int num_retener;
+__device__ double retenido[hMAX_RETENIDOS][hMAX_VEC];
+__device__ double merito_retenido[hMAX_RETENIDOS];
+__device__ int retenidos_registrados;
+__device__ int fila_ultimo_retenido;
+#endif
 
+// solo variar precios o solo variables en la población B, no conduce a nada, no se mejora la solución de partida de la población B
+// precios en el vector solución (pF, pY, pQ, pD, pE)
+
+__managed__ int NVECp;
+
+#ifdef MESTIZAJE
+double** hpoblacionB;
+double** hdescendienteB;
+int* hfactibleB;
+double* hmerito_individuoB;
+int* pro_factibleB;
+double* pro_merito_individuoB;
+double hmejor_meritoB;
+int hind_mejor_meritoB;
+double* pro_vector_poblacionB;
+double* pro_vector_descendienteB;
+int generaciones_mestizaje;
+double hprob_cop_mejorB;
+
+__constant__ int num_retenerB;
+__device__ double retenidoB[hMAX_RETENIDOS][hMAX_VEC];
+__device__ double merito_retenidoB[hMAX_RETENIDOS];
+__device__ int retenidos_registradosB;
+__device__ int fila_ultimo_retenidoB;
+__managed__ bool mestizaje;
+__managed__ int n_mestizos;
+__managed__ int n_mestizosB;
+
+__device__ double poblacionB[hMAX_POB][hMAX_VEC];
+__device__ double descendienteB[hMAX_POB][hMAX_VEC];
+__device__ int* factibleB;
+__device__ double* merito_individuoB;
+__device__ double mejor_meritoB;
+__device__ int ind_mejor_meritoB;
+__device__ double prob_cop_mejorB;
+
+#endif
 // valores constantes durante toda la simulación
-
+// PssH0_sum se está calculando en un kernel, sería mejor hacerlo en el host y declarala __constant__ en el device
 __device__ double PssH0_sum;
+
 __device__ double repartoFF[hNDEM][hNFAC];
 
 bool CANCELAR;
@@ -466,7 +411,7 @@ double vec_ini[hMAX_VEC];
 int hind_mejor_merito;
 double hmejor_merito;
 double mejor_merito_anterior;
-int generacion;
+int generacion = -10;
 int res_Simulacion;
 int nvar_fijas;
 int intentos;
@@ -478,7 +423,6 @@ int n_hilos;
 int hNPOB;
 int NBLO_K;
 int hNIF_K;
-__constant__ int NIF_K;
 int sol_mem_compartida;
 int red_prob_cop_mejor;
 
@@ -489,6 +433,8 @@ unsigned int semilla;
 double factor_dispersion;
 double variacion_dispersion;
 double hprob_cop_mejor_ini;
+int hnum_retener;
+int hnum_retenerB;
 
 /*
 parámetro F que pondera la diferencia entre dos individuos al azar, que se suma al mejor individuo para
@@ -512,7 +458,6 @@ int hhisto_int;
 bool incluir_x0;
 int hNVEC;
 
-
 // NO se usan, se mantienen por compatibilidad con MEGA y MEGA_DLL
 int modo_poblacion_inicial;
 int modo_reinicio_poblacion;
@@ -535,9 +480,9 @@ struct timeb tiempo_ant, tiempo_act;
 double dif_tpo_par;
 double dif_tpo_tot;
 
-void imprime_error(const char* rot) {
-	printf("%s (%d) %s\n", rot, cudaStatus, cudaGetErrorString(cudaStatus));
-	fprintf(salida, "%s (%d) %s\n", rot, cudaStatus, cudaGetErrorString(cudaStatus));
+void imprime_error(int ng, const char* rot) {
+	printf("%d %s (%d) %s\n", ng, rot, cudaStatus, cudaGetErrorString(cudaStatus));
+	fprintf(salida, "%d %s (%d) %s\n", ng, rot, cudaStatus, cudaGetErrorString(cudaStatus));
 }
 
 //cuando se pulsa Ctrl+C, se establece la variable global 'CANCELAR' a true para que el algoritmo genético termine lo antes posible
@@ -545,6 +490,7 @@ void cancelar(int sig)
 {
 	CANCELAR = true;
 }
+
 bool tarjeta() {
 	int device;
 	cudaGetDevice(&device);
@@ -621,7 +567,7 @@ bool tarjeta() {
 				//  Configurar explícitamente el atributo del kernel antes de lanzarlo
 				cudaStatus = cudaFuncSetAttribute(kernel_seleccion, cudaFuncAttributeMaxDynamicSharedMemorySize, peticion_mem_comp);
 				if (cudaStatus != cudaSuccess) {
-					imprime_error("cudaFuncSetAttribute cudaFuncAttributeMaxDynamicSharedMemorySize");
+					imprime_error(-1, "cudaFuncSetAttribute cudaFuncAttributeMaxDynamicSharedMemorySize");
 					return false;
 				}
 				// (Opcional) Solicitar preferencia física para Shared Memory sobre la caché L1
@@ -793,19 +739,18 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 	}
 	gen.seed((unsigned int)semilla);
 	dis_entero = uniform_int_distribution<int>{ 0, (int)(hNPOB - 1) };
-
 	dis_entero_nvec = uniform_int_distribution<int>{ 0, (int)(hNVEC - 1) };
 
 	kernelConstantes << <1, 1 >> > ();
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("lanzar kernelConstantes");
+		imprime_error(-2, "lanzar kernelConstantes");
 		return false;
 	}
 	// esperar a que termine el kernel y si hubo errores en su ejecucion
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelConstantes");
+		imprime_error(-2, "cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelConstantes");
 		return false;
 	}
 	if (genera_poblacion(vec_ini) == false) {
@@ -847,6 +792,27 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 	fprintf(salida, "Recombinación (CR)     : %12.5e\n", hcte_recombinacion);
 	fprintf(salida, "Recombinación extra    : %12.5e\n", hcte_recombinacion_extra);
 	fprintf(salida, "Probab.copiar el mejor : %12.5e\n", hprob_cop_mejor_ini);
+#ifdef RETENER
+	fprintf(salida, "Número mejor retenidos : %12d\n", hnum_retener);
+#endif	
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		fprintf(salida, "-------------------------------------\n");
+		if (n_mestizos == 0 && n_mestizosB == 0) {
+			fprintf(salida, "Mestizaje              : %12s\n", "inactivo");
+		}
+		else {
+			fprintf(salida, "Mestizaje              : %12s\n", "si");
+		}
+		fprintf(salida, "Generaciones mestizaje : %12d\n", generaciones_mestizaje);
+		fprintf(salida, "Número de mestizos     : %12d %6d\n", n_mestizos, n_mestizosB);
+		fprintf(salida, "Valores ini.sol. fijos : %12d\n", NVECp);
+		fprintf(salida, "Probab.copiar el mejorB: %12.5e\n", hprob_cop_mejorB);
+#ifdef RETENER
+		fprintf(salida, "Número mejor retenidos : %12d\n", hnum_retenerB);
+#endif
+	}
+#endif
 	fprintf(salida, "-------------------------------------\n");
 	fprintf(salida, "Control progreso cada  : %12d generaciones\n", generaciones_control_progreso);
 	fprintf(salida, "Progreso mínimo        : %12.3f %%\n", 100. * min_progreso);
@@ -874,11 +840,11 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 	else {
 		fprintf(salida, "AgH NO incluido en la solución\n");
 	}
-	fprintf(salida, "Datos de cabecera      : %12d\n", LCAB);
-	int lsol = LSOL - 1;
+	fprintf(salida, "Datos de cabecera      : %12d\n", hLCAB);
+	int lsol = hLSOL - 1;
 	// no restamos 1 a LVAR porque en la solución no se incluye el precio de uno de los factores, por
 	// eso se lo sumamos a LVARS_PP para obtener el total de variables del modelo
-	int lvar = LVAR;
+	int lvar = hLVAR;
 	if (hop.GE_INCLUYE_XP == false) {
 		lsol -= hNDEM * hNSEC;
 		lvar -= hNDEM * hNSEC;
@@ -888,8 +854,8 @@ double* soluciona(double* par_h, double* cotasInf_h, double* cotasSup_h, double*
 		lvar -= hNDEM;
 	}
 	fprintf(salida, "Variables solución     : %12d\n", lsol);
-	fprintf(salida, "Resto variables modelo : %12d\n", LVARS_PP + 1);
-	fprintf(salida, "Variables recalculadas : %12d\n", LVARS_SP);
+	fprintf(salida, "Resto variables modelo : %12d\n", hLVARS_PP + 1);
+	fprintf(salida, "Variables recalculadas : %12d\n", hLVARS_SP);
 	fprintf(salida, "-------------------------------------\n");
 	fprintf(salida, "Total                  : %12d\n\n", lvar);
 	fprintf(salida, "Variables fijas en sol : %12d\n", nvar_fijas);
@@ -946,7 +912,7 @@ static bool copiaVectorDoubleHostDevice(double* fte, int ta, double*& des) {
 	// reservamos memoria en el device
 	cudaStatus = cudaMalloc((void**)&des, ta * sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMalloc copiaMtDoubleHostDevice");
+		imprime_error(-3, "cudaMalloc copiaMtDoubleHostDevice");
 		return false;
 	}
 	// copiamos los datos 'fte' en la memoria que acabamos de reservar
@@ -957,7 +923,7 @@ static bool copiaVectorDoubleHostDevice(double* fte, int ta, double*& des) {
 	*/
 	cudaStatus = cudaMemcpy(des, fte, ta * sizeof(double), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpy copiaMtDoubleHostDevice");
+		imprime_error(-3, "cudaMemcpy copiaMtDoubleHostDevice");
 		return false;
 	}
 	return true;
@@ -965,12 +931,12 @@ static bool copiaVectorDoubleHostDevice(double* fte, int ta, double*& des) {
 static bool copiaVectorIntHostDevice(int* fte, int ta, int*& des) {
 	cudaStatus = cudaMalloc((void**)&des, ta * sizeof(int));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMalloc copiaMtIntHostDevice");
+		imprime_error(-3, "cudaMalloc copiaMtIntHostDevice");
 		return false;
 	}
 	cudaStatus = cudaMemcpy(des, fte, ta * sizeof(int), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpy copiaMtIntHostDevice");
+		imprime_error(-3, "cudaMemcpy copiaMtIntHostDevice");
 		return false;
 	}
 	return true;
@@ -1007,8 +973,8 @@ int parametros_alge(double* par) {
 	hNVEC = (int)par[ipar++];
 	estadistica_pob_ini = (int)par[ipar++];
 	desviaciones_relativas = (int)par[ipar++];
-	hprob_cop_mejor_ini = par[ipar++];
-	hprob_cop_mejor = hprob_cop_mejor_ini;
+	hprob_cop_mejor = hprob_cop_mejor_ini = par[ipar++];
+	hnum_retener = (int)par[ipar++];
 	f_paso_prolongar = par[ipar++];
 	dis_prolonga_min = par[ipar++];
 	factor_dispersion_actualizado = factor_dispersion;
@@ -1023,7 +989,7 @@ int parametros_alge(double* par) {
 		//fprintf(salida, "Error. hNVEC >= MAX_VEC\n");
 		return -1;
 	}
-	int lsol = LSOL - 1;
+	int lsol = hLSOL - 1;
 	if (hop.GE_INCLUYE_XP == false) {
 		lsol -= hNDEM * hNSEC;
 	}
@@ -1065,12 +1031,29 @@ bool inicia_poblacion() {
 		hdescendiente[i] = (double*)malloc(memoria_fila);
 		if (hdescendiente[i] == NULL) return false;
 	}
-
 	size_t const mem_npob = sizeof(double) * hNPOB;
 	hmerito_individuo = (double*)malloc(mem_npob);
 	if (hmerito_individuo == NULL) return false;
 	hfactible = (int*)malloc(sizeof(int) * hNPOB);
 	if (hfactible == NULL) return false;
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		hpoblacionB = (double**)malloc(mem_primer_indice);
+		if (hpoblacionB == NULL) return false;
+		hdescendienteB = (double**)malloc(mem_primer_indice);
+		if (hdescendienteB == NULL) return false;
+		for (int i = 0; i < hNPOB; i++) {
+			hpoblacionB[i] = (double*)malloc(memoria_fila);
+			if (hpoblacionB[i] == NULL) return false;
+			hdescendienteB[i] = (double*)malloc(memoria_fila);
+			if (hdescendienteB[i] == NULL) return false;
+		}
+		hmerito_individuoB = (double*)malloc(mem_npob);
+		if (hmerito_individuoB == NULL) return false;
+		hfactibleB = (int*)malloc(sizeof(int) * hNPOB);
+		if (hfactibleB == NULL) return false;
+	}
+#endif
 	return true;
 }
 // da valores a las cotas de cada variable, y marca como fijas aquellas variables que tienen el mismo valor en la cota inferior y en la superior
@@ -1108,7 +1091,7 @@ bool genera_poblacion(double* vec_central) {
 	// intérvalo simétrico centrado en 'vec_central' con distribución uniforme
 
 	if (modo_poblacion_inicial == 0) {
-		
+
 		// se cambian todas las variables respecto del individuo central
 
 		for (int i = 0; i < hNPOB; i++) {
@@ -1198,6 +1181,57 @@ bool genera_poblacion(double* vec_central) {
 		}
 	}
 
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		for (int i = 0; i < hNPOB; i++) {
+			for (int j = 0; j < hNVEC; j++) {
+				// solo se generan valores para las variables a partir de 'hNVECp', para las anteriores se usan los valores en 'vec_central'
+				if (j < NVECp) {
+					if (hfijo[j] == 1) {
+						hpoblacionB[i][j] = hcotas[0][j];
+					}
+					else {
+						hpoblacionB[i][j] = vec_central[j];
+					}
+				}
+				else {
+					if (hfijo[j] == 1) {
+						hpoblacionB[i][j] = hcotas[0][j];
+					}
+					else {
+						semi_izq = vec_central[j] - hcotas[0][j];
+						semi_dch = hcotas[1][j] - vec_central[j];
+						if (semi_izq < semi_dch) {
+							semi_intervalo = semi_izq;
+						}
+						else {
+							semi_intervalo = semi_dch;
+						}
+						f = (semi_izq + semi_dch) / (2. * semi_intervalo);
+						a = dis_double(gen);
+						desplazamiento = f * factor_dispersion_actualizado * a * semi_intervalo;
+						a = dis_double(gen);
+						if (a < 0.5) {
+							v = vec_central[j] - desplazamiento;
+						}
+						else {
+							v = vec_central[j] + desplazamiento;
+						}
+						if (v < hcotas[0][j]) {
+							v = hcotas[0][j] + hMicro;
+						}
+						else if (v > hcotas[1][j]) {
+							v = hcotas[1][j] - hMicro;
+						}
+						hpoblacionB[i][j] = v;
+					}
+				}
+				// necesario para que 'hdescendienteB' tenga todos los valores y no solo desde 'hNVECp' hasta 'NVEC'
+				hdescendienteB[i][j] = hpoblacionB[i][j];
+			}
+		}
+	}
+#endif
 	if (incluir_x0) {
 		// incluir en la población el vector de prueba inicial 'vec_central' como primer individuo
 		for (int j = 0; j < hNVEC; j++) {
@@ -1205,6 +1239,7 @@ bool genera_poblacion(double* vec_central) {
 		}
 	}
 
+	// 'hllama_merito_s_todo' llenará 'hres_merito' (que es una variable global) con el mérito de todos los individuos de la población
 	hres_merito = (double*)malloc(hNPOB * sizeof(double));
 	bool r = hllama_merito_s_todo(hpoblacion, NBLO_K, n_hilos);
 	if (r == false) {
@@ -1222,17 +1257,41 @@ bool genera_poblacion(double* vec_central) {
 			hind_mejor_merito = i;
 		}
 	}
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		if (incluir_x0) {
+			// incluir en la población el vector de prueba inicial 'vec_central' como primer individuo
+			for (int j = 0; j < hNVEC; j++) {
+				hpoblacionB[0][j] = vec_central[j];
+			}
+		}
+		hres_merito = (double*)malloc(hNPOB * sizeof(double));
+		r = hllama_merito_s_todo(hpoblacionB, NBLO_K, n_hilos);
+		if (r == false) {
+			printf("hllama_merito_s_todo B error\n");
+			return false;
+		}
+		// seleccionar el mejor
+		hmejor_meritoB = 1.0e+99;
+		hind_mejor_meritoB = hNPOB + 1;
+		for (int i = 0; i < hNPOB; i++) {
+			v = hmerito_individuoB[i] = hres_merito[i];
+			hfactibleB[i] = 1;
+			if (v < hmejor_meritoB) {
+				hmejor_meritoB = v;
+				hind_mejor_meritoB = i;
+			}
+		}
+	}
+#endif
 	free(hres_merito);
 	return true;
 }
-static __global__ void kernel_inicia_estados_azar(azar* state, unsigned long semilla) {
-	int idx = threadIdx.x + blockDim.x * blockIdx.x;
-	int desde = idx * NIF_K;
-	int hasta = desde + NIF_K;
-	for (int i = desde; i < hasta; i++) {
+static __global__ void kernel_inicia_estados_azar(azar* state, int n, unsigned long semilla) {
+	for (int i = 0; i < n; i++) {
 		// Inicializa 'state[idx]' que es el estado para cada hilo 'idx'
-		// cada hilo obtiene la misma semilla, una secuencia distinta (idx), sin desplazamiento (0)
-		curand_init(semilla, idx, 0, &state[idx]);
+		// cada hilo obtiene la misma semilla, una secuencia distinta 'i', sin desplazamiento '0'
+		curand_init(semilla, i, 0, &state[i]);
 	}
 }
 static __global__ void kernel_mutacion_cruze(azar* estado_gen_azar) {
@@ -1335,6 +1394,9 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 	// recupera el estado del generador aleatorio asociado a este hilo
 
 	azar ult_estado = estado_gen_azar[idx];
+	int i1;
+	int i2;
+	int i3;
 	double vazar;
 #ifdef REGULA
 	vazar = curand_uniform_double(&ult_estado);
@@ -1346,11 +1408,11 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 	else {
 		unsigned int r;
 		r = curand(&ult_estado);
-		int i1 = (r % NPOB);
+		i1 = (r % NPOB);
 		r = curand(&ult_estado);
-		int i2 = (r % NPOB);
+		i2 = (r % NPOB);
 		r = curand(&ult_estado);
-		int i3 = (r % NVEC);
+		i3 = (r % NVEC);
 		double v;
 		int es_factible = 1;
 		for (int j = 0; j < NVEC; j++) {
@@ -1372,9 +1434,9 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 #else
 	unsigned int r;
 	r = curand(&ult_estado);
-	int i1 = (r % NPOB);
+	i1 = (r % NPOB);
 	r = curand(&ult_estado);
-	int i2 = (r % NPOB);
+	i2 = (r % NPOB);
 	vazar = curand_uniform_double(&ult_estado);
 	if (i1 == i2 || (prob_cop_mejor > Micro && vazar < prob_cop_mejor)) {
 		if (prob_cop_mejor < 0) {
@@ -1395,7 +1457,7 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 	}
 	else {
 		r = curand(&ult_estado);
-		int i3 = (r % NVEC);
+		i3 = (r % NVEC);
 		double v;
 		int es_factible = 1;
 		for (int j = 0; j < NVEC; j++) {
@@ -1418,6 +1480,309 @@ static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar) {
 	// salva el estado del generador aleatorio asociado a este hilo
 	estado_gen_azar[idx] = ult_estado;
 }
+#ifdef MESTIZAJE
+static __global__ void kernel_mutacion_cruzeB(azar* estado_gen_azar) {
+
+	// vamos a restringir las variaciones de valores a las de las variables por lo que usaremos NVECp
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+	azar ult_estado = estado_gen_azar[idx];
+	int desde = idx * NIF_K;
+	int hasta = desde + NIF_K;
+	int i1;
+	int i2;
+	int i3;
+	unsigned int r;
+	double v;
+	double vazar;
+	int es_factible;
+#ifdef REGULA
+	for (int i = desde; i < hasta; i++) {
+		vazar = curand_uniform_double(&ult_estado);
+		if (vazar < prob_cop_mejorB) {
+			// Conserva en la población al individuo 'i'
+
+			factibleB[i] = 0;
+			continue;
+		}
+		r = curand(&ult_estado);
+		i1 = (r % NPOB);
+		r = curand(&ult_estado);
+		i2 = (r % NPOB);
+		r = curand(&ult_estado);
+		i3 = NVECp + (r % (NVEC - NVECp));
+		es_factible = 1;
+		for (int j = NVECp; j < NVEC; j++) {
+			vazar = curand_uniform_double(&ult_estado);
+			if (fijo[j] == 0 && (j == i3 || vazar <= cte_recombinacion)) {
+				v = poblacionB[ind_mejor_meritoB][j] + factor_mutacion * (poblacionB[i1][j] - poblacionB[i2][j]);
+				if (v < cotas[0][j] || v > cotas[1][j]) {
+					es_factible = 0;
+					break;
+				}
+				descendienteB[i][j] = v;
+			}
+			else {
+				descendienteB[i][j] = poblacionB[i][j];
+			}
+		}
+		factibleB[i] = es_factible;
+	}
+#else
+	for (int i = desde; i < hasta; i++) {
+		r = curand(&ult_estado);
+		i1 = (r % NPOB);
+		r = curand(&ult_estado);
+		i2 = (r % NPOB);
+		vazar = curand_uniform_double(&ult_estado);
+		if (i1 == i2 || (prob_cop_mejorB > Micro && vazar < prob_cop_mejorB)) {
+			if (prob_cop_mejorB < 0) {
+				factibleB[i] = 0;
+				continue;
+			}
+			for (int j = NVECp; j < NVEC; j++) {
+				vazar = curand_uniform_double(&ult_estado);
+				if (fijo[j] == 0 && vazar <= cte_recombinacion_extra) {
+					descendienteB[i][j] = poblacionB[ind_mejor_meritoB][j];
+				}
+				else {
+					descendienteB[i][j] = poblacionB[i][j];
+				}
+			}
+			factibleB[i] = 1;
+			continue;
+		}
+		r = curand(&ult_estado);
+		i3 = NVECp + (r % (NVEC - NVECp));
+		es_factible = 1;
+		for (int j = NVECp; j < NVEC; j++) {
+			vazar = curand_uniform_double(&ult_estado);
+			if (fijo[j] == 0 && (j == i3 || vazar <= cte_recombinacion)) {
+				v = poblacionB[ind_mejor_meritoB][j] + factor_mutacion * (poblacionB[i1][j] - poblacionB[i2][j]);
+				if (v < cotas[0][j] || v > cotas[1][j]) {
+					es_factible = 0;
+					break;
+				}
+				descendienteB[i][j] = v;
+			}
+			else {
+				descendienteB[i][j] = poblacionB[i][j];
+			}
+		}
+		factibleB[i] = es_factible;
+	}
+#endif
+	estado_gen_azar[idx] = ult_estado;
+}
+static __global__ void kernel_mutacion_cruze_1B(azar* estado_gen_azar) {
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+	// recupera el estado del generador aleatorio asociado a este hilo
+	azar ult_estado = estado_gen_azar[idx];
+	int i1;
+	int i2;
+	int i3;
+	double vazar;
+#ifdef REGULA
+	vazar = curand_uniform_double(&ult_estado);
+	if (vazar < prob_cop_mejorB) {
+		// Conserva en la población al individuo 'idx'
+
+		factibleB[idx] = 0;
+	}
+	else {
+		unsigned int r;
+		r = curand(&ult_estado);
+		i1 = (r % NPOB);
+		r = curand(&ult_estado);
+		i2 = (r % NPOB);
+		r = curand(&ult_estado);
+		i3 = NVECp + (r % (NVEC - NVECp));
+		double v;
+		int es_factible = 1;
+		for (int j = NVECp; j < NVEC; j++) {
+			vazar = curand_uniform_double(&ult_estado);
+			if (fijo[j] == 0 && (j == i3 || vazar <= cte_recombinacion)) {
+				v = poblacionB[ind_mejor_meritoB][j] + factor_mutacion * (poblacionB[i1][j] - poblacionB[i2][j]);
+				if (v < cotas[0][j] || v > cotas[1][j]) {
+					es_factible = 0;
+					break;
+				}
+				descendienteB[idx][j] = v;
+			}
+			else {
+				descendienteB[idx][j] = poblacionB[idx][j];
+			}
+		}
+		factibleB[idx] = es_factible;
+	}
+#else
+	unsigned int r;
+	r = curand(&ult_estado);
+	i1 = (r % NPOB);
+	r = curand(&ult_estado);
+	i2 = (r % NPOB);
+	vazar = curand_uniform_double(&ult_estado);
+	if (i1 == i2 || (prob_cop_mejorB > Micro && vazar < prob_cop_mejorB)) {
+		if (prob_cop_mejorB < 0) {
+			factibleB[idx] = 0;
+		}
+		else {
+			for (int j = NVECp; j < NVEC; j++) {
+				vazar = curand_uniform_double(&ult_estado);
+				if (fijo[j] == 0 && vazar <= cte_recombinacion_extra) {
+					descendienteB[idx][j] = poblacionB[ind_mejor_meritoB][j];
+				}
+				else {
+					descendienteB[idx][j] = poblacionB[idx][j];
+				}
+			}
+			factibleB[idx] = 1;
+		}
+	}
+	else {
+		r = curand(&ult_estado);
+		i3 = NVECp + (r % (NVEC - NVECp));
+		double v;
+		int es_factible = 1;
+		for (int j = NVECp; j < NVEC; j++) {
+			vazar = curand_uniform_double(&ult_estado);
+			if (fijo[j] == 0 && (j == i3 || vazar <= cte_recombinacion)) {
+				v = poblacionB[ind_mejor_meritoB][j] + factor_mutacion * (poblacionB[i1][j] - poblacionB[i2][j]);
+				if (v < cotas[0][j] || v > cotas[1][j]) {
+					es_factible = 0;
+					break;
+				}
+				descendienteB[idx][j] = v;
+			}
+			else {
+				descendienteB[idx][j] = poblacionB[idx][j];
+			}
+		}
+		factibleB[idx] = es_factible;
+	}
+#endif
+	// salva el estado del generador aleatorio asociado a este hilo
+	estado_gen_azar[idx] = ult_estado;
+}
+static __global__ void kernel_mestizaje(azar* estado_gen_azar) {
+	azar ult_estado = estado_gen_azar[NPOB + 1];
+	unsigned int r;
+	int i1;
+	// de la población B a la población principal
+	if (n_mestizos > 0) {
+		for (int i = 0; i < n_mestizos; i++) {
+			// evitar que se sobreescriba el mejor individuo
+			do {
+				r = curand(&ult_estado);
+				i1 = (r % NPOB);
+			} while (i1 == ind_mejor_merito);
+			for (int j = 0; j < NVEC; j++) {
+				poblacion[i1][j] = poblacionB[i1][j];
+			}
+			// al copiar todas las variables, desde 0 hasta NVEC, no hay que recalcular el mérito
+			merito_individuo[i1] = merito_individuoB[i1];
+		}
+	}
+	if (n_mestizosB > 0) {
+		// de la población principal a la población B
+		for (int i = 0; i < n_mestizosB; i++) {
+			do {
+				r = curand(&ult_estado);
+				i1 = (r % NPOB);
+			} while (i1 == ind_mejor_meritoB);
+			for (int j = NVECp; j < NVEC; j++) {
+				poblacionB[i1][j] = poblacion[i1][j];
+			}
+			// hay que recalcular el mérito porque no se han copiado todas las variables, solo desde NVECp hasta NVEC
+			merito_individuoB[i1] = merito_s(poblacionB[i1]);
+		}
+	}
+	estado_gen_azar[NPOB + 1] = ult_estado;
+}
+#ifdef RETENER
+static __global__ void kernel_retenerB(azar* estado_gen_azar) {
+	// ha terminado la mutación y cruce de la generación actual y antes del proceso de selección
+	// añadimos el mejor individuo de la generación anterior al registro circular de retenidos
+
+	// recupera el estado del generador aleatorio del elemento 'NPOB' del vector 'estado_gen_azar'
+	azar ult_estado = estado_gen_azar[NPOB];
+
+	if (retenidos_registradosB < num_retenerB) {
+		// un retenido más. Una vez que 'retenidos_registrados = num_retener' el número de retenidos no cambiará
+		retenidos_registradosB++;
+	}
+	// mantenemos un índice 'fila_ultimo_retenido' que apunta a la fila de la tabla de 'retenidos' donde ponemos el
+	// último, es un índice circular, después de ocupar la última fila de la tabla de 'retenidos', apuntamos a la primera
+	fila_ultimo_retenidoB++;
+	if (fila_ultimo_retenidoB == num_retenerB) {
+		fila_ultimo_retenidoB = 0;
+	}
+	for (int j = 0; j < NVEC; j++) {
+		retenidoB[fila_ultimo_retenidoB][j] = poblacionB[ind_mejor_meritoB][j];
+	}
+	merito_retenidoB[fila_ultimo_retenidoB] = merito_individuoB[ind_mejor_meritoB];
+
+	// copiar los 'retenidos_registrados' en posiciones de la población, elegidas al azar 
+	// recorremos las filas de la tabla de 'retenidos' de abajo-arriba
+	unsigned int r;
+	int i1;
+	int fila = fila_ultimo_retenidoB;
+	for (int i = 0; i < retenidos_registradosB; i++) {
+		r = curand(&ult_estado);
+		i1 = (r % NPOB);
+		for (int j = 0; j < NVEC; j++) {
+			poblacionB[i1][j] = retenidoB[fila][j];
+		}
+		merito_individuoB[i1] = merito_retenidoB[fila];
+		// podemos no cambiar el estado factible de 'i1', para que:
+		//		si es 0, dejarlo porque el descendiente en 'i1' no es factible y la 'seleccion' no recalculará el mérito y se quederá el individuo que acabamos de recuperar
+		//		si es 1, dejarlo para que la 'seleccion' calcule el mérito del descendiente en 'i1' y si es mejor lo acepte.
+
+		// o forzar que siempre se quede el que acabamos de copiar, lo que es coherente con la idea de mantener a los abuelos
+		factibleB[i1] = 0;
+
+		// retroceder en el registro circular de retenidos
+		fila--;
+		if (fila < 0) {
+			// seguimos por el final
+			fila = num_retenerB - 1;
+		}
+	}
+
+	// salva el estado del generador aleatorio del elemento 'NPOB' del vector 'estado_gen_azar'
+	estado_gen_azar[NPOB] = ult_estado;
+}
+#endif
+static __global__ void kernel_seleccionB() {
+	double me_descendiente;
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+	int desde = idx * NIF_K;
+	int hasta = desde + NIF_K;
+	for (int i = desde; i < hasta; i++) {
+		if (factibleB[i] == 1) {
+			me_descendiente = merito_s(descendienteB[i]);
+			if (me_descendiente < merito_individuoB[i]) {
+				for (int j = 0; j < NVEC; j++) {
+					poblacionB[i][j] = descendienteB[i][j];
+				}
+				merito_individuoB[i] = me_descendiente;
+			}
+		}
+	}
+}
+static __global__ void kernel_seleccion_1B() {
+	double me_descendiente;
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
+	if (factibleB[idx] == 1) {
+		me_descendiente = merito_s(descendienteB[idx]);
+		if (me_descendiente < merito_individuoB[idx]) {
+			for (int j = NVECp; j < NVEC; j++) {
+				poblacionB[idx][j] = descendienteB[idx][j];
+			}
+			merito_individuoB[idx] = me_descendiente;
+		}
+	}
+}
+#endif
 #ifdef BLOQUES_VARIABLES
 static __global__ void kernel_indexa_factibles() {
 	n_individuos_factibles = 0;
@@ -1428,8 +1793,62 @@ static __global__ void kernel_indexa_factibles() {
 	}
 }
 #endif
+#ifdef RETENER
+static __global__ void kernel_retener(azar* estado_gen_azar) {
+	// ha terminado la mutación y cruce de la generación actual y antes del proceso de selección
+	// añadimos el mejor individuo de la generación anterior al registro circular de retenidos
+
+	// recupera el estado del generador aleatorio del elemento 'NPOB' del vector 'estado_gen_azar'
+	azar ult_estado = estado_gen_azar[NPOB];
+
+	if (retenidos_registrados < num_retener) {
+		// un retenido más. Una vez que 'retenidos_registrados = num_retener' el número de retenidos no cambiará
+		retenidos_registrados++;
+	}
+	// mantenemos un índice 'fila_ultimo_retenido' que apunta a la fila de la tabla de 'retenidos' donde ponemos el
+	// último, es un índice circular, después de ocupar la última fila de la tabla de 'retenidos', apuntamos a la primera
+	fila_ultimo_retenido++;
+	if (fila_ultimo_retenido == num_retener) {
+		fila_ultimo_retenido = 0;
+	}
+	for (int j = 0; j < NVEC; j++) {
+		retenido[fila_ultimo_retenido][j] = poblacion[ind_mejor_merito][j];
+	}
+	merito_retenido[fila_ultimo_retenido] = merito_individuo[ind_mejor_merito];
+
+	// copiar los 'retenidos_registrados' en posiciones de la población, elegidas al azar 
+	// recorremos las filas de la tabla de 'retenidos' de abajo-arriba
+	unsigned int r;
+	int i1;
+	int fila = fila_ultimo_retenido;
+	for (int i = 0; i < retenidos_registrados; i++) {
+		r = curand(&ult_estado);
+		i1 = (r % NPOB);
+		for (int j = 0; j < NVEC; j++) {
+			poblacion[i1][j] = retenido[fila][j];
+		}
+		merito_individuo[i1] = merito_retenido[fila];
+		// podemos no cambiar el estado factible de 'i1', para que:
+		//		si es 0, dejarlo porque el descendiente en 'i1' no es factible y la 'seleccion' no recalculará el mérito y se quederá el individuo que acabamos de recuperar
+		//		si es 1, dejarlo para que la 'seleccion' calcule el mérito del descendiente en 'i1' y si es mejor lo acepte.
+
+		// o forzar que siempre se quede el que acabamos de copiar, lo que es coherente con la idea de mantener a los abuelos
+		factible[i1] = 0;
+
+		// retroceder en el registro circular de retenidos
+		fila--;
+		if (fila < 0) {
+			// seguimos por el final
+			fila = num_retener - 1;
+		}
+	}
+
+	// salva el estado del generador aleatorio del elemento 'NPOB' del vector 'estado_gen_azar'
+	estado_gen_azar[NPOB] = ult_estado;
+}
+#endif
 //static __global__ __launch_bounds__(512) void  kernel_seleccion() {
-static __global__ void  kernel_seleccion() {
+static __global__ void kernel_seleccion() {
 	// No parece tener ningún efecto
 	//asm(".pragma \"enable_smem_spilling\";");
 	double me_descendiente;
@@ -1463,15 +1882,12 @@ static __global__ void kernel_seleccion_1() {
 		}
 	}
 }
+#ifdef BLOQUES_VARIABLES
 static __global__ void kernel_seleccion_1i() {
-	// No parece tener ningún efecto
-	//asm(".pragma \"enable_smem_spilling\";");
 	double me_descendiente;
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
-#ifdef BLOQUES_VARIABLES
 	if (idx >= n_individuos_factibles) return;
 	idx = indice_ind[idx];
-#endif
 	if (factible[idx] == 1) {
 		me_descendiente = merito_s(descendiente[idx]);
 		if (me_descendiente < merito_individuo[idx]) {
@@ -1482,15 +1898,19 @@ static __global__ void kernel_seleccion_1i() {
 		}
 	}
 }
+#endif
 /*
 *************************
 Busca la solución
 *************************
 */
 int resuelve() {
+	generacion = 0;
+	intentos = 0;
+
 	cudaStatus = cudaMemcpyToSymbol(ind_mejor_merito, &hind_mejor_merito, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("resuelve ini. cudaMemcpy error copiar ind_mejor_merito al device");
+		imprime_error(generacion, "resuelve ini. cudaMemcpy error copiar ind_mejor_merito al device");
 		return -60;
 	}
 	// podemos realizar este cálculo porque 'hpoblacion' y 'poblacion' son iguales en este momento
@@ -1500,13 +1920,75 @@ int resuelve() {
 		fprintf(salida, "resuelve. incongruencia en el mejor mérito de la población inicial\n%18.10e\n%18.10e\n\n", vi, hmejor_merito);
 		return -61;
 	}
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		cudaStatus = cudaMemcpyToSymbol(ind_mejor_meritoB, &hind_mejor_meritoB, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(generacion, "resuelve ini. cudaMemcpy error copiar ind_mejor_merito B al device");
+			return -60;
+		}
+		// podemos realizar este cálculo porque 'hpoblacion' y 'poblacion' son iguales en este momento
+		vi = hllama_merito_s(hpoblacionB[hind_mejor_meritoB]);
+		if (diferencia_relativa(vi, hmejor_meritoB) > hDeciMicro) {
+			printf("resuelve. incongruencia en el mejor mérito de la población inicial B\n%18.10e\n%18.10e\n\n", vi, hmejor_meritoB);
+			fprintf(salida, "resuelve. incongruencia en el mejor mérito de la población inicial B\n%18.10e\n%18.10e\n\n", vi, hmejor_meritoB);
+			return -61;
+		}
+		cudaStatus = cudaMemcpyToSymbol(prob_cop_mejorB, &hprob_cop_mejorB, sizeof(double), size_t(0), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(generacion, "resuelve ini. cudaMemcpy error copiar prob_cop_mejorB B al device");
+			return -60;
+		}
+	}
+#endif
 	double tpo_var;
 	tot_tpo_muta = 0.;
 	tot_tpo_sele = 0.;
 	par_tpo_segs = 0.;
 	tot_tpo_mins = 0.;
-	generacion = 0;
-	intentos = 0;
+#ifdef RETENER
+	// 'fila_ultimo_retenido' y 'retenidos_registrados' se incrementan nada más iniciarse la ejecución de 'kernel_retener' y
+	// asi la primera vez que se la llama empezaran con 0 
+	int tmp = -1;
+	if (hnum_retener > 0) {
+		cudaStatus = cudaMemcpyToSymbol(fila_ultimo_retenido, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(generacion, "resuelve. cudaMemcpy error copiar hultimo_retenido al device");
+			return -66;
+		}
+		cudaStatus = cudaMemcpyToSymbol(retenidos_registrados, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(generacion, "resuelve. cudaMemcpy error copiar n_retenidos al device");
+			return -66;
+		}
+		cudaStatus = cudaMemcpyToSymbol(num_retener, &hnum_retener, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(generacion, "resuelve. cudaMemcpy error copiar hnum_retenidos al device");
+			return -66;
+		}
+	}
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		if (hnum_retenerB > 0) {
+			cudaStatus = cudaMemcpyToSymbol(fila_ultimo_retenidoB, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaMemcpy error copiar hultimo_retenido al device");
+				return -66;
+			}
+			cudaStatus = cudaMemcpyToSymbol(retenidos_registradosB, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaMemcpy error copiar n_retenidos al device");
+				return -66;
+			}
+			cudaStatus = cudaMemcpyToSymbol(num_retenerB, &hnum_retenerB, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaMemcpy error copiar hnum_retenidos al device");
+				return -66;
+			}
+		}
+	}
+#endif
+#endif
 	mejor_merito_anterior = 1.0e+99;
 
 	if (hllama_sol_mejor_merito() == false) {
@@ -1530,15 +2012,29 @@ int resuelve() {
 		return -63;
 	}
 
-	// prepara un estado del generador aleatorio para cada hilo
+	// prepara un estado del generador aleatorio para cada hilo y uno más para el 'kernel_retener'
 	azar* estado_gen_azar;
-	cudaMalloc((void**)&estado_gen_azar, hNPOB * sizeof(azar));
-	kernel_inicia_estados_azar << <NBLO_K, n_hilos >> > (estado_gen_azar, semilla);
+	// un estado más que individuos para el 'kernel_retener'
+	cudaMalloc((void**)&estado_gen_azar, (hNPOB + 1) * sizeof(azar));
+	kernel_inicia_estados_azar << <1, 1 >> > (estado_gen_azar, hNPOB + 1, semilla);
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("resuelve ini. cudaDeviceSynchronize devuelve codigo de error tras lanzar setup_kernelMRG");
+		imprime_error(generacion, "resuelve ini. cudaDeviceSynchronize devuelve codigo de error tras lanzar setup_kernelMRG");
 		return -64;
 	}
+#ifdef MESTIZAJE
+	azar* estado_gen_azarB;
+	if (mestizaje) {
+		// dos estados más que individuos para el 'kernel_retener' y el 'kernel_mestizaje'
+		cudaMalloc((void**)&estado_gen_azarB, (hNPOB + 2) * sizeof(azar));
+		kernel_inicia_estados_azar << <1, 1 >> > (estado_gen_azarB, hNPOB + 2, semilla);
+		cudaStatus = cudaDeviceSynchronize();
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(generacion, "resuelve ini. cudaDeviceSynchronize devuelve codigo de error tras lanzar setup_kernelMRG B");
+			return -64;
+		}
+	}
+#endif
 	ftime(&tiempo_ini);
 	int num_bloques = NBLO_K;
 	int num_hilos_bloque = n_hilos;
@@ -1550,7 +2046,7 @@ int resuelve() {
 		hfactor_mutacion = par_mutacion[0] + dis_double(gen) * (par_mutacion[1] - par_mutacion[0]);
 		cudaStatus = cudaMemcpyToSymbol(factor_mutacion, &hfactor_mutacion, sizeof(double), size_t(0), cudaMemcpyHostToDevice);
 		if (cudaStatus != cudaSuccess) {
-			imprime_error("resuelve. cudaMemcpy error copiar hfactor_mutacion al device");
+			imprime_error(generacion, "resuelve. cudaMemcpy error copiar hfactor_mutacion al device");
 			return -65;
 		}
 		// ---------------------------------------------------------------------------------------------------------------------------------------
@@ -1562,21 +2058,21 @@ int resuelve() {
 		}
 		cudaStatus = cudaDeviceSynchronize();
 		if (cudaStatus != cudaSuccess) {
-			imprime_error("resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar mutacion_cruze");
+			imprime_error(generacion, "resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar mutacion_cruze");
 			return -66;
 		}
-		ftime(&tiempo_act);
-		tpo_var = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
-		tot_tpo_muta += tpo_var;
-		par_tpo_segs += tpo_var;
-		tot_tpo_mins += tpo_var;
-
+#ifdef RETENER
+		if (hnum_retener > 0) {
+			// retener en la población los mejores de generaciones anteriores en posiciones al azar
+			kernel_retener << <1, 1 >> > (estado_gen_azar);
+		}
+#endif
 #ifdef BLOQUES_VARIABLES
 		if (indesando_individuos_factibles) {
 			kernel_indexa_factibles << <1, 1 >> > ();
 			cudaStatus = cudaMemcpyFromSymbol(&hn_individuos_factibles, n_individuos_factibles, sizeof(int));
 			if (cudaStatus != cudaSuccess) {
-				imprime_error("resuelve. cudaMemcpyFromSymbol error extraer n_individuos_factibles del device");
+				imprime_error(generacion, "resuelve. cudaMemcpyFromSymbol error extraer n_individuos_factibles del device");
 				return -66;
 			}
 			ratio_factibles = (100 * hn_individuos_factibles) / hNPOB;
@@ -1591,6 +2087,12 @@ int resuelve() {
 			}
 		}
 #endif
+		ftime(&tiempo_act);
+		tpo_var = (double)(tiempo_act.time - tiempo_ant.time) + (double)(tiempo_act.millitm - tiempo_ant.millitm) / 1000.;
+		tot_tpo_muta += tpo_var;
+		par_tpo_segs += tpo_var;
+		tot_tpo_mins += tpo_var;
+
 		ftime(&tiempo_ant);
 		if (sol_mem_compartida > 0) {
 			// Lanzar el kernel pasando el tamaño dinámico como tercer parámetro de los brackets <<< >>>
@@ -1629,16 +2131,87 @@ int resuelve() {
 		}
 		cudaStatus = cudaDeviceSynchronize();
 		if (cudaStatus != cudaSuccess) {
-			imprime_error("resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar seleccion");
+			imprime_error(generacion, "resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar seleccion");
 			return -67;
 		}
+#ifdef MESTIZAJE
+		if (mestizaje) {
+			if (hNIF_K == 1) {
+				kernel_mutacion_cruze_1B << <NBLO_K, n_hilos >> > (estado_gen_azarB);
+			}
+			else {
+				kernel_mutacion_cruzeB << <NBLO_K, n_hilos >> > (estado_gen_azarB);
+			}
+			cudaStatus = cudaDeviceSynchronize();
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar mutacion_cruze B");
+				return -66;
+			}
+#ifdef RETENER
+			if (hnum_retenerB > 0) {
+				// retener en la población los mejores de generaciones anteriores en posiciones al azar
+				kernel_retenerB << <1, 1 >> > (estado_gen_azarB);
+			}
+#endif
+			if (sol_mem_compartida > 0) {
+				if (hNIF_K == 1) {
+					kernel_seleccion_1B << <num_bloques, num_hilos_bloque, peticion_mem_comp >> > ();
+				}
+				else {
+					kernel_seleccionB << <num_bloques, num_hilos_bloque, peticion_mem_comp >> > ();
+				}
+			}
+			else {
+				if (hNIF_K == 1) {
+					kernel_seleccion_1B << <num_bloques, num_hilos_bloque >> > ();
+				}
+				else {
+					kernel_seleccionB << <num_bloques, num_hilos_bloque >> > ();
+				}
+			}
+			cudaStatus = cudaDeviceSynchronize();
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar seleccion B");
+				return -67;
+			}
+
+			// copiar individuos entre poblaciones
+			if (generacion > 0 && generacion % generaciones_mestizaje == 0) {
+				if (n_mestizos > 0 || n_mestizosB > 0) {
+					kernel_mestizaje << <1, 1 >> > (estado_gen_azarB);
+					cudaStatus = cudaDeviceSynchronize();
+					if (cudaStatus != cudaSuccess) {
+						imprime_error(generacion, "resuelve. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernel_convergencia");
+						return -67;
+					}
+				}
+			}
+			cudaStatus = cudaMemcpy(hmerito_individuoB, pro_merito_individuoB, hNPOB * sizeof(double), cudaMemcpyDeviceToHost);
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaMemcpy extraer merito_individuo B");
+				return -68;
+			}
+			for (int k = 0; k < hNPOB; k++) {
+				if (hmerito_individuoB[k] < hmejor_meritoB) {
+					hind_mejor_meritoB = k;
+					hmejor_meritoB = hmerito_individuoB[k];
+				}
+			}
+			cudaStatus = cudaMemcpyToSymbol(ind_mejor_meritoB, &hind_mejor_meritoB, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+			if (cudaStatus != cudaSuccess) {
+				imprime_error(generacion, "resuelve. cudaMemcpy error copiar ind_mejor_merito al device B");
+				return -69;
+			}
+		}
+#endif
+		// después de MESTIZAJE porque habrá cambiado el mérito de los individuos recibidos de la población B
 		// ---------------------------------------------------------------------------------------------------------------------------------------
 		// copia del device al host
 		// ---------------------------------------------------------------------------------------------------------------------------------------
 		// extraer los méritos del device para identificar al mejor individuo
 		cudaStatus = cudaMemcpy(hmerito_individuo, pro_merito_individuo, hNPOB * sizeof(double), cudaMemcpyDeviceToHost);
 		if (cudaStatus != cudaSuccess) {
-			imprime_error("resuelve. cudaMemcpy extraer merito_individuo");
+			imprime_error(generacion, "resuelve. cudaMemcpy extraer merito_individuo");
 			return -68;
 		}
 		for (int k = 0; k < hNPOB; k++) {
@@ -1654,11 +2227,12 @@ int resuelve() {
 		// el device no necesita saber el valor del mejor mérito
 		cudaStatus = cudaMemcpyToSymbol(ind_mejor_merito, &hind_mejor_merito, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
 		if (cudaStatus != cudaSuccess) {
-			imprime_error("resuelve. cudaMemcpy error copiar ind_mejor_merito al device");
+			imprime_error(generacion, "resuelve. cudaMemcpy error copiar ind_mejor_merito al device");
 			return -69;
 		}
 		// ---------------------------------------------------------------------------------------------------------------------------------------
 		// generación completada
+		// ---------------------------------------------------------------------------------------------------------------------------------------
 
 		generacion++;
 
@@ -1693,14 +2267,34 @@ bool muestra_evolucion(const char* rotulo) {
 	fprintf(salida, "%8d %5d %12.5e %13.6e %13.6e %13.6e %13.6e %13.6e %9.1f %9.2f", generacion, hind_mejor_merito, hmerito_individuo[hind_mejor_merito], hVAB, himpuestos, hcotizacionesSS, hsZ, hsQ, par_tpo_segs, tot_tpo_mins / 60.);
 #ifdef BLOQUES_VARIABLES
 	if (indesando_individuos_factibles) {
-		printf(" %6d %4d\n", hn_individuos_factibles, ratio_factibles);
-		fprintf(salida, " %6d %4d\n", hn_individuos_factibles, ratio_factibles);
+		printf(" %6d %4d", hn_individuos_factibles, ratio_factibles);
+		fprintf(salida, " %6d %4d", hn_individuos_factibles, ratio_factibles);
+#ifdef MESTIZAJE
+		if (mestizaje) {
+			printf("  %5d %12.5e", hind_mejor_meritoB, hmerito_individuoB[hind_mejor_meritoB]);
+			fprintf(salida, "  %5d %12.5e", hind_mejor_meritoB, hmerito_individuoB[hind_mejor_meritoB]);
+		}
+#endif
+		printf("\n");
+		fprintf(salida, "\n");
 	}
 	else {
+#ifdef MESTIZAJE
+		if (mestizaje) {
+			printf("              %5d %12.5e", hind_mejor_meritoB, hmerito_individuoB[hind_mejor_meritoB]);
+			fprintf(salida, "              %5d %12.5e", hind_mejor_meritoB, hmerito_individuoB[hind_mejor_meritoB]);
+		}
+#endif
 		printf("\n");
 		fprintf(salida, "\n");
 	}
 #else
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		printf("  %5d %12.5e", hind_mejor_meritoB, hmerito_individuoB[hind_mejor_meritoB]);
+		fprintf(salida, "  %5d %12.5e", hind_mejor_meritoB, hmerito_individuoB[hind_mejor_meritoB]);
+	}
+#endif
 	printf("\n");
 	fprintf(salida, "\n");
 #endif
@@ -1729,11 +2323,40 @@ int comprobar_final() {
 			intentos++;
 			if (intentos < max_intentos) {
 				// intentar con una nueva población inicial
-				genera_poblacion(vec_ini);
-				copiaPoblacionAlDevice();
 				if (variacion_dispersion > 0) {
 					factor_dispersion_actualizado *= variacion_dispersion;
 				}
+				genera_poblacion(vec_ini);
+				// la población principal y la población B si hay mestizaje, si no se hace con esta última, que estará evolucionada,
+				// condicionaría desastrosamente a la población principal si hay mestizaje desde ella a la principal, que es lo normal
+				copiaPoblacionesAlDevice();
+#ifdef RETENER
+				int tmp = -1;
+				cudaStatus = cudaMemcpyToSymbol(fila_ultimo_retenido, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+				if (cudaStatus != cudaSuccess) {
+					imprime_error(generacion, "comprobar_final. cudaMemcpy error copiar hultimo_retenido al device");
+					return -66;
+				}
+				cudaStatus = cudaMemcpyToSymbol(retenidos_registrados, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+				if (cudaStatus != cudaSuccess) {
+					imprime_error(generacion, "comprobar_final. cudaMemcpy error copiar n_retenidos al device");
+					return -66;
+				}
+#ifdef MESTIZAJE
+				if (mestizaje) {
+					cudaStatus = cudaMemcpyToSymbol(fila_ultimo_retenidoB, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+					if (cudaStatus != cudaSuccess) {
+						imprime_error(generacion, "comprobar_final. cudaMemcpy error copiar hultimo_retenidoB al device");
+						return -66;
+					}
+					cudaStatus = cudaMemcpyToSymbol(retenidos_registradosB, &tmp, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+					if (cudaStatus != cudaSuccess) {
+						imprime_error(generacion, "comprobar_final. cudaMemcpy error copiar n_retenidosB al device");
+						return -66;
+					}
+				}
+#endif
+#endif
 				if (red_prob_cop_mejor != 0 && hprob_cop_mejor > 0) {
 					if (max_intentos > 1) {
 						hprob_cop_mejor = hprob_cop_mejor_ini * (1. - (double)intentos / (double)(max_intentos - 1));
@@ -1841,7 +2464,7 @@ bool salida_solucion(char* vfichero, char* fichero) {
 	// vector solución
 	sal_sol = _fsopen(vfichero, "w", _SH_DENYWR);
 	if (sal_sol != 0) {
-		nsol = LCAB;
+		nsol = hLCAB;
 		// evitar el precio del factor que no forma parte del vector solución pero si de 'hme_sol'
 		if (hop.OR_PRE_EXCLUIDO == 1) {
 			fprintf(sal_sol, "%23.15e\n", hme_sol[nsol++]);
@@ -1872,7 +2495,7 @@ bool salida_solucion(char* vfichero, char* fichero) {
 		// vector solución ampliado por el precio del factor que no forma parte del vector solución
 		// pero si de 'hme_sol'
 		int n = 0;
-		nsol = LCAB;
+		nsol = hLCAB;
 		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pF", 0, hme_sol[nsol++]);
 		fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pF", 1, hme_sol[nsol++]);
 		for (int i = 0; i < hNSEC; i++) fprintf(sal_sol, "%5d;%-8s;%5d;%23.15e\n", n++, "pY", i, hme_sol[nsol++]);
@@ -2025,9 +2648,6 @@ bool salida_solucion(char* vfichero, char* fichero) {
 
 // la parte de la aplicación relacionada con el modelo: ecuaciones, parámetros, datos iniciales y opciones de cálculo del 'mérito'
 
-double hAYD_ADI_DEM[hNDEM]{};
-double* pro_AYD_ADI_DEM;
-
 __global__ void kernel_merito_s_todo(double* pobla, double* res, int cuantos) {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	int indic = idx * NIF_K;
@@ -2053,7 +2673,7 @@ bool hllama_merito_s_todo(double** pobla, int bloques, int hilos) {
 	double* pro_res;
 	cudaStatus = cudaMalloc((void**)&pro_res, hNPOB * sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMalloc hllama_merito_s_todo dres");
+		imprime_error(-4, "cudaMalloc hllama_merito_s_todo dres");
 		return false;
 	}
 	double* hplano;
@@ -2066,7 +2686,7 @@ bool hllama_merito_s_todo(double** pobla, int bloques, int hilos) {
 	kernel_merito_s_todo << <bloques, hilos >> > (pro_pobla, pro_res, hNIF_K);
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar llama_merito_s");
+		imprime_error(-4, "cudaDeviceSynchronize devuelve codigo de error tras lanzar llama_merito_s");
 		return false;
 	}
 	cudaMemcpy(hres_merito, pro_res, hNPOB * sizeof(double), cudaMemcpyDeviceToHost);
@@ -2082,20 +2702,20 @@ double hllama_merito_s(double* vec_opt) {
 	double* pro_res;
 	cudaStatus = cudaMalloc((void**)&pro_res, sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMalloc hmerito_s dres");
+		imprime_error(-5, "cudaMalloc hmerito_s dres");
 		return -1.0;
 	}
 	double* dvec_opt;
 	cudaStatus = cudaMalloc((void**)&dvec_opt, hNVEC * sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMalloc hmerito_s dvec_opt");
+		imprime_error(-5, "cudaMalloc hmerito_s dvec_opt");
 		return -1.0;
 	}
 	cudaMemcpy(dvec_opt, vec_opt, hNVEC * sizeof(double), cudaMemcpyHostToDevice);
 	kernel_merito_s << <1, 1 >> > (dvec_opt, pro_res);
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar llama_merito_s");
+		imprime_error(-5, "cudaDeviceSynchronize devuelve codigo de error tras lanzar llama_merito_s");
 		return -1.0;
 	}
 	double* hres_s;
@@ -2109,7 +2729,6 @@ double hllama_merito_s(double* vec_opt) {
 	cudaFree(dvec_opt);
 	return *hres_s;
 }
-
 __global__ void kernel_sol_mejor_merito() {
 	merito_sol(poblacion[ind_mejor_merito]);
 }
@@ -2117,7 +2736,7 @@ bool hllama_sol_mejor_merito() {
 	kernel_sol_mejor_merito << <1, 1 >> > ();
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar kernel_sol_mejor_merito");
+		imprime_error(generacion, "cudaDeviceSynchronize devuelve codigo de error tras lanzar kernel_sol_mejor_merito");
 		return false;
 	}
 
@@ -2125,42 +2744,42 @@ bool hllama_sol_mejor_merito() {
 
 	cudaStatus = cudaMemcpy(hVEC_OPT_E, pro_VEC_OPT_E, hLVSOL * sizeof(double), cudaMemcpyDeviceToHost);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpy devuelve codigo de error 'hVEC_OPT_E, pro_VEC_OPT_E'");
+		imprime_error(generacion, "cudaMemcpy devuelve codigo de error 'hVEC_OPT_E, pro_VEC_OPT_E'");
 		return false;
 	}
 	cudaStatus = cudaMemcpy(hme_sol, pro_me_sol, hLVAR * sizeof(double), cudaMemcpyDeviceToHost);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpy devuelve codigo de error 'hme_sol, pro_me_sol'");
+		imprime_error(generacion, "cudaMemcpy devuelve codigo de error 'hme_sol, pro_me_sol'");
 		return false;
 	}
 	cudaStatus = cudaMemcpyFromSymbol(&hindice_desv_bloques, indice_desv_bloques, sizeof(int));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyFromSymbol devuelve codigo de error '&hindice_desv_bloques, indice_desv_bloques'");
+		imprime_error(generacion, "cudaMemcpyFromSymbol devuelve codigo de error '&hindice_desv_bloques, indice_desv_bloques'");
 		return false;
 	}
 	cudaStatus = cudaMemcpyFromSymbol(&hVAB, VAB, sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyFromSymbol devuelve codigo de error '&hVAB, VAB'");
+		imprime_error(generacion, "cudaMemcpyFromSymbol devuelve codigo de error '&hVAB, VAB'");
 		return false;
 	}
 	cudaStatus = cudaMemcpyFromSymbol(&himpuestos, impuestos, sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyFromSymbol devuelve codigo de error '&himpuestos, impuestos'");
+		imprime_error(generacion, "cudaMemcpyFromSymbol devuelve codigo de error '&himpuestos, impuestos'");
 		return false;
 	}
 	cudaStatus = cudaMemcpyFromSymbol(&hcotizacionesSS, cotizacionesSS, sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyFromSymbol devuelve codigo de error '&hcotizacionesSS, cotizacionesSS'");
+		imprime_error(generacion, "cudaMemcpyFromSymbol devuelve codigo de error '&hcotizacionesSS, cotizacionesSS'");
 		return false;
 	}
 	cudaStatus = cudaMemcpyFromSymbol(&hsZ, sZ, sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyFromSymbol devuelve codigo de error '&hsZ, sZ'");
+		imprime_error(generacion, "cudaMemcpyFromSymbol devuelve codigo de error '&hsZ, sZ'");
 		return false;
 	}
 	cudaStatus = cudaMemcpyFromSymbol(&hsQ, sQ, sizeof(double));
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyFromSymbol devuelve codigo de error '&hsQ, sQ'");
+		imprime_error(generacion, "cudaMemcpyFromSymbol devuelve codigo de error '&hsQ, sQ'");
 		return false;
 	}
 	// esta comparación es innecesaria, sería totalmente extraordinario que no se cumpliera, salvo
@@ -2179,7 +2798,7 @@ bool hllama_sol_mejor_merito() {
 	return true;
 }
 
-// dejamos los '#ifdef ... #endif' porque en esta aplicación no hay ningún #define y así es una copia exacta del modelo de la DLL
+// dejamos los '#ifdef ... #endif' porque en esta aplicación no hay ninguno de estos #define y así es una copia exacta del modelo de la DLL
 __device__ double merito_s(double* vec_opt) {
 	/*
 	No se pueden poner restricciones a variables que no formen parte de 'vec_opt'
@@ -4317,29 +4936,40 @@ __device__ bool planoA2D(double* fte, double**& dest, int fils, int cols) {
 }
 
 static __global__ void kernelIni(
-	int* pro_pvec,
 	double* pro_me_sol,
 	double* pro_VEC_OPT_E,
-	double* pro_AYD_ADI_DEM,
+#ifdef __CONS_DAT_PAR
+	double* pro_desvios_bloque
+#else
 	double* pro_desvios_bloque,
+	double* pro_AYD_ADI_DEM,
 	OPCIONES* pro_opciones,
 	DATOS* pro_datos,
 	PARAMETROS* pro_parametros
+#endif
 )
 {
 	// hace que las 'variables device' apunten a las correspondientes 'direcciones de memoria device'
 	// variable = dirección
-	pvec = pro_pvec;
 	me_sol = pro_me_sol;
 	VEC_OPT_E = pro_VEC_OPT_E;
-	AYD_ADI_DEM = pro_AYD_ADI_DEM;
 	desvios_bloque = pro_desvios_bloque;
+#ifndef __CONS_DAT_PAR
+	AYD_ADI_DEM = pro_AYD_ADI_DEM;
 	// no se puede cambiar la dirección de una struct en C++ pero se puede crear una nueva
 	op = *pro_opciones;
 	datos = *pro_datos;
 	parametros = *pro_parametros;
+#endif
 }
-
+/*
+static __global__ void kernelProMerito(double* pro_merito_individuo) {
+	merito_individuo = pro_merito_individuo;
+}
+static __global__ void kernelProMeritoB(double* pro_merito_individuo) {
+	merito_individuoB = pro_merito_individuo;
+}
+*/
 static __global__ void kernelIniGene(
 	int* pro_fijo,
 	int* pro_factible,
@@ -4385,7 +5015,6 @@ static __global__ void kernelIniGene(
 	}
 #endif
 }
-
 static __global__ void kernelConstantes() {
 
 	// valores constantes durante toda la simulación
@@ -4405,7 +5034,6 @@ static __global__ void kernelConstantes() {
 		}
 	}
 }
-
 static __global__ void kernelPoblacionAdevice(double* pro_vector_poblacion)
 {
 #ifdef DINAMICA
@@ -4421,9 +5049,44 @@ static __global__ void kernelPoblacionAdevice(double* pro_vector_poblacion)
 		}
 	}
 #endif
-	free(pro_vector_poblacion);
 }
+#ifdef MESTIZAJE
+static __global__ void kernelIniGeneB(
+	int* pro_factibleB,
+	double* pro_merito_individuoB,
+	double* pro_vector_poblacionB,
+	double* pro_vector_descendienteB
+)
+{
+	factibleB = pro_factibleB;
+	merito_individuoB = pro_merito_individuoB;
 
+	int n = 0;
+	for (int i = 0; i < NPOB; i++) {
+		for (int j = 0; j < NVEC; j++) {
+			poblacionB[i][j] = pro_vector_poblacionB[n];
+			descendienteB[i][j] = pro_vector_descendienteB[n];
+			n++;
+		}
+	}
+}
+static __global__ void kernelPoblacionAdeviceB(double* pro_vector_poblacion)
+{
+#ifdef DINAMICA
+	if (planoA2D(pro_vector_poblacion, poblacionB, NPOB, NVEC) == false) {
+		printf("kernelPoblacion para poblacion B\n\n");
+		return;
+	}
+#else
+	int n = 0;
+	for (int i = 0; i < NPOB; i++) {
+		for (int j = 0; j < NVEC; j++) {
+			poblacionB[i][j] = pro_vector_poblacion[n++];
+		}
+	}
+}
+#endif
+#endif
 double diferencia_relativa(double a, double b) {
 	double mayor;
 	double menor;
@@ -4461,11 +5124,10 @@ bool copiaIniGPU() {
 
 	cudaStatus = cudaMemcpyToSymbol(NPOB, &hNPOB, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaMemcpyToSymbol error hNPOB->");
+		imprime_error(-6, "cudaMemcpyToSymbol error hNPOB->");
 		return false;
 	}
 	cudaStatus = cudaMemcpyToSymbol(NVEC, &hNVEC, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
-	cudaStatus = cudaMemcpyToSymbol(histo_int, &hhisto_int, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
 	cudaStatus = cudaMemcpyToSymbol(puntero_bloque_desviacion, &hpuntero_bloque_desviacion, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
 	cudaStatus = cudaMemcpyToSymbol(desplazamiento_desviacion, &hdesplazamiento_desviacion, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
 
@@ -4478,15 +5140,8 @@ bool copiaIniGPU() {
 
 	// reserva memoria para algunas matrices en el device y las cargar con los valores iniciales de las correspondientes matrices host
 
-	// reserva memoria en la dirección 'pro_pvec', a la que apuntará la variable device 'pvec' mediante 'kernelIni' y le
-	// copia el contenido de la variable host 'hpvec'
-	res = copiaVectorIntHostDevice(hpvec, hN_BLO_VEC + 1, pro_pvec);
-	if (res == false) {
-		return false;
-	}
 	// reserva memoria en la dirección 'pro_me_sol' a la que apuntará la variable device 'me_sol' mediante 'kernelIni' y le
 	// copia el contenido de la variable host 'hme_sol'
-	hme_sol[0] = 100.1;
 	res = copiaVectorDoubleHostDevice(hme_sol, hLVAR, pro_me_sol);
 	if (res == false) {
 		return false;
@@ -4495,44 +5150,53 @@ bool copiaIniGPU() {
 	if (res == false) {
 		return false;
 	}
-	res = copiaVectorDoubleHostDevice(hAYD_ADI_DEM, hNDEM, pro_AYD_ADI_DEM);
-	if (res == false) {
-		return false;
-	}
 	res = copiaVectorDoubleHostDevice(hdesvios_bloque, hMAX_DESVIOS_BLOQUE, pro_desvios_bloque);
 	if (res == false) {
 		return false;
 	}
+#ifdef __CONS_DAT_PAR
+	cudaStatus = cudaMemcpyToSymbol(AYD_ADI_DEM, &hAYD_ADI_DEM, hNDEM * sizeof(double), 0, cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpyToSymbol(op, &hop, sizeof(OPCIONES), 0, cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpyToSymbol(datos, &hdatos, sizeof(DATOS), 0, cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpyToSymbol(parametros, &hparametros, sizeof(PARAMETROS), 0, cudaMemcpyHostToDevice);
+#else
+	res = copiaVectorDoubleHostDevice(hAYD_ADI_DEM, hNDEM, pro_AYD_ADI_DEM);
+	if (res == false) {
+		return false;
+	}
 
-	// copiar las estructuras hopciones, hdatos y hparametros al device
+	// copiar las estructuras: hopciones, hdatos y hparametros al device
 
 	cudaStatus = cudaMalloc((void**)&pro_opciones, sizeof(OPCIONES));
 	cudaStatus = cudaMemcpy(pro_opciones, &hop, sizeof(OPCIONES), cudaMemcpyHostToDevice);
-
 	cudaStatus = cudaMalloc((void**)&pro_datos, sizeof(DATOS));
 	cudaStatus = cudaMemcpy(pro_datos, &hdatos, sizeof(DATOS), cudaMemcpyHostToDevice);
-
 	cudaStatus = cudaMalloc((void**)&pro_parametros, sizeof(PARAMETROS));
 	cudaStatus = cudaMemcpy(pro_parametros, &hparametros, sizeof(PARAMETROS), cudaMemcpyHostToDevice);
+#endif
+
 	kernelIni << <1, 1 >> > (
-		pro_pvec,
 		pro_me_sol,
 		pro_VEC_OPT_E,
-		pro_AYD_ADI_DEM,
+#ifdef __CONS_DAT_PAR
+		pro_desvios_bloque
+#else
 		pro_desvios_bloque,
+		pro_AYD_ADI_DEM,
 		pro_opciones,
 		pro_datos,
 		pro_parametros
+#endif
 		);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("lanzar kernelIni");
+		imprime_error(-6, "lanzar kernelIni");
 		return false;
 	}
 	// esperar a que termine el kernel y si hubo errores en su ejecucion
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelIni");
+		imprime_error(-6, "cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelIni");
 		return false;
 	}
 	return true;
@@ -4555,6 +5219,7 @@ bool copiaGeneticoGPU() {
 	if (res == false) {
 		return false;
 	}
+	// merito
 	res = copiaVectorDoubleHostDevice(hmerito_individuo, hNPOB, pro_merito_individuo);
 	if (res == false) {
 		return false;
@@ -4567,7 +5232,6 @@ bool copiaGeneticoGPU() {
 		return false;
 	}
 	free(hplano);
-
 	// poblacion
 	aplana(hpoblacion, hNPOB, hNVEC, hplano);
 	res = copiaVectorDoubleHostDevice(hplano, hNPOB * hNVEC, pro_vector_poblacion);
@@ -4594,18 +5258,65 @@ bool copiaGeneticoGPU() {
 		);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("lanzar kernelIniGene");
+		imprime_error(-7, "lanzar kernelIniGene");
 		return false;
 	}
 	// esperar a que termine el kernel y si hubo errores en su ejecucion
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelIniGene");
+		imprime_error(-7, "cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelIniGene");
 		return false;
 	}
 	cudaFree(pro_vector_cotas);
 	cudaFree(pro_vector_poblacion);
 	cudaFree(pro_vector_descendiente);
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		// factible
+		res = copiaVectorIntHostDevice(hfactibleB, hNPOB, pro_factibleB);
+		if (res == false) {
+			return false;
+		}
+		// merito
+		res = copiaVectorDoubleHostDevice(hmerito_individuoB, hNPOB, pro_merito_individuoB);
+		if (res == false) {
+			return false;
+		}
+		// poblacion
+		aplana(hpoblacionB, hNPOB, hNVEC, hplano);
+		res = copiaVectorDoubleHostDevice(hplano, hNPOB * hNVEC, pro_vector_poblacionB);
+		if (res == false) {
+			return false;
+		}
+		free(hplano);
+		// descendientes
+		aplana(hdescendienteB, hNPOB, hNVEC, hplano);
+		res = copiaVectorDoubleHostDevice(hplano, hNPOB * hNVEC, pro_vector_descendienteB);
+		if (res == false) {
+			return false;
+		}
+		free(hplano);
+		kernelIniGeneB << <1, 1 >> > (
+			pro_factibleB,
+			pro_merito_individuoB,
+			pro_vector_poblacionB,
+			pro_vector_descendienteB
+			);
+		cudaStatus = cudaGetLastError();
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(-7, "lanzar kernelIniGene B");
+			return false;
+		}
+		// esperar a que termine el kernel y si hubo errores en su ejecucion
+		cudaStatus = cudaDeviceSynchronize();
+		if (cudaStatus != cudaSuccess) {
+			imprime_error(-7, "cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelIniGene B");
+			return false;
+		}
+		cudaFree(pro_vector_poblacionB);
+		cudaFree(pro_vector_descendienteB);
+	}
+#endif
 	cudaMemGetInfo(&free_t, &total_t);
 	free_m = (float)(free_t / mega_byte);
 	total_m = (float)(total_t / mega_byte);
@@ -4633,7 +5344,7 @@ bool copiaGeneticoGPU() {
 	return true;
 }
 
-bool copiaPoblacionAlDevice() {
+bool copiaPoblacionesAlDevice() {
 	double* hplano;
 	aplana(hpoblacion, hNPOB, hNVEC, hplano);
 	bool res = copiaVectorDoubleHostDevice(hplano, hNPOB * hNVEC, pro_vector_poblacion);
@@ -4644,20 +5355,71 @@ bool copiaPoblacionAlDevice() {
 	kernelPoblacionAdevice << <1, 1 >> > (pro_vector_poblacion);
 	cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("copiaPoblacionAlDevice. lanzar kernelPoblacionAdevice");
+		imprime_error(generacion, "copiaPoblacionAlDevice. lanzar kernelPoblacionAdevice");
 		return false;
 	}
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelPoblacionAdevice");
+		imprime_error(generacion, "copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelPoblacionAdevice");
 		return false;
 	}
+	cudaFree(pro_vector_poblacion);
 	cudaStatus = cudaMemcpyToSymbol(ind_mejor_merito, &hind_mejor_merito, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+	/*
+	res = copiaVectorDoubleHostDevice(hmerito_individuo, hNPOB, pro_merito_individuo);
+	if (res == false) {
+		return false;
+	}
+	kernelProMerito << <1, 1 >> > (pro_merito_individuo);
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		imprime_error(generacion, "copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelProMerito");
+		return false;
+	}
+	*/
 	cudaStatus = cudaMemcpy(pro_merito_individuo, hmerito_individuo, hNPOB * sizeof(double), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("copiaPoblacionAlDevice. cudaMemcpy copiar merito_individuo al device");
+		imprime_error(generacion, "copiaPoblacionAlDevice. cudaMemcpy copiar merito_individuo al device");
 		return false;
 	}
+#ifdef MESTIZAJE
+	aplana(hpoblacionB, hNPOB, hNVEC, hplano);
+	res = copiaVectorDoubleHostDevice(hplano, hNPOB * hNVEC, pro_vector_poblacionB);
+	if (res == false) {
+		return false;
+	}
+	free(hplano);
+	kernelPoblacionAdeviceB << <1, 1 >> > (pro_vector_poblacionB);
+	cudaStatus = cudaGetLastError();
+	if (cudaStatus != cudaSuccess) {
+		imprime_error(generacion, "copiaPoblacionAlDevice. lanzar kernelPoblacionAdeviceB");
+		return false;
+	}
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		imprime_error(generacion, "copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelPoblacionAdeviceB");
+		return false;
+	}
+	cudaFree(pro_vector_poblacionB);
+	cudaStatus = cudaMemcpyToSymbol(ind_mejor_meritoB, &hind_mejor_meritoB, sizeof(int), size_t(0), cudaMemcpyHostToDevice);
+	/*
+	res = copiaVectorDoubleHostDevice(hmerito_individuoB, hNPOB, pro_merito_individuoB);
+	if (res == false) {
+		return false;
+	}
+	kernelProMeritoB << <1, 1 >> > (pro_merito_individuoB);
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		imprime_error(generacion, "copiaPoblacionAlDevice. cudaDeviceSynchronize devuelve codigo de error tras lanzar kernelProMeritoB");
+		return false;
+	}
+	*/
+	cudaStatus = cudaMemcpy(pro_merito_individuoB, hmerito_individuoB, hNPOB * sizeof(double), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		imprime_error(generacion, "copiaPoblacionAlDevice. cudaMemcpy copiar merito_individuoB al device");
+		return false;
+	}
+#endif
 	return true;
 }
 
@@ -4674,7 +5436,7 @@ bool crear_carpeta_si_no_existe(char* cadena) {
 	char* carpeta;
 	carpeta = (char*)malloc(512);
 	strcpy(carpeta, cadena);
-	int n = strlen(carpeta);
+	int n = (int)strlen(carpeta);
 	int i;
 	for (i = 0; i < n; i++) {
 		if (carpeta[i] == '\\') carpeta[i] = '/';
@@ -4841,6 +5603,15 @@ int main(int argc, char* argv[]) {
 	if (fgets(c, 63, fop) == NULL) {
 		if (feof(fop)) {
 			datos_nuevos = false;
+#ifdef MESTIZAJE
+			mestizaje = false;
+			// no se usarán
+			generaciones_mestizaje = 2000;
+			hnum_retenerB = 3;
+			n_mestizos = (int)(0.02 * hNPOB);
+			n_mestizosB = n_mestizos;
+			NVECp = 0;
+#endif
 		}
 		else {
 			fclose(fop);
@@ -4857,7 +5628,7 @@ int main(int argc, char* argv[]) {
 				}
 				else {
 					fclose(fop);
-					printf("error lectura líneas en blano\n");
+					printf("error lectura líneas en blanco\n");
 					return -1;
 				}
 			}
@@ -4869,44 +5640,125 @@ int main(int argc, char* argv[]) {
 			fclose(fop);
 			printf("error lectura max_intentos\n");
 			return -1;
-		};
+		}
 		max_intentos = atoi(c);
 		if (fgets(c, 63, fop) == NULL) {
 			fclose(fop);
 			printf("error lectura semilla\n");
 			return -1;
-		};
+		}
 		semilla = atoi(c);
-		if (fgets(c, 63, fop) == NULL) {
-			fclose(fop);
-			printf("error lectura hprob_cop_mejor\n");
-			return -1;
-		};
-		hprob_cop_mejor_ini = atof(c);
-		if (fgets(c, 63, fop) == NULL) {
-			fclose(fop);
-			printf("error lectura red_prob_cop_mejor\n");
-			return -1;
-		};
-		red_prob_cop_mejor = atoi(c);
 		if (fgets(c, 63, fop) == NULL) {
 			fclose(fop);
 			printf("error lectura factor_dispersion\n");
 			return -1;
-		};
+		}
 		factor_dispersion = atof(c);
 		if (fgets(c, 63, fop) == NULL) {
 			fclose(fop);
 			printf("error lectura variacion_dispersion\n");
 			return -1;
-		};
+		}
 		variacion_dispersion = atof(c);
 		if (fgets(c, 63, fop) == NULL) {
 			fclose(fop);
 			printf("error lectura modo_poblacion_inicial\n");
 			return -1;
-		};
+		}
 		modo_poblacion_inicial = atoi(c);
+		if (fgets(c, 63, fop) == NULL) {
+			fclose(fop);
+			printf("error lectura hprob_cop_mejor\n");
+			return -1;
+		}
+		hprob_cop_mejor_ini = atof(c);
+		if (fgets(c, 63, fop) == NULL) {
+			fclose(fop);
+			printf("error lectura red_prob_cop_mejor\n");
+			return -1;
+		}
+		red_prob_cop_mejor = atoi(c);
+		if (fgets(c, 63, fop) == NULL) {
+			fclose(fop);
+			printf("error lectura hnum_retenidos\n");
+			return -1;
+		}
+		hnum_retener = atoi(c);
+		if (hnum_retener >= hMAX_RETENIDOS) {
+			printf("hnum_retenidos [%d] debe ser menor qque %d\n", hnum_retener, hMAX_RETENIDOS);
+			return -1;
+		}
+#ifdef MESTIZAJE
+		if (fgets(c, 63, fop) == NULL) {
+			if (feof(fop)) {
+				mestizaje = false;
+				// no se usarán
+				generaciones_mestizaje = 2000;
+				hprob_cop_mejorB = 0.;
+				hnum_retenerB = 3;
+				n_mestizos = (int)(0.02 * hNPOB);
+				n_mestizosB = n_mestizos;
+				NVECp = 0;
+				fclose(fop);
+			}
+			else {
+				fclose(fop);
+				printf("error lectura mestizaje\n");
+				return -1;
+			}
+		}
+		else {
+			mestizaje = atoi(c) == 1;
+			if (mestizaje == false) {
+				// no se usarán
+				generaciones_mestizaje = 2000;
+				hprob_cop_mejorB = 0.;
+				hnum_retenerB = 3;
+				n_mestizos = (int)(0.02 * hNPOB);
+				n_mestizosB = n_mestizos;
+				NVECp = 0;
+				fclose(fop);
+			}
+			else {
+				if (fgets(c, 63, fop) == NULL) {
+					fclose(fop);
+					printf("error lectura generaciones_mestizaje\n");
+					return -1;
+				}
+				generaciones_mestizaje = atoi(c);
+				if (fgets(c, 63, fop) == NULL) {
+					fclose(fop);
+					printf("error lectura hprob_cop_mejorB\n");
+					return -1;
+				}
+				hprob_cop_mejorB = atof(c);
+				if (fgets(c, 63, fop) == NULL) {
+					fclose(fop);
+					printf("error lectura hnum_retenerB\n");
+					return -1;
+				}
+				hnum_retenerB = atoi(c);
+				if (fgets(c, 63, fop) == NULL) {
+					fclose(fop);
+					printf("error lectura n_mestizos\n");
+					return -1;
+				}
+				n_mestizos = atoi(c);
+				if (fgets(c, 63, fop) == NULL) {
+					fclose(fop);
+					printf("error lectura n_mestizosB\n");
+					return -1;
+				}
+				n_mestizosB = atoi(c);
+				if (fgets(c, 63, fop) == NULL) {
+					fclose(fop);
+					printf("error lectura NVECp\n");
+					return -1;
+				}
+				NVECp = atoi(c);
+			}
+		}
+#endif
 	}
 	fclose(fop);
 	rtrim_string(descripcion_caso, '\n');
@@ -4916,9 +5768,8 @@ int main(int argc, char* argv[]) {
 	rtrim_string(senda_vector_solucion, '\n');
 	rtrim_string(senda_modelo_solucion, '\n');
 	if (argc == 1 || argc == 2) {
-
 		// nombre del fichero del caso, sin la carpeta
-		int n = strlen(fichero_caso) - 1;
+		int n = (int)strlen(fichero_caso) - 1;
 		if (n < 1 || fichero_caso[strlen(fichero_caso)] == '/' || fichero_caso[strlen(fichero_caso)] == '\\') {
 			fclose(fop);
 			printf("Falta el nombre del fichero del caso\n");
@@ -4940,7 +5791,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	else if (argc == 3) {
-		printf("argumentos leidos de \n%s\n%s\n\n", argv[1], argv[2]);
 		if (fichero_caso[strlen(fichero_caso) - 1] != '/' && fichero_caso[strlen(fichero_caso) - 1] != '\\') {
 			printf("error fichero fuente del caso. debe ser una carpeta\n");
 			return -1;
@@ -5344,9 +6194,22 @@ int main(int argc, char* argv[]) {
 	fgets(c, 32, fop);
 	if (datos_nuevos) {
 		hpar[hipar++] = hprob_cop_mejor = hprob_cop_mejor_ini;
+		fgets(c, 32, fop);
+		if (hnum_retener < 0) {
+			hpar[hipar++] = hnum_retener = -1;
+		}
+		else {
+			hpar[hipar++] = hnum_retener;
+		}
+		if (hnum_retenerB < 0) {
+			hnum_retenerB = -1;
+		}
 	}
 	else {
 		hpar[hipar++] = hprob_cop_mejor = hprob_cop_mejor_ini = atof(c);
+		fgets(c, 32, fop);
+		hpar[hipar++] = hnum_retener = atoi(c);
+		hnum_retenerB = hnum_retener;
 	}
 	fgets(c, 32, fop);
 	hpar[hipar++] = f_paso_prolongar = atof(c);
@@ -5380,6 +6243,11 @@ int main(int argc, char* argv[]) {
 #else
 	ta_pob = (unsigned)(sizeof(double) * (hMAX_POB + 1) * (hMAX_VEC + 1));
 #endif
+#ifdef MESTIZAJE
+	if (mestizaje) {
+		ta_pob *= 2;
+	}
+#endif
 	printf("poblacion              : %14u %9.2f MB\n", (unsigned long)ta_pob, ta_pob / mega_byte);
 	ta_me_sol = hLVAR * sizeof(double);
 	printf("variables me_sol       : %14u %9.2f MB\n", (unsigned long)ta_me_sol, ta_me_sol / mega_byte);
@@ -5389,7 +6257,7 @@ int main(int argc, char* argv[]) {
 	// antes de lanzar ningón kernel
 	cudaStatus = cudaDeviceSetLimit(cudaLimitMallocHeapSize, 16 * ta_pob);
 	if (cudaStatus != cudaSuccess) {
-		imprime_error("Error al ejecutar cudaDeviceSetLimit");
+		imprime_error(-10, "Error al ejecutar cudaDeviceSetLimit");
 		return false;
 	}
 	cudaDeviceGetLimit(&limite_mem_comp, cudaLimitMallocHeapSize);

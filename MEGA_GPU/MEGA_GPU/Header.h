@@ -11,7 +11,7 @@ using namespace std;
 
 /*
 Propiedades del proyecto: C/C++: Command line (opciones adicionales)
--Xptxas -0.3 maximiza la optimización, no he encontyrado ninguna mejora
+-Xptxas -0.3 maximiza la optimización, no he encontrado ninguna mejora
 -Xptxas -maxrregcount=N establece el número de registros por hilo a N, lo que determina la ocupación y el spilling
 */
 
@@ -23,53 +23,62 @@ Propiedades del proyecto: C/C++: Command line (opciones adicionales)
 #define azar curandStatePhilox4_32_10
 #endif
 
+// retener el mejor individuo de generaciones anteriores, ha servido para comprobar que
+// la probabilidad de copiar el mejor es algo similar
+#define RETENER
+
+// si se define BLOQUES_VARIABLES, el número de bloques del kernel 'selecciona' se ajusta al número de
+// individuos factibles, lo que puede mejorar la eficiencia y en cualquier caso no supone un coste adicional de tiempo
+// solo opera al principio de los cálculos porque en muy pocas generaciones todos los descendientes resultan factibles
+#define BLOQUES_VARIABLES
+#ifdef BLOQUES_VARIABLES
+const int MIN_RATIO_FACTIBLES = 99;
+#endif
+
 // tipo de memoria para las matrices 2D: 'cotas', 'poblacion' y 'descendiente'
 // si no se especifica DINAMICA será estática
-#define DINAMICA
+//#define DINAMICA
+
+// ubica en la memoria constant las estructuras: OPCIONES, DATOS y PARAMETROS
+// no es reomendable porque dos hilos distintos nunca acceden a la misma dirección de memoria
+// precisamente cada uno trata elementos distintos de las mismas matrices o estructuras de datos
+//#define __CONS_DAT_PAR
 
 // no aporta nada y es ineficiente
 //#define REGULA
 
-// si se define BLOQUES_VARIABLES, el número de bloques del kernel 'selecciona' se ajusta al número de
-// individuos factibles, lo que puede mejorar la eficiencia (al principio) y en cualquier caso no
-// supone un coste adicional de tiempo
-#define BLOQUES_VARIABLES
-
-#ifdef BLOQUES_VARIABLES
-const int MIN_RATIO_FACTIBLES = 99;
-#endif
+// se lleva una segunda población en paralelo y cada 'n' generaciones se intercambian 'k' individuos
+// la segunda población a veces aporta porque no se duplica el tiempo de cálculo como cabía esperar
+// aunque parece preferible una sola población el doble de grande
+// !! IMPORTANTE !! --------------------------------------------------
+// MESTIZAJE solo es compatible con memoria estática para la población
+//#define MESTIZAJE
 
 // solo vale la pena para MEGA4, MEGA5, MEGA6 y MEGA8
 #define MEGA6
 
 const int hNFAC = 2;
-__device__ const int NFAC = 2;
 
 #if defined(MEGA4)
 const int hNDEM = 2;
 const int hNSEC = 6;
-__device__ const int NDEM = 2;
-__device__ const int NSEC = 6;
-const int hMAX_POB = 5120;
+const int hMAX_POB = 8000;
 #elif defined(MEGA5)
 const int hNDEM = 3;
 const int hNSEC = 63;
-const int hMAX_POB = 30720;
-__device__ const int NDEM = 3;
-__device__ const int NSEC = 63;
+const int hMAX_POB = 40000;
 #elif defined(MEGA6)
 const int hNDEM = 2;
 const int hNSEC = 31;
-__device__ const int NDEM = 2;
-__device__ const int NSEC = 31;
-const int hMAX_POB = 10240;
+const int hMAX_POB = 15000;
 #elif defined(MEGA8)
-const int NDEM = 2;
-const int NSEC = 32;
-__device__ const int NDEM = 2;
-__device__ const int NSEC = 32;
-const int hMAX_POB = 10240;
+const int hNDEM = 2;
+const int hNSEC = 32;
+const int hMAX_POB = 15000;
 #endif
+__device__ const int NFAC = hNFAC;
+__device__ const int NDEM = hNDEM;
+__device__ const int NSEC = hNSEC;
 
 //__managed__ se usa para tener el mismo nombre de variable en el host y el device y que compartan su valor de forma automática, pero
 // es menos eficiente que dos nombres de variable distintos cuyos valores se coordinan manualmente cuando es necesario
@@ -204,14 +213,13 @@ __device__ double  precio_factor_trabajo_pFL(int INDICE_F_TRA, double PobAct, do
 #pragma region Genetico
 
 static __global__ void kernelIni(
-	int* pro_pvec,
 	double* pro_me_sol,
 	double* pro_VEC_OPT_E,
-	double* pro_AYD_ADI_DEM,
-	double* pro_desvios_bloque,
-	OPCIONES* pro_opciones,
-	DATOS* pro_datos,
-	PARAMETROS* pro_parametros
+	double* pro_desvios_bloque
+	//double* pro_AYD_ADI_DEM,
+	//OPCIONES* pro_opciones,
+	//DATOS* pro_datos,
+	//PARAMETROS* pro_parametros
 );
 static __global__ void kernelIniGene(
 	int* pro_fijo,
@@ -222,17 +230,33 @@ static __global__ void kernelIniGene(
 	double* pro_descendiente
 );
 static __global__ void kernelConstantes();
-static __global__ void kernelPoblacionAdevice(double* pro_poblacion);
-static __global__ void kernel_inicia_estados_azar(azar* state, unsigned long semilla);
-__global__ void kernel_mutacion_cruze(azar* estado_gen_azar);
-__global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar);
-__global__ void kernel_seleccion();
-__global__ void kernel_seleccion_1();
-__global__ void kernel_seleccion_1i();
+static __global__ void kernel_merito_s_todo(double* vec_opt_todo, double* res, int hNIF_K);
+static __global__ void kernel_merito_s(double* vec_opt, double* res);
+static __global__ void kernel_sol_mejor_merito();
+static __global__ void kernelPoblacionAdevice(double* pro_vector_poblacion);
+static __global__ void kernel_inicia_estados_azar(azar* state, int n, unsigned long semilla);
+
+static __global__ void kernel_mutacion_cruze(azar* estado_gen_azar);
+static __global__ void kernel_mutacion_cruze_1(azar* estado_gen_azar);
+static __global__ void kernel_retener(azar* estado_gen_azar);
+static __global__ void kernel_seleccion();
+static __global__ void kernel_seleccion_1();
+#ifdef BLOQUES_VARIABLES
+static __global__ void kernel_indexa_factibles();
+static __global__ void kernel_seleccion_1i();
+#endif
 __device__ bool planoA2D(double* fte, double**& dest, int fils, int cols);
-__global__ void kernel_merito_s_todo(double* vec_opt_todo, double* res, int hNIF_K);
-__global__ void kernel_merito_s(double* vec_opt, double* res);
-__global__ void kernel_sol_mejor_merito();
+#ifdef MESTIZAJE
+static __global__ void kernelPoblacionAdeviceB(double* pro_vector_poblacion);
+static __global__ void kernel_mutacion_cruzeB(azar* estado_gen_azar);
+static __global__ void kernel_mutacion_cruze_1B(azar* estado_gen_azar);
+static __global__ void kernel_mestizaje(azar* estado_gen_azar);
+#ifdef RETENER
+static __global__ void kernel_retenerB(azar* estado_gen_azar);
+#endif
+static __global__ void kernel_seleccionB();
+static __global__ void kernel_seleccion_1B();
+#endif
 
 int     main(int argc, char* argv[]);
 bool    tarjeta();
@@ -240,13 +264,13 @@ static bool copiaVectorIntHostDevice(int* fte, int ta, int*& des);
 static bool copiaVectorDoubleHostDevice(double* fte, int ta, double*& des);
 bool    copiaIniGPU();
 bool    copiaGeneticoGPU();
-bool    copiaPoblacionAlDevice();
+bool    copiaPoblacionesAlDevice();
 double  hllama_merito_s(double* vec_opt);
 bool    hllama_merito_s_todo(double** pobla, int bloques, int hilos);
 bool    hllama_sol_mejor_merito();
 double* soluciona(double* par, double* cotasInf, double* cotasSup, double* vec, int extendida, const char* senda);
 void    fin_soluciona();
-void    imprime_error(const char* rot);
+void    imprime_error(int generacion, const char* rot);
 void    cancelar(int sig);
 int     parametros_alge(double* par);
 bool    inicia_cotas();

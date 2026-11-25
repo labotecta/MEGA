@@ -1,8 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>C:\MEGA\MEGA_GPU\Casos\Comandos\mcs7_030.txt 1001_demanda_42_det_P_0_90_RentaF.txt</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>C:\MEGA\MEGA_GPU\Casos\Comandos\c_mcs6\mestizaje\RET_3_3_PCM_2_2.txt 205_salarios_1_5_42_det_0_00</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArgumentsHistory>C:\\MEGA\\MEGA_GPU\\Casos\\Actual\\par_caso_cuda.txt|C:\MEGA\MEGA_GPU\Casos\parametros\mcs6_000n.txt 201_precios_ini_42_EXO|C:\MEGA\MEGA_GPU\Casos\parametros\mcs5_005.txt 300_demanda_42_exo_E|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs5_005.txt 300_demanda_42_exo_E|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs7_030.txt 1001_demanda_42_det_P_0_90_RentaF.txt|</LocalDebuggerCommandArgumentsHistory>
+    <LocalDebuggerCommandArgumentsHistory>C:\MEGA\MEGA_GPU\Casos\Comandos\mcs7_030.txt 1001_demanda_42_det_P_0_90_RentaF.txt|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs6_005r.txt 201_precios_ini_42_EXO|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs6_005r5.txt 205_salarios_1_5_42_det_0_00|C:\MEGA\MEGA_GPU\Casos\Comandos\c_mcs7\RET_0_0_AYD_3_M_2k_0_0.txt     3001_ayudas_fue__42_det_P_0_90|C:\MEGA\MEGA_GPU\Casos\Comandos\c_mcs6\mestizaje\RET_3_3_PCM_2_2.txt 205_salarios_1_5_42_det_0_00|</LocalDebuggerCommandArgumentsHistory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>C:\MEGA\MEGA_GPU\Casos\Comandos\c_mcs6\fosiles.txt 230_fosiles_1_5_det_P_0_00</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArgumentsHistory>C:\MEGA\MEGA_GPU\Casos\Comandos\mcs6_005r5.txt 205_salarios_1_5_42_det_0_00|C:\MEGA\MEGA_GPU\Casos\Comandos\mcs6.txt 205_salarios_1_5_42_det_0_00|C:\MEGA\MEGA_GPU\Casos\Comandos\c_mcs6\fosiles.txt 230_fosiles_1_5_det_P_0_00|</LocalDebuggerCommandArgumentsHistory>
   </PropertyGroup>
 </Project>
