@@ -32,36 +32,36 @@ const int NFAC = 2;
 #ifdef MEGA0
 const int NDEM = 1;
 const int NSEC = 2;
-const int MAX_POB = 5120;
+const int MAX_POB = 8000;
 #elif defined(MEGA1)
 const int NDEM = 2;
 const int NSEC = 2;
-const int MAX_POB = 5120;
+const int MAX_POB = 8000;
 #elif defined(MEGA2)
 // es idéntica a MEGA1
 const int NDEM = 2;
 const int NSEC = 2;
-const int MAX_POB = 5120;
+const int MAX_POB = 8000;
 #elif defined(MEGA3)
 const int NDEM = 3;
 const int NSEC = 2;
-const int MAX_POB = 5120;
+const int MAX_POB = 8000;
 #elif defined(MEGA4)
 const int NDEM = 2;
 const int NSEC = 6;
-const int MAX_POB = 5120;
+const int MAX_POB = 8000;
 #elif defined(MEGA5)
 const int NDEM = 3;
 const int NSEC = 63;
-const int MAX_POB = 30720;
+const int MAX_POB = 40000;
 #elif defined(MEGA6)
 const int NDEM = 2;
 const int NSEC = 31;
-const int MAX_POB = 10240;
+const int MAX_POB = 15000;
 #elif defined(MEGA8)
 const int NDEM = 2;
 const int NSEC = 32;
-const int MAX_POB = 10240;
+const int MAX_POB = 15000;
 #endif
 
 /*

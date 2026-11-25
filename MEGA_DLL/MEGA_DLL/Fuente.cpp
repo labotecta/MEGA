@@ -2218,7 +2218,7 @@ int parametros_alge(double* par) {
 	estadistica_pob_ini = (int)par[ipar++];
 	desviaciones_relativas = (int)par[ipar++];
 	prob_cop_mejor = prob_cop_mejor_ini = par[ipar++];
-	num_retener = par[ipar++];
+	num_retener = (int)par[ipar++];
 	f_paso_prolongar = par[ipar++];
 	dis_prolonga_min = par[ipar++];
 
